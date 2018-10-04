@@ -1,0 +1,6 @@
+Inputs,DefaultLabel,IsSessionFile,TOME_3001
+GradientCoeff,coeff.grad,1,TOME_3001/Session 1
+SpinEchoNegative,SpinEchoFieldMap_AP,0,TOME_3001/Session 1
+SpinEchoPositive,SpinEchoFieldMap_PA,0,TOME_3001/Session 1
+T1,T1w_MPR_axial,0,TOME_3001/T1_Axial
+T2,T2w_SPC,0,TOME_3001/Session 1
