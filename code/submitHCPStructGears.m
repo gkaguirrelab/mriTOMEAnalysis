@@ -5,7 +5,7 @@ projectName = 'tome';
 freesurferLicenseFileName = 'freesurfer_license.txt';
 fileType = 'nifti';
 gearName = 'hcp-struct';
-rootSessionLabel = 'Session 1';
+rootSessionInputLabel = 'T1';
 paramsFileName = 'tomeHCPStructuralParams.csv';
 
 
@@ -29,8 +29,11 @@ allSessions = fw.getProjectSessions(projID);
 
 
 %% Identify the freesurfer license file
-freesurferLicenseFileIdx = find(strcmp(cellfun(@(x) x.name,allProjects{projIdx}.files,'UniformOutput',false),freesurferLicenseFileName));
-freesurferLicenseFileID = allProjects{projIdx}.files{freesurferLicenseFileIdx}.id;
+fsLicFileIdx = find(strcmp(cellfun(@(x) x.name,allProjects{projIdx}.files,'UniformOutput',false),freesurferLicenseFileName));
+fsLicFileName = allProjects{projIdx}.files{fsLicFileIdx}.name;
+fsLicFileID = allProjects{projIdx}.id;
+fsLicFileType = 'project';
+fsLicFileLabel = 'FreeSurferLicense';
 
 
 %% Construct the gear configuration
@@ -68,6 +71,9 @@ for jj=1:nJobs
     % Loop through the inputs specified in the paramsTable
     for ii=1:size(paramsTable,1)
         
+        % Define the input label
+        theInputLabel=char(paramsTable{ii,1});
+        % Get the entry for this job and input from the params table
         entry = strsplit(char(paramsTable{ii,jj+nParamColumns}),'/');
         % Try to find the session with this subject and session label
         sessionIdx = find(cellfun(@(x) all([strcmp(x.subject.code,entry{1}) strcmp(x.label,entry{2})]),allSessions));
@@ -91,7 +97,9 @@ for jj=1:nJobs
             % It is a session file (such as a coeff.grad file). See if the
             % target file is there.
             acqIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
-            acqID = allSessions{sessionIdx}.files{acqIdx}.id;
+            theID = allSessions{sessionIdx}.id;
+            theName = allSessions{sessionIdx}.files{acqIdx}.name;
+            theType = 'session';
         else
             % It is an acqusition file. Try to find an acquisition that
             % matches the input label and contains a nifti file. We use
@@ -106,27 +114,38 @@ for jj=1:nJobs
             if sum(acqIdx)>1
                 error('More than one matching acquisition for this input entry')
             end
-            % We have a match. Get the ID
-            acqID = allAcqs{acqIdx}.id;
+            % We have a match. Re-find the nifti file
+            theNiftiIdx = find(cellfun(@(y) strcmp(y.type,'nifti'),allAcqs{acqIdx}.files));
+            % Get the name and ID
+            theID = allAcqs{acqIdx}.id;
+            theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
+            theType = 'acquisition';
+            % Check if theInputLabel is the rootSessionInputLabel
+            if strcmp(rootSessionInputLabel,theInputLabel)
+                % Get the root session information. This is the session to
+                % which the analysis product will be assigned
+                rootSessionID = allSessions{sessionIdx}.id;
+            end
         end
         % Add this input information to the structure
-        inputStem = struct('type', 'acquisition',...
-                  'id', acqID, ...
-                  'name', targetLabel);
-        inputs.(char(paramsTable{ii,1})) = inputStem;
+        inputStem = struct('type', theType,...
+                  'id', theID, ...
+                  'name', theName);
+        inputs.(theInputLabel) = inputStem;
     end
 
-    
-    %% Identify the root session
-    % This is the session to which the analysis product will be assigned
-    subjectName = char(paramsTable.Properties.VariableNames{jj+nParamColumns});
-    rootSessionIdx = find(cellfun(@(x) all([strcmp(x.subject.code,subjectName) strcmp(x.label,rootSessionLabel)]),allSessions));    
-    rootSessionID = allSessions{rootSessionIdx}.id;
+    % Add the freesurfer license file
+    inputStem = struct('type', fsLicFileType,...
+        'id', fsLicFileID, ...
+        'name', fsLicFileName);
+    inputs.(fsLicFileLabel) = inputStem;
 
-    
-    %% Customize gear configuration
+        
+    %% Customize gear configuration with this subject name
     config = configDefault;
+    subjectName = char(paramsTable.Properties.VariableNames{jj+nParamColumns});
     config.Subject = subjectName;
+    config.RegName = 'FS';
 
     
     %% Assemble Job
@@ -140,10 +159,13 @@ for jj=1:nJobs
     analysisLabel = [gearName ' v' allGears{thisGarIdx}.gear.version ' - ' char(datetime('now','TimeZone','local','Format','dd/MM/yyyy HH:mm:ss'))];
 
     
+    %% Check if this analysis already exists
+    
+    
     %% Run
     body = struct('label', analysisLabel, 'job', thisJob);
     [returnData, resp] = fw.addSessionAnalysis(rootSessionID, body);
-    
+    foo=1;
 end
 
 
