@@ -7,7 +7,7 @@ fileType = 'nifti';
 gearName = 'hcp-struct';
 rootSessionInputLabel = 'T1';
 paramsFileName = 'tomeHCPStructuralParams.csv';
-
+verbose = true;
 
 %% Load the params table
 % This identifies the subjects and inputs to be processed
@@ -41,12 +41,14 @@ fsLicFileLabel = 'FreeSurferLicense';
 allGears = fw.getAllGears();
 
 % Find the particular gear we are going to use
-thisGarIdx=find(strcmp(cellfun(@(x) x.gear.name,allGears,'UniformOutput',false),gearName));
-thisGearID = allGears{thisGarIdx}.id;
+theGearIdx=find(strcmp(cellfun(@(x) x.gear.name,allGears,'UniformOutput',false),gearName));
+theGearID = allGears{theGearIdx}.id;
+theGearName = allGears{theGearIdx}.gear.name;
+theGearVersion = allGears{theGearIdx}.gear.version;
 
 % Build the config params. Read the config to set the defaults and edit
 % required ones
-gear = fw.getGear(thisGearID);
+gear = fw.getGear(theGearID);
 gearCfg = struct(gear.gear.config);
 configDefault = struct;
 keys = fieldnames(gearCfg);
@@ -150,18 +152,24 @@ for jj=1:nJobs
     
     %% Assemble Job
     % Create the job body with all the involved files in a struct
-    thisJob = struct('gear_id', thisGearID, ...
+    thisJob = struct('gear_id', theGearID, ...
         'inputs', inputs, ...
         'config', config);
 
     
     %% Assemble analysis label
-    analysisLabel = [gearName ' v' allGears{thisGarIdx}.gear.version ' - ' char(datetime('now','TimeZone','local','Format','dd/MM/yyyy HH:mm:ss'))];
+    analysisLabel = [theGearName ' v' theGearVersion ' - ' char(datetime('now','TimeZone','local','Format','dd/MM/yyyy HH:mm:ss'))];
 
     
-    %% Check if this analysis already exists
-    
-    
+    %% Check if the analysis has already been performed
+    allAnalyses=fw.getSessionAnalyses(rootSessionID);
+    if any(cellfun(@(x) strcmp(x.gearInfo.name,theGearName),allAnalyses))
+        if verbose
+            fprintf(['The analysis ' theGearName ' is already present for ' subjectName '; skipping.\n']);
+        end
+        continue
+    end
+        
     %% Run
     body = struct('label', analysisLabel, 'job', thisJob);
     [returnData, resp] = fw.addSessionAnalysis(rootSessionID, body);
