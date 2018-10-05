@@ -163,13 +163,15 @@ for jj=1:nJobs
     
     %% Check if the analysis has already been performed
     allAnalyses=fw.getSessionAnalyses(rootSessionID);
-    if any(cellfun(@(x) strcmp(x.gearInfo.name,theGearName),allAnalyses))
-        if verbose
-            fprintf(['The analysis ' theGearName ' is already present for ' subjectName '; skipping.\n']);
+    if ~isempty(allAnalyses)
+        if any(cellfun(@(x) strcmp(x.gearInfo.name,theGearName),allAnalyses))
+            if verbose
+                fprintf(['The analysis ' theGearName ' is already present for ' subjectName '; skipping.\n']);
+            end
+            continue
         end
-        continue
     end
-        
+    
     %% Run
     body = struct('label', analysisLabel, 'job', thisJob);
     [returnData, resp] = fw.addSessionAnalysis(rootSessionID, body);
