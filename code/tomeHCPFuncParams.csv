@@ -1,0 +1,9 @@
+projectName,tome,gearName,hcp-func,rootSessionInputLabel,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
+Inputs,GradientCoeff,SpinEchoNegative,SpinEchoPositive,StructZip,fMRIScout,fMRITimeSeries,,,
+DefaultLabel,coeff.grad,SpinEchoFieldMap_AP,SpinEchoFieldMap_PA,hcp-struct/hcpstruct.zip,,,,,
+IsSessionFile,1,0,0,1,0,0,,,
+IsAnalysisFile,0,0,0,1,0,0,,,
+ExactStringMatch,0,0,0,0,1,1,,,
+,,,,,,,,,
+TOME_3042,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1/rfMRI_REST_AP_Run1_SBRef,TOME_3042/Session 1/rfMRI_REST_AP_Run1,,,
+TOME_3042,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1,TOME_3042/Session 1/rfMRI_REST_PA_Run2_SBRef,TOME_3042/Session 1/rfMRI_REST_PA_Run2,,,
