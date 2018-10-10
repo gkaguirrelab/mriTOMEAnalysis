@@ -208,7 +208,7 @@ for ii=nParamRows+1:nRows
     
     
     %% Assemble analysis label
-    analysisLabel = [theGearName ' v' theGearVersion ' [' rootSessionTag '] - ' char(datetime('now','TimeZone','local','Format','dd/MM/yyyy HH:mm:ss'))];
+    analysisLabel = [theGearName ' v' theGearVersion ' [' rootSessionTag '] - ' char(datetime('now','TimeZone','local','Format','yyyy-MM-dd HH:mm'))];
     
     
     %% Check if the analysis has already been performed
