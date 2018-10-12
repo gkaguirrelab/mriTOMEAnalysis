@@ -143,30 +143,39 @@ for ii=nParamRows+1:nRows
                 theType = 'session';
             end
         else
-            % It is an acqusition file. Try to find an acquisition that
-            % matches the input label and contains a nifti file. Unless
-            % told to use exact matching, we use strfind instead of strcmp,
-            % as the stored label in flywheel sometimes has a trailing
-            % space.
-            if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
-                foo=1;
-                labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
-            else                
-                labelMatchIdx = cellfun(@(x) ~isempty(x),strfind(cellfun(@(x) x.label,allAcqs,'UniformOutput',false),targetLabel));
+            % It is an acqusition file. If a file entry was specified, go
+            % find that.
+            if length(entry)==4
+                % We are given the name of the file
+                theName = entry{4};
+                % Find the acquisition ID
+                acqIdx = find(cellfun(@(x) sum(cellfun(@(y) strcmp(y.name,theName),x.files)),allAcqs));
+                theID = allAcqs{acqIdx}.id;
+            else
+                % Try to find an acquisition that
+                % matches the input label and contains a nifti file. Unless
+                % told to use exact matching, trim off leading and trailing
+                % whitespace, as the stored label in flywheel sometimes has a
+                % trailing space.
+                if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
+                    labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
+                else
+                    labelMatchIdx = cellfun(@(x) strcmp(strtrim(x.label),strtrim(targetLabel)),allAcqs);
+                end
+                isNiftiIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),x.files)),allAcqs);
+                acqIdx = logical(labelMatchIdx .* isNiftiIdx);
+                if ~any(acqIdx)
+                    error('No matching acquisition for this input entry')
+                end
+                if sum(acqIdx)>1
+                    error('More than one matching acquisition for this input entry')
+                end
+                % We have a match. Re-find the nifti file
+                theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
+                % Get the name and ID
+                theID = allAcqs{acqIdx}.id;
+                theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
             end
-            isNiftiIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),x.files)),allAcqs);
-            acqIdx = logical(labelMatchIdx .* isNiftiIdx);
-            if ~any(acqIdx)
-                error('No matching acquisition for this input entry')
-            end
-            if sum(acqIdx)>1
-                error('More than one matching acquisition for this input entry')
-            end
-            % We have a match. Re-find the nifti file
-            theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
-            % Get the name and ID
-            theID = allAcqs{acqIdx}.id;
-            theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
             theType = 'acquisition';
             % Check if theInputLabel is the rootSessionInputLabel
             if strcmp(p.Results.rootSessionInputLabel,theInputLabel)
@@ -219,10 +228,11 @@ for ii=nParamRows+1:nRows
         priorAnalysesMatchIdx = cellfun(@(x) strcmp(x.gearInfo.name,theGearName),allAnalyses);
         if any(priorAnalysesMatchIdx)
             % See if the data tag in any of the prior analyses is a match
+            % Ignore white space in the label parts
             for mm=1:length(allAnalyses)
                 analysisLabelParts = strsplit(allAnalyses{mm}.label,{'[',']'});
                 if length(analysisLabelParts)>1
-                    if strcmp(analysisLabelParts{2},rootSessionTag)
+                    if strcmp(strtrim(analysisLabelParts{2}),strtrim(rootSessionTag))
                         skipFlag = true;
                     end
                 end
