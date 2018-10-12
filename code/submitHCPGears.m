@@ -1,7 +1,7 @@
 
 
 %% Full path to the params csv file
-paramsFileName = 'tomeHCPStructParams.csv';
+paramsFileName = 'tomeHCPFuncParams.csv';
 
 
 %% Load and parse the params table
@@ -135,12 +135,14 @@ for ii=nParamRows+1:nRows
                 theID = allAnalyses{analysisIdx}.id;
                 theName = allAnalyses{analysisIdx}.files{fileIdx}.name;
                 theType = 'analysis';
+            theAcqLabel = 'analysis_file';
             else
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
-                acqIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
-                theName = allSessions{sessionIdx}.files{acqIdx}.name;
+                sessIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
+                theName = allSessions{sessionIdx}.files{sessIdx}.name;
                 theType = 'session';
+                theAcqLabel = 'session_file';
             end
         else
             % It is an acqusition file. If a file entry was specified, go
@@ -151,6 +153,7 @@ for ii=nParamRows+1:nRows
                 % Find the acquisition ID
                 acqIdx = find(cellfun(@(x) sum(cellfun(@(y) strcmp(y.name,theName),x.files)),allAcqs));
                 theID = allAcqs{acqIdx}.id;
+                theAcqLabel = allAcqs{acqIdx}.label;
             else
                 % Try to find an acquisition that
                 % matches the input label and contains a nifti file. Unless
@@ -172,9 +175,10 @@ for ii=nParamRows+1:nRows
                 end
                 % We have a match. Re-find the nifti file
                 theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
-                % Get the name and ID
+                % Get the file name, ID, and acquisition label
                 theID = allAcqs{acqIdx}.id;
                 theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
+                theAcqLabel = allAcqs{acqIdx}.label;
             end
             theType = 'acquisition';
             % Check if theInputLabel is the rootSessionInputLabel
@@ -190,6 +194,7 @@ for ii=nParamRows+1:nRows
             'id', theID, ...
             'name', theName);
         inputs.(theInputLabel) = inputStem;
+        acqNotes.(theInputLabel) = theAcqLabel;
     end
     
     % Add the freesurfer license file
@@ -197,7 +202,7 @@ for ii=nParamRows+1:nRows
         'id', fsLicFileID, ...
         'name', fsLicFileName);
     inputs.(fsLicFileLabel) = inputStem;
-    
+    acqNotes.(fsLicFileLabel) = 'projectFile';
     
     %% Customize gear configuration
     configKeys = eval(p.Results.configKeys);
@@ -248,9 +253,21 @@ for ii=nParamRows+1:nRows
     
     %% Run
     body = struct('label', analysisLabel, 'job', thisJob);
-    [returnData, resp] = fw.addSessionAnalysis(rootSessionID, body);
+    [newAnalysisID, resp] = fw.addSessionAnalysis(rootSessionID, body);
+    
+    
+    %% Add a notes entry to the analysis object
+    note = 'InputLabel  ---  AcquisitionLabel  ---  FileName\n';
+    inputFieldNames = fieldnames(inputs);
+    for nn = 1:numel(inputFieldNames)
+        newLine = [inputFieldNames{nn} '  ---  ' acqNotes.(inputFieldNames{nn}) '  ---  ' inputs.(inputFieldNames{nn}).name '\n'];
+        note = [note newLine];
+    end
+    fw.addAnalysisNote(newAnalysisID,sprintf(note));
+    
+    %% Report the event
     if p.Results.verbose
-        fprintf(['Submitted ' subjectName ' [' returnData '] - ' analysisLabel '\n']);
+        fprintf(['Submitted ' subjectName ' [' newAnalysisID '] - ' analysisLabel '\n']);
     end
 end
 
