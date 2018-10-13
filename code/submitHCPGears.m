@@ -257,10 +257,11 @@ for ii=nParamRows+1:nRows
     
     
     %% Add a notes entry to the analysis object
-    note = 'InputLabel  ---  AcquisitionLabel  ---  FileName\n';
+    note = ['InputLabel  -+-  AcquisitionLabel  -+-  FileName\n' ...
+            '-------------|----------------------|-----------\n'];
     inputFieldNames = fieldnames(inputs);
     for nn = 1:numel(inputFieldNames)
-        newLine = [inputFieldNames{nn} '  ---  ' acqNotes.(inputFieldNames{nn}) '  ---  ' inputs.(inputFieldNames{nn}).name '\n'];
+        newLine = [inputFieldNames{nn} '  -+-  ' acqNotes.(inputFieldNames{nn}) '  -+-  ' inputs.(inputFieldNames{nn}).name '\n'];
         note = [note newLine];
     end
     fw.addAnalysisNote(newAnalysisID,sprintf(note));
