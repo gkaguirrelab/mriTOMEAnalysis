@@ -140,6 +140,9 @@ for ii=nParamRows+1:nRows
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
                 sessIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
+                if isempty(sessIdx)
+                    error('No matching session file for this entry (likely missing a coeff.grad file)')
+                end
                 theName = allSessions{sessionIdx}.files{sessIdx}.name;
                 theType = 'session';
                 theAcqLabel = 'session_file';
@@ -155,15 +158,15 @@ for ii=nParamRows+1:nRows
                 theID = allAcqs{acqIdx}.id;
                 theAcqLabel = allAcqs{acqIdx}.label;
             else
-                % Try to find an acquisition that
-                % matches the input label and contains a nifti file. Unless
-                % told to use exact matching, trim off leading and trailing
-                % whitespace, as the stored label in flywheel sometimes has a
-                % trailing space.
+                % Try to find an acquisition that matches the input label
+                % and contains a nifti file. Unless told to use exact
+                % matching, trim off leading and trailing whitespace, as
+                % the stored label in flywheel sometimes has a trailing
+                % space. Also, use a case insensitive match.
                 if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
                     labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
                 else
-                    labelMatchIdx = cellfun(@(x) strcmp(strtrim(x.label),strtrim(targetLabel)),allAcqs);
+                    labelMatchIdx = cellfun(@(x) strcmpi(strtrim(x.label),strtrim(targetLabel)),allAcqs);
                 end
                 isNiftiIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),x.files)),allAcqs);
                 acqIdx = logical(labelMatchIdx .* isNiftiIdx);
