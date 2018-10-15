@@ -1,7 +1,7 @@
 
 
 %% Full path to the params csv file
-paramsFileName = 'tomeHCPFuncParams.csv';
+paramsFileName = 'tomeHCPFuncParams_Session1.csv';
 
 
 %% Load and parse the params table
