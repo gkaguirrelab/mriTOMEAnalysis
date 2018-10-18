@@ -1,8 +1,18 @@
+function submitHCPGears(paramsFileName)
+% Submits jobs to the flywheel instance based upon a table of parameters
+%
+% Syntax
+%  result = submitHCPGears(paramsFileName)
+%
+% Description:
+%
+%
+%
 
-
-%% Full path to the params csv file
-paramsFileName = 'tomeHCPFuncParams_Session1.csv';
-
+% Examples:
+%{
+    submitHCPGears(tomeHCPFuncParams_Session1.csv);
+%}
 
 %% Load and parse the params table
 % This identifies the subjects and inputs to be processed
