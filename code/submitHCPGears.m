@@ -149,11 +149,11 @@ for ii=nParamRows+1:nRows
             else
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
-                sessIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
-                if isempty(sessIdx)
+                fileIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
+                if isempty(fileIdx)
                     error('No matching session file for this entry (likely missing a coeff.grad file)')
                 end
-                theName = allSessions{sessionIdx}.files{sessIdx}.name;
+                theName = allSessions{sessionIdx}.files{fileIdx}.name;
                 theType = 'session';
                 theAcqLabel = 'session_file';
             end
@@ -199,7 +199,11 @@ for ii=nParamRows+1:nRows
                 % Get the root session information. This is the session to
                 % which the analysis product will be assigned
                 rootSessionID = allSessions{sessionIdx}.id;
-                rootSessionTag = allAcqs{acqIdx}.label;
+                % The root session tag is used to label the outputs of the
+                % gear. Sometimes there is leading or trailing white space
+                % in the acquisition label. We trim that off here as it can
+                % cause troubles in gear execution.
+                rootSessionTag = strtrim(allAcqs{acqIdx}.label);
             end
         end
         % Add this input information to the structure
@@ -252,6 +256,7 @@ for ii=nParamRows+1:nRows
                 if length(analysisLabelParts)>1
                     if strcmp(strtrim(analysisLabelParts{2}),strtrim(rootSessionTag))
                         skipFlag = true;
+                        priorAnalysisID = allAnalyses{mm}.id;
                     end
                 end
             end
@@ -260,13 +265,17 @@ for ii=nParamRows+1:nRows
     if skipFlag
         if p.Results.verbose
             fprintf(['The analysis ' theGearName ' is already present for ' subjectName ', ' rootSessionTag '; skipping.\n']);
+            % This command may be used to delete the prior analysis
+            %{
+                fw.deleteSessionAnalysis(allSessions{sessionIdx}.id,priorAnalysisID);
+            %}
         end
         continue
     end
     
     %% Run
     body = struct('label', analysisLabel, 'job', thisJob);
-    [newAnalysisID, resp] = fw.addSessionAnalysis(rootSessionID, body);
+    [newAnalysisID, ~] = fw.addSessionAnalysis(rootSessionID, body);
     
     
     %% Add a notes entry to the analysis object
