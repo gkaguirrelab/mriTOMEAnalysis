@@ -1,8 +1,7 @@
-function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID)
-p = inputParser; p.KeepUnmatched = false;
+function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID, varargin)
+p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
-p.parse(tableVarargin{:});
-
+p.parse(varargin{:});
 
 %% Get the subject's data
 freeSurferDir = '~/Downloads/TOME_3003/T1w';
