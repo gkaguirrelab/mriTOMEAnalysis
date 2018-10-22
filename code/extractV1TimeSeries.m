@@ -1,23 +1,30 @@
 function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
+p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
+p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
+p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
+p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
+p.addParameter('runName','rfMRI_REST_AP_Run1_gdc', @ischar);
+
+
 p.parse(varargin{:});
 
 %% Get the subject's data
-freeSurferDir = '~/Downloads/TOME_3003/T1w';
-anatDir = '~/Downloads/TOME_3003/T1w';
-functionalDir = '~/Downloads/TOME_3003_flash/tfMRI_FLASH_PA_run2';
-outputDir = '~/Desktop';
-runName = 'tfMRI_FLASH_PA_run2';
+freeSurferDir = p.Results.freeSurferDir;
+anatDir = p.Results.anatDir;
+functionalDir = p.Results.functionalDir;
+outputDir = p.Results.outputDir;
+runName = p.Results.runName;
 
 
 
 %% Run FreeSurfer bit
-system(['bash makeV1Mask.sh ', subjectID, ' ', anatDir, ' ', freeSurferDir, ' ', functionalDir, ' ', outputDir, ' ', runName]);
+system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
 
 %% Verify alignment
 if p.Results.visualizeAlignment
-    system(['export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; freeview -v ' anatDir, '/T1w1_gdc.nii.gz ', functionalDir, '/rfMRI_REST_AP_Run1_gdc.nii.gz ', outputDir, '/', subjectID, '_lh_v1_register_restAsTarg_identity_nearest.nii.gz'])
+    system(['export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; freeview -v ' anatDir, '/T1w1_gdc.nii.gz ', functionalDir, ['/' runName '_gdc.nii.gz '], outputDir, '/', [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz '] outputDir, '/', [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz &']])
 end
 
 %% MATLAB stuffs
@@ -27,6 +34,11 @@ rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registered
 
 combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
 MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
+
+% confirm that registration happened the way we think we did and that
+% freeview isn't misleading us
+superImposedMask.vol = (1-combinedV1Mask.vol).*restScan.vol;
+
 
 restScan = MRIread(fullfile(functionalDir, [runName, '_gdc.nii.gz']));
 v1TimeSeries = combinedV1Mask.vol.*restScan.vol; % still contains voxels with 0s
