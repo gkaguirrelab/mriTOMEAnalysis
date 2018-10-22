@@ -1,13 +1,21 @@
 function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID)
 
+%% Get the subject's data
+freeSurferDir = '~/Downloads/TOME_3003/T1w';
+anatDir = '~/Downloads/TOME_3003/T1w';
+functionalDir = '~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/';
+outputDir = '~/Desktop';
+
+
+
 %% Run FreeSurfer bit
-system('bash code/makeV1Mask.sh');
+system(['bash makeV1Mask.sh ', subjectID, ' ', anatDir, ' ', freeSurferDir, ' ', functionalDir, ' ', outputDir]);
 
 
 %% MATLAB stuffs
 % after we've made the V1 mask, lets start figuring out the timeseries 
-mask = MRIread('~/Desktop/lh_v1_register_restAsTarg_identity_nearest.nii.gz');
-restScan = MRIread('~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc.nii.gz');
+mask = MRIread(fullfile(outputDir, [subjectID, '_lh_v1_register_restAsTarg_identity_nearest.nii.gz']));
+restScan = MRIread(fullfile(functionalDir, 'rfMRI_REST_AP_Run1_gdc.nii.gz'));
 v1TimeSeries = mask.vol.*restScan.vol; % still contains voxels with 0s
 
 % convert 4D matrix to 2D matrix, where each row is a separate time series
