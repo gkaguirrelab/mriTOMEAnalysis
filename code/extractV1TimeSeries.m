@@ -1,9 +1,13 @@
 function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID)
+p = inputParser; p.KeepUnmatched = false;
+p.addParameter('visualizeAlignment',false, @islogical);
+p.parse(tableVarargin{:});
+
 
 %% Get the subject's data
 freeSurferDir = '~/Downloads/TOME_3003/T1w';
 anatDir = '~/Downloads/TOME_3003/T1w';
-functionalDir = '~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/';
+functionalDir = '~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1';
 outputDir = '~/Desktop';
 
 
@@ -11,6 +15,10 @@ outputDir = '~/Desktop';
 %% Run FreeSurfer bit
 system(['bash makeV1Mask.sh ', subjectID, ' ', anatDir, ' ', freeSurferDir, ' ', functionalDir, ' ', outputDir]);
 
+%% Verify alignment
+if p.Results.visualizeAlignment
+    system(['export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; freeview -v ' anatDir, '/T1w1_gdc.nii.gz ', functionalDir, '/rfMRI_REST_AP_Run1_gdc.nii.gz ', outputDir, '/', subjectID, '_lh_v1_register_restAsTarg_identity_nearest.nii.gz'])
+end
 
 %% MATLAB stuffs
 % after we've made the V1 mask, lets start figuring out the timeseries 
