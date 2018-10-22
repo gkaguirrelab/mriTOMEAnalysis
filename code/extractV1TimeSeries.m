@@ -5,7 +5,7 @@ p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysi
 p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
 p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('runName','rfMRI_REST_AP_Run1_gdc', @ischar);
+p.addParameter('runName','rfMRI_REST_AP_Run1', @ischar);
 
 
 p.parse(varargin{:});
@@ -28,19 +28,26 @@ if p.Results.visualizeAlignment
 end
 
 %% MATLAB stuffs
-% after we've made the V1 mask, lets start figuring out the timeseries 
+% after we've made the V1 mask, lets start figuring out the timeseries
 lhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz']));
 rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz']));
 
 combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
 MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
 
-% confirm that registration happened the way we think we did and that
-% freeview isn't misleading us
-superImposedMask.vol = (1-combinedV1Mask.vol).*restScan.vol;
 
 
 restScan = MRIread(fullfile(functionalDir, [runName, '_gdc.nii.gz']));
+
+
+% confirm that registration happened the way we think we did and that
+% freeview isn't misleading us. if we visualize this, such as with imagesec
+% in MATLAB, we can see that the zero'ed out voxels are largely where we'd
+% want them to be in v1
+superImposedMask.vol = (1-combinedV1Mask.vol).*restScan.vol;
+
+
+
 v1TimeSeries = combinedV1Mask.vol.*restScan.vol; % still contains voxels with 0s
 
 % convert 4D matrix to 2D matrix, where each row is a separate time series
@@ -72,45 +79,22 @@ end
 
 % take the mean
 meanV1TimeSeries = mean(v1TimeSeriesCollapsed,1);
+tr = restScan.tr/1000;
+timebase = 0:tr:(length(meanV1TimeSeries)*tr-tr);
+plot(timebase, meanV1TimeSeries)
+xlabel('Time (s)')
+ylabel('BOLD Signal')
+
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
+if ~exist(savePath, 'dir')
+    mkdir(savePath);
+end
+
+save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', '-v7.3');
+
 
 % load in pupil data
 load('~/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/restingTOMEAnalysis/rfMRI_REST_AP_run01_pupil.mat')
-
-                
-
-%% stuff that didn't work
-% keeping it around in case there are useful notes
-
-% % setup subject dir for FreeSurfer
-% export SUBJECTS_DIR=~/Downloads/TOME_3003/T1w
-% 
-% % figure out the transformation matrix from free surfer space to HCP space
-% bbregister --s TOME_3003 --mov ~/Downloads/TOME_3003/T1w/T1w1_gdc_LIA.nii.gz --reg ~/Desktop/register_LIA.dat --t1 --init-fsl
-% 
-% % FreeSurfer output is in LIA format, so convert HCP to that
-% mri_convert --in_orientation LIA ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc.nii.gz ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc_LIA.nii.gz
-% 
-% % use this transfomation to  transform the mask of V1 in freeSurfer space
-% % to HCP space
-% mri_label2vol --label ~/Downloads/TOME_3003/T1w/TOME_3003/label/lh.V1.label --temp ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc_LIA.nii.gz --o ~/Desktop/lhv1mask_withRegistration_LIA.nii.gz --reg ~/Desktop/register_LIA.dat
-% 
-% %mri_convert -ns 1 -rl ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc.nii.gz ~/Desktop/lh_v1mask.nii.gz ~/Desktop/lh_v1mask_rl.nii.gz
-% 
-% 
-% 
-% % different approach
-% % figure out the transformation matrix from free surfer space to HCP space
-% bbregister --s TOME_3003 --mov ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --reg ~/Desktop/register.dat --t1 --init-fsl
-% 
-% mri_label2vol --label ~/Downloads/TOME_3003/T1w/TOME_3003/label/lh.V1.label --temp ~/Downloads/TOME_3003/T1w/TOME_3003/mri/orig.mgz --o ~/Desktop/lhv1mask_FS.nii.gz --identity
-% 
-% mri_vol2vol --mov ~/Desktop/lhv1mask_FS.nii.gz --targ ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --reg ~/Desktop/register.dat --o ~/Desktop/lhv1mask_inSubjectSpace.nii.gz --inv
-% mri_vol2vol  --reg ~/Desktop/register.dat --mov ~/Desktop/lhv1mask_FS.nii.gz --o ~/Desktop/lhv1mask_inSubjectSpace.nii.gz --inv
-
-% attempt at downsampling
-% mri_convert -vs 2 2 2 ~/Desktop/lh_v1_register.nii.gz ~/Desktop/lh_v1_register_downsampled.nii.gz
-% unforunately, this gives us a mask that doesn't match the dimensinos of
-% the functional scan -- this is not a good attempt
 
 end
 
