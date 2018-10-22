@@ -21,7 +21,7 @@ functionalDir=$4
 outputDir=$5
 
 runName=$6
-runName=${runName}_gdc.nii.gz
+runNameLong=${runName}_gdc.nii.gz
 
 bbregister --s $subjectID --mov $anatDir/T1w1_gdc.nii.gz --reg $outputDir/${subjectID}_register.dat --t1 --init-fsl
 
@@ -30,5 +30,5 @@ mri_label2vol --label $freeSurferDir/${subjectID}/label/rh.V1.label --temp $anat
 
 
 
-mri_vol2vol --mov $outputDir/${subjectID}_${runName}_lh_v1_registeredToAnatomical.nii.gz --targ $functionalDir/${runName} --o $outputDir/${subjectID}_${runName}_lh_v1_registeredToFunctional.nii.gz --regheader --interp nearest
-mri_vol2vol --mov $outputDir/${subjectID}_${runName}_rh_v1_registeredToAnatomical.nii.gz --targ $functionalDir/${runName} --o $outputDir/${subjectID}_${runName}_rh_v1_registeredToFunctional.nii.gz --regheader --interp nearest
+mri_vol2vol --mov $outputDir/${subjectID}_${runName}_lh_v1_registeredToAnatomical.nii.gz --targ $functionalDir/${runNameLong} --o $outputDir/${subjectID}_${runName}_lh_v1_registeredToFunctional.nii.gz --regheader --interp nearest
+mri_vol2vol --mov $outputDir/${subjectID}_${runName}_rh_v1_registeredToAnatomical.nii.gz --targ $functionalDir/${runNameLong} --o $outputDir/${subjectID}_${runName}_rh_v1_registeredToFunctional.nii.gz --regheader --interp nearest
