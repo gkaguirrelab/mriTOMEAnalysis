@@ -25,8 +25,8 @@ function mrTOMEAnalysisLocalHook
 
 
 %% Say hello.
-fprintf('mrTOMEAnalysis local hook.\n');
-projectName = 'mrTOMEAnalysis';
+fprintf('mriTOMEAnalysis local hook.\n');
+projectName = 'mriTOMEAnalysis';
 
 %% Delete any old prefs
 if (ispref(projectName))
