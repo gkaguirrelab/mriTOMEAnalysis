@@ -12,11 +12,18 @@ export FSLDIR PATH
 . ${FSLDIR}/etc/fslconf/fsl.sh
 
 # set up the FreeSurfer data lives
-freeSurferDir=$1
-export SUBJECTS_DIR=freeSurferDir
+freeSurferDir=$3
+export SUBJECTS_DIR=$freeSurferDir
 
-bbregister --s TOME_3003 --mov ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --reg ~/Desktop/register_bashTest.dat --t1 --init-fsl
+subjectID=$1
+anatDir=$2
+functionalDir=$4
+outputDir=$5
 
-mri_label2vol --label ~/Downloads/TOME_3003/T1w/TOME_3003/label/lh.V1.label --temp ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --o ~/Desktop/lh_v1_register.nii.gz --reg ~/Desktop/register.dat
+runName=rfMRI_REST_AP_Run1_gdc.nii.gz
 
-mri_vol2vol --mov ~/Desktop/lh_v1_register.nii.gz --targ ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc.nii.gz --o ~/Desktop/lh_v1_register_restAsTarg_identity_nearest.nii.gz --regheader --interp nearest
+bbregister --s $subjectID --mov $anatDir/T1w1_gdc.nii.gz --reg $outputDir/${subjectID}_register.dat --t1 --init-fsl
+
+mri_label2vol --label $freeSurferDir/${subjectID}/label/lh.V1.label --temp $anatDir/T1w1_gdc.nii.gz --o $outputDir/${subjectID}_lh_v1_register.nii.gz --reg $outputDir/${subjectID}_register.dat
+
+mri_vol2vol --mov $outputDir/${subjectID}_lh_v1_register.nii.gz --targ $functionalDir/${runName} --o $outputDir/${subjectID}_lh_v1_register_restAsTarg_identity_nearest.nii.gz --regheader --interp nearest
