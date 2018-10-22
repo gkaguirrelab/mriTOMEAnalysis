@@ -1,22 +1,7 @@
 function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID)
 
-%% FreeSurfer commands
-% note that these would be entered into terminal, but are just jotted down
-% here for reference
-
-% register anatomical to freeSurfer space
-bbregister --s TOME_3003 --mov ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --reg ~/Desktop/register.dat --t1 --init-fsl
-
-% convert surface label of V1 to volume, and align it to the subject's
-% native space
-mri_label2vol --label ~/Downloads/TOME_3003/T1w/TOME_3003/label/lh.V1.label --temp ~/Downloads/TOME_3003/T1w/T1w1_gdc.nii.gz --o ~/Desktop/lh_v1_register.nii.gz --reg ~/Desktop/register.dat
-
-
-% resample V1 volume mask for EPI data. use nearest-neighbors interpolation
-% so mask remains binary
-% also note the use of --regheader, which essentially applies the identity
-% matrix
-mri_vol2vol --mov ~/Desktop/lh_v1_register.nii.gz --targ ~/Downloads/TOME_3003_functional/rfMRI_REST_AP_Run1/rfMRI_REST_AP_Run1_gdc.nii.gz --o ~/Desktop/lh_v1_register_restAsTarg_identity_nearest.nii.gz --regheader --interp nearest
+%% Run FreeSurfer bit
+system('bash code/makeV1Mask.sh');
 
 
 %% MATLAB stuffs
