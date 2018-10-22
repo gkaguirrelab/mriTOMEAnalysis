@@ -21,7 +21,9 @@ functionalDir=$4
 outputDir=$5
 
 runName=$6
-runNameLong=${runName}_gdc.nii.gz
+
+
+runNameLong=${runName}.nii.gz
 
 bbregister --s $subjectID --mov $anatDir/T1w1_gdc.nii.gz --reg $outputDir/${subjectID}_register.dat --t1 --init-fsl
 
