@@ -32,6 +32,8 @@ end
 lhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz']));
 rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz']));
 
+combinedV1Mask = lhV1Mask; % make sure combinedV1Mask has the appropriate header information
+combinedV1Mask.vol = [];
 combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
 MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
 
@@ -78,6 +80,7 @@ for xx = 1:nXIndices
 end
 
 % take the mean
+plotFig = figure;
 meanV1TimeSeries = mean(v1TimeSeriesCollapsed,1);
 tr = restScan.tr/1000;
 timebase = 0:tr:(length(meanV1TimeSeries)*tr-tr);
