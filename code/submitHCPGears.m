@@ -11,7 +11,7 @@ function submitHCPGears(paramsFileName)
 
 % Examples:
 %{
-    submitHCPGears(tomeHCPFuncParams_Session1.csv);
+    submitHCPGears('tomeHCPFuncParams_Session2.csv');
 %}
 
 %% Load and parse the params table
@@ -149,6 +149,9 @@ for ii=nParamRows+1:nRows
             else
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
+                if isempty(allSessions{sessionIdx}.files)
+                    error('No session file for this entry (likely missing a coeff.grad file)')
+                end
                 fileIdx = find(strcmp(cellfun(@(x) x.name,allSessions{sessionIdx}.files,'UniformOutput',false),targetLabel));
                 if isempty(fileIdx)
                     error('No matching session file for this entry (likely missing a coeff.grad file)')
@@ -188,6 +191,15 @@ for ii=nParamRows+1:nRows
                 end
                 % We have a match. Re-find the nifti file
                 theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
+                % Check for an error condition
+                if isempty(theNiftiIdx)
+                    error('No nifti file for this acquisition');
+                end
+                if length(theNiftiIdx)>1
+                    warning('More than one nifti file for this acquisition; using the most recent');
+                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theNiftiIdx)));
+                    theNiftiIdx=theNiftiIdx(mostRecentIdx);
+                end
                 % Get the file name, ID, and acquisition label
                 theID = allAcqs{acqIdx}.id;
                 theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
