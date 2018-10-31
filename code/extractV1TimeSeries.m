@@ -1,4 +1,4 @@
-function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID, varargin)
+function [ meanV1TimeSeries, v1TimeSeriesCollapsed, voxelIndices, combinedV1Mask, functionalScan ] = extractV1TimeSeries(subjectID, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
 p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
@@ -53,18 +53,18 @@ MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemisp
 
 
 
-restScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
 
 
 % confirm that registration happened the way we think we did and that
 % freeview isn't misleading us. if we visualize this, such as with imagesec
 % in MATLAB, we can see that the zero'ed out voxels are largely where we'd
 % want them to be in v1
-superImposedMask.vol = (1-combinedV1Mask.vol).*restScan.vol;
+superImposedMask.vol = (1-combinedV1Mask.vol).*functionalScan.vol;
 
 
 
-v1TimeSeries = combinedV1Mask.vol.*restScan.vol; % still contains voxels with 0s
+v1TimeSeries = combinedV1Mask.vol.*functionalScan.vol; % still contains voxels with 0s
 
 % convert 4D matrix to 2D matrix, where each row is a separate time series
 % corresponding to a different voxel in the mask
@@ -87,6 +87,7 @@ for xx = 1:nXIndices
                     % stash voxels that hvae not been masked out
                     v1TimeSeriesCollapsed(nNonZeroVoxel, tr) = v1TimeSeries(xx,yy,zz,tr);
                 end
+                voxelIndices{nNonZeroVoxel} = [xx, yy, zz];
                 nNonZeroVoxel = nNonZeroVoxel + 1;
             end
         end
@@ -96,7 +97,7 @@ end
 % take the mean
 plotFig = figure;
 meanV1TimeSeries = mean(v1TimeSeriesCollapsed,1);
-tr = restScan.tr/1000;
+tr = functionalScan.tr/1000;
 timebase = 0:tr:(length(meanV1TimeSeries)*tr-tr);
 plot(timebase, meanV1TimeSeries)
 xlabel('Time (s)')
@@ -107,7 +108,7 @@ if ~exist(savePath, 'dir')
     mkdir(savePath);
 end
 
-save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', '-v7.3');
+save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', 'v1TimeSeriesCollapsed', 'voxelIndices', '-v7.3');
 
 
 % load in pupil data
