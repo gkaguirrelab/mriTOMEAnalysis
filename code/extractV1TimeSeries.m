@@ -6,6 +6,8 @@ p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
 p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('runName','rfMRI_REST_AP_Run1', @ischar);
+p.addParameter('structuralName','T1w_acpc_dc_restore', @ischar);
+
 
 
 p.parse(varargin{:});
@@ -16,7 +18,19 @@ anatDir = p.Results.anatDir;
 functionalDir = p.Results.functionalDir;
 outputDir = p.Results.outputDir;
 runName = p.Results.runName;
+structuralName = p.Results.structuralName;
 
+%% Align functional and structural scan in native space of structural scan
+% run bash script to do the alignment
+system(['bash HCPbringFunctionalToStructural.sh ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
+
+% save out the first acquisition of the aligned functional scan to make
+% sure it is aligned like we think
+functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+functionalScan_firstAq = functionalScan;
+functionalScan_firstAq.vol = functionalScan.vol(:,:,:,1);
+MRIwrite(functionalScan_firstAq, fullfile(functionalDir, [runName, '_native_firstAq.nii.gz']));
+system(['fsleyes "', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
 
 
 %% Run FreeSurfer bit
