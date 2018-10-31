@@ -11,7 +11,7 @@ function submitHCPGears(paramsFileName)
 
 % Examples:
 %{
-    submitHCPGears('tomeHCPFuncParams_Session2.csv');
+    submitHCPGears('tomeNoahRetinoParams.csv');
 %}
 
 %% Load and parse the params table
@@ -23,13 +23,19 @@ p = inputParser; p.KeepUnmatched = false;
 p.addParameter('projectName','tome',@ischar);
 p.addParameter('gearName','hcp-func',@ischar);
 p.addParameter('rootSessionInputLabel','fMRITimeSeries',@ischar);
-p.addParameter('verbose',true,@islogical);
+p.addParameter('verbose','true',@ischar);
 p.addParameter('AcqFileType','nifti',@ischar);
-p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@ischar);
+p.addParameter('includeFreeSurferLicenseFile','true', @ischar);
+p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configKeys','',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configVals','',@(x)(isempty(x) || ischar(x)));
 tableVarargin = paramsTable{1,1:end};
 p.parse(tableVarargin{:});
+
+% The parameters arrive as char variables from the csv file. Eval some of
+% them here.
+verbose = eval(p.Results.verbose);
+includeFreeSurferLicenseFile = eval(p.Results.includeFreeSurferLicenseFile);
 
 % Define the paramsTable dimensions
 nParamRows = 6; % This is the number of rows that make up the header
@@ -58,12 +64,15 @@ allSessions = fw.getProjectSessions(projID);
 
 
 %% Identify the freesurfer license file
-fsLicFileIdx = find(strcmp(cellfun(@(x) x.name,allProjects{projIdx}.files,'UniformOutput',false),p.Results.freesurferLicenseFileName));
-fsLicFileName = allProjects{projIdx}.files{fsLicFileIdx}.name;
-fsLicFileID = allProjects{projIdx}.id;
-fsLicFileType = 'project';
-fsLicFileLabel = 'FreeSurferLicense';
-
+if includeFreeSurferLicenseFile
+    fsLicFileIdx = find(strcmp(cellfun(@(x) x.name,allProjects{projIdx}.files,'UniformOutput',false),p.Results.freesurferLicenseFileName));
+    fsLicFileName = allProjects{projIdx}.files{fsLicFileIdx}.name;
+    fsLicFileID = allProjects{projIdx}.id;
+    fsLicFileType = 'project';
+    fsLicFileLabel = 'FreeSurferLicense';
+else
+    fsLicFileID = [];
+end
 
 %% Construct the gear configuration
 % Get all the gears
@@ -86,7 +95,7 @@ for i = 1:numel(keys)
     if isfield(val, 'default')
         configDefault.(keys{i}) = val.default;
     else
-        if p.Results.verbose
+        if verbose
         fprintf('No default value for %s\n. It must be set prior to execution.', keys{i});
         end
     end
@@ -227,11 +236,13 @@ for ii=nParamRows+1:nRows
     end
     
     % Add the freesurfer license file
-    inputStem = struct('type', fsLicFileType,...
-        'id', fsLicFileID, ...
-        'name', fsLicFileName);
-    inputs.(fsLicFileLabel) = inputStem;
-    acqNotes.(fsLicFileLabel) = 'projectFile';
+    if ~isempty(fsLicFileID)
+        inputStem = struct('type', fsLicFileType,...
+            'id', fsLicFileID, ...
+            'name', fsLicFileName);
+        inputs.(fsLicFileLabel) = inputStem;
+        acqNotes.(fsLicFileLabel) = 'projectFile';
+    end
     
     %% Customize gear configuration
     configKeys = eval(p.Results.configKeys);
@@ -275,7 +286,7 @@ for ii=nParamRows+1:nRows
         end
     end
     if skipFlag
-        if p.Results.verbose
+        if verbose
             fprintf(['The analysis ' theGearName ' is already present for ' subjectName ', ' rootSessionTag '; skipping.\n']);
             % This command may be used to delete the prior analysis
             %{
@@ -301,7 +312,7 @@ for ii=nParamRows+1:nRows
     fw.addAnalysisNote(newAnalysisID,sprintf(note));
     
     %% Report the event
-    if p.Results.verbose
+    if verbose
         fprintf(['Submitted ' subjectName ' [' newAnalysisID '] - ' analysisLabel '\n']);
     end
 end
