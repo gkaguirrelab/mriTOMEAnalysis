@@ -34,7 +34,7 @@ system(['fsleyes "', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, 
 
 
 %% Run FreeSurfer bit
-system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
+system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '" "', structuralName '"']);
 
 %% Verify alignment
 if p.Results.visualizeAlignment
@@ -53,7 +53,7 @@ MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemisp
 
 
 
-restScan = MRIread(fullfile(functionalDir, [runName, '_gdc.nii.gz']));
+restScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
 
 
 % confirm that registration happened the way we think we did and that
@@ -111,7 +111,6 @@ save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', '-v7
 
 
 % load in pupil data
-load('~/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/restingTOMEAnalysis/rfMRI_REST_AP_run01_pupil.mat')
 
 end
 
