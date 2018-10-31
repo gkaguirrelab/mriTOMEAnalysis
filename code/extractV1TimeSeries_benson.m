@@ -1,4 +1,4 @@
-function [ meanV1TimeSeries, v1TimeSeriesCollapsed, voxelIndices, combinedV1Mask, functionalScan ] = extractV1TimeSeries(subjectID, varargin)
+function [ meanV1TimeSeries] = extractV1TimeSeries(subjectID, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
 p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
@@ -6,8 +6,6 @@ p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
 p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('runName','rfMRI_REST_AP_Run1', @ischar);
-p.addParameter('structuralName','T1w_acpc_dc_restore', @ischar);
-
 
 
 p.parse(varargin{:});
@@ -18,23 +16,16 @@ anatDir = p.Results.anatDir;
 functionalDir = p.Results.functionalDir;
 outputDir = p.Results.outputDir;
 runName = p.Results.runName;
-structuralName = p.Results.structuralName;
 
-%% Align functional and structural scan in native space of structural scan
-% run bash script to do the alignment
-system(['bash HCPbringFunctionalToStructural.sh ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
-
-% save out the first acquisition of the aligned functional scan to make
-% sure it is aligned like we think
-functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
-functionalScan_firstAq = functionalScan;
-functionalScan_firstAq.vol = functionalScan.vol(:,:,:,1);
-MRIwrite(functionalScan_firstAq, fullfile(functionalDir, [runName, '_native_firstAq.nii.gz']));
-system(['fsleyes "', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
-
+eccen = MRIread('~/Downloads/TOME_3040_native.template_eccen.nii.gz');
+areas = MRIread('~/Downloads/TOME_3040_native.template_areas.nii.gz');
+areaNum = 1;
+eccenRange = [0 20];
+savePath = outputDir;
+[maskFullFile,saveName] = makeMaskFromRetino(eccen,areas,areaNum,eccenRange,savePath);
 
 %% Run FreeSurfer bit
-system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '" "', structuralName '"']);
+system(['bash makeV1Mask_benson.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
 
 %% Verify alignment
 if p.Results.visualizeAlignment
@@ -43,28 +34,22 @@ end
 
 %% MATLAB stuffs
 % after we've made the V1 mask, lets start figuring out the timeseries
-lhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz']));
-rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz']));
-
-combinedV1Mask = lhV1Mask; % make sure combinedV1Mask has the appropriate header information
-combinedV1Mask.vol = [];
-combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
-MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
+combinedV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_benson_registeredToFunctional.nii.gz']));
 
 
 
-functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+restScan = MRIread(fullfile(functionalDir, [runName, '_gdc.nii.gz']));
 
 
 % confirm that registration happened the way we think we did and that
 % freeview isn't misleading us. if we visualize this, such as with imagesec
 % in MATLAB, we can see that the zero'ed out voxels are largely where we'd
 % want them to be in v1
-superImposedMask.vol = (1-combinedV1Mask.vol).*functionalScan.vol;
+superImposedMask.vol = (1-combinedV1Mask.vol).*restScan.vol;
 
 
 
-v1TimeSeries = combinedV1Mask.vol.*functionalScan.vol; % still contains voxels with 0s
+v1TimeSeries = combinedV1Mask.vol.*restScan.vol; % still contains voxels with 0s
 
 % convert 4D matrix to 2D matrix, where each row is a separate time series
 % corresponding to a different voxel in the mask
@@ -87,7 +72,6 @@ for xx = 1:nXIndices
                     % stash voxels that hvae not been masked out
                     v1TimeSeriesCollapsed(nNonZeroVoxel, tr) = v1TimeSeries(xx,yy,zz,tr);
                 end
-                voxelIndices{nNonZeroVoxel} = [xx, yy, zz];
                 nNonZeroVoxel = nNonZeroVoxel + 1;
             end
         end
@@ -97,7 +81,7 @@ end
 % take the mean
 plotFig = figure;
 meanV1TimeSeries = mean(v1TimeSeriesCollapsed,1);
-tr = functionalScan.tr/1000;
+tr = restScan.tr/1000;
 timebase = 0:tr:(length(meanV1TimeSeries)*tr-tr);
 plot(timebase, meanV1TimeSeries)
 xlabel('Time (s)')
@@ -108,10 +92,11 @@ if ~exist(savePath, 'dir')
     mkdir(savePath);
 end
 
-save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', 'v1TimeSeriesCollapsed', 'voxelIndices', '-v7.3');
+save(fullfile(savePath, [runName '_meanV1TimeSeries_benson']), 'meanV1TimeSeries', '-v7.3');
 
 
 % load in pupil data
+load('~/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/restingTOMEAnalysis/rfMRI_REST_AP_run01_pupil.mat')
 
 end
 
