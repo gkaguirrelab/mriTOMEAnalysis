@@ -8,16 +8,23 @@ p.addParameter('runName','rfMRI_REST_AP_Run1', @ischar);
 
 p.parse(varargin{:});
 
-
+%% create the stimulus struct
 TR = 0.8*1000;
 % make stimulus struct
+% use same deltaT as the TR, so all of our regressors are on the same
+% timebase
 deltaT = 0.8*1000;
 totalTime = 336*1000;
 stimulusStruct.timebase = 0:deltaT:totalTime-TR;
+
+% light-on or light-off segments last 12 seconds
 segmentLength = 12*1000;
 numberOfBlocks = totalTime/segmentLength;
 stimulusStruct.values = zeros(1,length(stimulusStruct.timebase));
 
+% actually make the stimulus profile. we find the boundaries of the 12-s
+% chunks, then make the values in between 1 if it's an even-numbered chunk
+% otherwise they're left as 0.
 for bb = 1:numberOfBlocks
     firstIndex = find(stimulusStruct.timebase == (bb - 1) * segmentLength);
     secondIndex = find(stimulusStruct.timebase == (bb) * segmentLength) - 1;
@@ -30,26 +37,8 @@ for bb = 1:numberOfBlocks
     
 end
 
-
-temporalFit = tfeIAMP('verbosity','none');
-
-TR = 0.800;
-
-% make stimulus timebase
-deltaT = 800;
-totalTime = 420*deltaT;
-responseStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
-thePacket.kernel = [];
-thePacket.metaData = [];
-
-thePacket.stimulus.values = stimulusStruct.values;
-thePacket.stimulus.timebase = stimulusStruct.timebase;
-thePacket.response.timebase = responseStruct.timebase;
-
-
-% make the HRF
-%% convolve stimulus profile with HRF
-% make HRF
+% convolve stimulus profile with HRF
+% first make HRF
 hrfParams.gamma1 = 6;   % positive gamma parameter (roughly, time-to-peak in secs)
 hrfParams.gamma2 = 12;  % negative gamma parameter (roughly, time-to-peak in secs)
 hrfParams.gammaScale = 10; % scaling factor between the positive and negative gamma componenets
@@ -69,6 +58,23 @@ kernelStruct.values=hrf;
 thePacket.stimulus.values = conv(thePacket.stimulus.values, kernelStruct.values, 'full')*(thePacket.stimulus.timebase(2) - thePacket.stimulus.timebase(1));
 thePacket.stimulus.values = thePacket.stimulus.values(1:length(thePacket.stimulus.timebase));
 
+
+temporalFit = tfeIAMP('verbosity','none');
+
+
+
+% start assembling the packet
+responseStruct.timebase = stimulusStruct.timebase;
+thePacket.kernel = [];
+thePacket.metaData = [];
+
+thePacket.stimulus.values = stimulusStruct.values;
+thePacket.stimulus.timebase = stimulusStruct.timebase;
+thePacket.response.timebase = responseStruct.timebase;
+
+
+
+
 %% Make physio regressors
 % load up the physio results
 confoundRegressors = output.all;
@@ -83,7 +89,8 @@ for nn = 1:nRegressors
     thePacket.stimulus.values(end+1,:) = confoundRegressors(:,nn)';
 end
 
-
+% figure out how many rows of stimulus.values we have, AKA how many
+% different regressors we're working
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 
 
@@ -104,6 +111,7 @@ for vv = 1:size(timeSeriesAccumulator,1)
     [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
         'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
     
+    % save out all of the beta weights
     betas(vv,:) = paramsFit.paramMainMatrix;
     
 end
