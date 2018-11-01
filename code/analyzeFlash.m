@@ -1,4 +1,4 @@
-function analyzeFlash(subjectID, timeSeriesAccumulator, voxelIndices, v1Mask, flashScan, varargin)
+function analyzeFlash(subjectID, timeSeriesAccumulator, voxelIndices, v1Mask, flashScan, output, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flashAnalysis/', subjectID), @isstring);
 p.addParameter('runName','rfMRI_REST_AP_Run1', @ischar);
@@ -11,7 +11,7 @@ p.parse(varargin{:});
 
 TR = 0.8*1000;
 % make stimulus struct
-deltaT = 0.1*1000;
+deltaT = 0.8*1000;
 totalTime = 336*1000;
 stimulusStruct.timebase = 0:deltaT:totalTime-TR;
 segmentLength = 12*1000;
@@ -46,10 +46,10 @@ thePacket.stimulus.values = stimulusStruct.values;
 thePacket.stimulus.timebase = stimulusStruct.timebase;
 thePacket.response.timebase = responseStruct.timebase;
 
-defaultParamsInfo.nInstances = 1;
 
 % make the HRF
-%% Define a kernelStruct. In this case, a double gamma HRF
+%% convolve stimulus profile with HRF
+% make HRF
 hrfParams.gamma1 = 6;   % positive gamma parameter (roughly, time-to-peak in secs)
 hrfParams.gamma2 = 12;  % negative gamma parameter (roughly, time-to-peak in secs)
 hrfParams.gammaScale = 10; % scaling factor between the positive and negative gamma componenets
@@ -69,6 +69,24 @@ kernelStruct.values=hrf;
 thePacket.stimulus.values = conv(thePacket.stimulus.values, kernelStruct.values, 'full')*(thePacket.stimulus.timebase(2) - thePacket.stimulus.timebase(1));
 thePacket.stimulus.values = thePacket.stimulus.values(1:length(thePacket.stimulus.timebase));
 
+%% Make physio regressors
+% load up the physio results
+confoundRegressors = output.all;
+
+% normalize the regressors
+confoundRegressors = confoundRegressors - nanmean(confoundRegressors);
+confoundRegressors = confoundRegressors ./ nanstd(confoundRegressors);
+
+% add these regressors to our thePacket.stimulus struct
+nRegressors = size(confoundRegressors, 2);
+for nn = 1:nRegressors
+    thePacket.stimulus.values(end+1,:) = confoundRegressors(:,nn)';
+end
+
+
+defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
+
+
 %% Loop over voxels and fit the IAMP model on each voxel's timeseries
 for vv = 1:size(timeSeriesAccumulator,1)
     
@@ -86,7 +104,7 @@ for vv = 1:size(timeSeriesAccumulator,1)
     [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
         'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
     
-    betas(vv) = paramsFit.paramMainMatrix;
+    betas(vv,:) = paramsFit.paramMainMatrix;
     
 end
 
@@ -94,7 +112,7 @@ end
 betaVol = v1Mask;
 for vv = 1:size(timeSeriesAccumulator, 1)
     
-    betaVol.vol(voxelIndices{vv}(1), voxelIndices{vv}(2), voxelIndices{vv}(3)) = betas(vv);
+    betaVol.vol(voxelIndices{vv}(1), voxelIndices{vv}(2), voxelIndices{vv}(3)) = betas(vv,1);
     
 end
 
