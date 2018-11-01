@@ -35,16 +35,18 @@ for aa = 1:numberOfAnalyses
     runName = runName{2};
     runName = strsplit(runName, ']');
     runName = runName{1};
+    runName = strtrim(runName);
     
     if ~exist(p.Results.dataDownloadDir, 'dir')
         mkdir(p.Results.dataDownloadDir);
     end
   
-    [fwInfo] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID);
+    
     
     if strcmp(runName, 'T1w_MPR')
-        
+        fileName = [subjectID, '_hcpstruct.zip'];
     end
+    [fwInfo] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID, fileName);
 end
 
 
