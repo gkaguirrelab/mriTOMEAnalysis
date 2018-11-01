@@ -48,6 +48,27 @@ thePacket.response.timebase = responseStruct.timebase;
 
 defaultParamsInfo.nInstances = 1;
 
+% make the HRF
+%% Define a kernelStruct. In this case, a double gamma HRF
+hrfParams.gamma1 = 6;   % positive gamma parameter (roughly, time-to-peak in secs)
+hrfParams.gamma2 = 12;  % negative gamma parameter (roughly, time-to-peak in secs)
+hrfParams.gammaScale = 10; % scaling factor between the positive and negative gamma componenets
+
+kernelStruct.timebase=stimulusStruct.timebase;
+
+% The timebase is converted to seconds within the function, as the gamma
+% parameters are defined in seconds.
+hrf = gampdf(kernelStruct.timebase/1000, hrfParams.gamma1, 1) - ...
+    gampdf(kernelStruct.timebase/1000, hrfParams.gamma2, 1)/hrfParams.gammaScale;
+kernelStruct.values=hrf;
+
+% Normalize the kernel to have unit amplitude
+[ kernelStruct ] = normalizeKernelArea( kernelStruct );
+
+% convolve the HRF with our stimulus profile
+thePacket.stimulus.values = conv(thePacket.stimulus.values, kernelStruct.values, 'full')*(thePacket.stimulus.timebase(2) - thePacket.stimulus.timebase(1));
+thePacket.stimulus.values = thePacket.stimulus.values(1:length(thePacket.stimulus.timebase));
+
 %% Loop over voxels and fit the IAMP model on each voxel's timeseries
 for vv = 1:size(timeSeriesAccumulator,1)
     
