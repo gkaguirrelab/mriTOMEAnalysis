@@ -37,6 +37,9 @@ for bb = 1:numberOfBlocks
     
 end
 
+% mean-center this stimulus profile
+stimulusStruct.values = stimulusStruct.values - 0.5;
+
 % convolve stimulus profile with HRF
 % first make HRF
 hrfParams.gamma1 = 6;   % positive gamma parameter (roughly, time-to-peak in secs)
@@ -55,6 +58,7 @@ kernelStruct.values=hrf;
 [ kernelStruct ] = normalizeKernelArea( kernelStruct );
 
 % convolve the HRF with our stimulus profile
+thePacket.stimulus = stimulusStruct;
 thePacket.stimulus.values = conv(thePacket.stimulus.values, kernelStruct.values, 'full')*(thePacket.stimulus.timebase(2) - thePacket.stimulus.timebase(1));
 thePacket.stimulus.values = thePacket.stimulus.values(1:length(thePacket.stimulus.timebase));
 
@@ -98,14 +102,7 @@ defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 for vv = 1:size(timeSeriesAccumulator,1)
     
     
-    % get the data for a single voxel
-    runData = timeSeriesAccumulator(vv,:);
-    
-    % convert to percent signal change relative to the mean
-    voxelMeanVec = mean(runData,2);
-    PSC = 100*((runData - voxelMeanVec)./voxelMeanVec);
-    
-    thePacket.response.values = PSC;
+    thePacket.response.values = timeSeriesAccumulator(vv,:);
     
     % TFE linear regression here
     [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
@@ -117,25 +114,36 @@ for vv = 1:size(timeSeriesAccumulator,1)
 end
 
 %% make an image
-betaVol = v1Mask;
-for vv = 1:size(timeSeriesAccumulator, 1)
-    
-    betaVol.vol(voxelIndices{vv}(1), voxelIndices{vv}(2), voxelIndices{vv}(3)) = betas(vv,1);
-    
+betaNames{1} = 'stimulusProfile';
+covariateNames = fieldnames(output);
+for bb = 2:(size(betas, 2))
+    betaNames{bb} = covariateNames{bb+3};
 end
 
-% figure out the run name to save the file appropriately
-runName = flashScan.fspec;
-runName = strsplit(runName, '/');
-runName = runName{end};
-runName = strsplit(runName, '.');
-runName = runName{1};
-
-if ~exist(p.Results.outputDir, 'dir')
-    mkdir(p.Results.outputDir);
+betaVol = [];
+for bb = 1:size(betas,2)
+    betaVol = v1Mask;
+    for vv = 1:size(timeSeriesAccumulator, 1)
+        
+        betaVol.vol(voxelIndices{vv}(1), voxelIndices{vv}(2), voxelIndices{vv}(3)) = betas(vv,bb);
+        
+    end
+    
+    % figure out the run name to save the file appropriately
+    runName = flashScan.fspec;
+    runName = strsplit(runName, '/');
+    runName = runName{end};
+    runName = strsplit(runName, '.');
+    runName = runName{1};
+    
+    if ~exist(p.Results.outputDir, 'dir')
+        mkdir(p.Results.outputDir);
+    end
+    
+    
+    
+    MRIwrite(betaVol, fullfile(p.Results.outputDir, [subjectID '_' runName, '_', betaNames{bb}, '.nii.gz']));
 end
-
-MRIwrite(betaVol, fullfile(p.Results.outputDir, [subjectID '_' runName '.nii.gz']));
 
 
 end
