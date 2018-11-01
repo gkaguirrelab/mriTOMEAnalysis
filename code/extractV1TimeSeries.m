@@ -1,4 +1,4 @@
-function [ meanV1TimeSeries, v1TimeSeriesCollapsed, voxelIndices, combinedV1Mask, functionalScan ] = extractV1TimeSeries(subjectID, varargin)
+function [ meanV1TimeSeries, v1TimeSeriesCollapsed_meanCentered, voxelIndices, combinedV1Mask, functionalScan ] = extractV1TimeSeries(subjectID, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
 p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
@@ -94,9 +94,22 @@ for xx = 1:nXIndices
     end
 end
 
+% mean center each row
+for rr = 1:size(v1TimeSeriesCollapsed)
+    
+    runData = v1TimeSeriesCollapsed(rr,:);
+    
+    % convert to percent signal change relative to the mean
+    voxelMeanVec = mean(runData,2);
+    PSC = 100*((runData - voxelMeanVec)./voxelMeanVec);
+    
+    v1TimeSeriesCollapsed_meanCentered(rr,:) = PSC;
+end
+    
+
 % take the mean
 plotFig = figure;
-meanV1TimeSeries = mean(v1TimeSeriesCollapsed,1);
+meanV1TimeSeries = mean(v1TimeSeriesCollapsed_meanCentered,1);
 tr = functionalScan.tr/1000;
 timebase = 0:tr:(length(meanV1TimeSeries)*tr-tr);
 plot(timebase, meanV1TimeSeries)
