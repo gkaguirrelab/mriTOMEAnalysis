@@ -45,8 +45,26 @@ for aa = 1:numberOfAnalyses
     
     if strcmp(runName, 'T1w_MPR')
         fileName = [subjectID, '_hcpstruct.zip'];
+        downloadType = 'analysis';
+        [fwInfoStruct] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID, fileName, 'downloadType', downloadType);
+        % grab standard2acpc_dc.nii.gz
+        % grab T1w_acpc_dc_restore.nii.gz
+        % grab freeSurfer
+        
+    else
+        % get functional analyses
+        fileName = [subjectID, '_', runName, '_hcpfunc.zip'];
+        downloadType = 'analysis';
+        [fwInfoFunc] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID, fileName, 'downloadType', downloadType);
+        % grab runName_mni.nii.gz
+        
+        % get the physio
+        fileName = [runName, '_puls.mat'];
+        downloadType = 'physio';
+        [fwInfoPhysio] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID, fileName, 'downloadType', downloadType);
+        % get _puls.mat
+
     end
-    [fwInfo] = getAnalysisFromFlywheel(theProject,analysisLabel,p.Results.dataDownloadDir, subjectID, fileName);
 end
 
 
