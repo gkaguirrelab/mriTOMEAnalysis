@@ -34,8 +34,17 @@ system(['fsleyes "', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, 
 
 
 %% Run FreeSurfer bit
-system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '" "', structuralName '"']);
+%system(['bash makeV1Mask.sh ', subjectID, ' "', anatDir, '" "', freeSurferDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '" "', structuralName '"']);
+%% Binarize Benson mask
+eccen = MRIread(fullfile(anatDir, [subjectID, '_native.template_eccen.nii.gz']));
+areas = MRIread(fullfile(anatDir, [subjectID, '_native.template_areas.nii.gz']));
+areaNum = 1;
+eccenRange = [0 20];
+savePath = outputDir;
+[maskFullFile,saveName] = makeMaskFromRetino(eccen,areas,areaNum,eccenRange,savePath);
 
+%% downsample benson mask to epi resolution
+system(['bash downsampleBensonMask ', subjectID, ' "', outputDir, '" "', freeSurferDir, '" "', functionalDir, '" "', runName, '" ']);
 %% Verify alignment
 if p.Results.visualizeAlignment
     system(['export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; freeview -v ' anatDir, '/T1w1_gdc.nii.gz ', functionalDir, ['/' runName '_gdc.nii.gz '], outputDir, '/', [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz '] outputDir, '/', [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz &']])
@@ -43,14 +52,14 @@ end
 
 %% MATLAB stuffs
 % after we've made the V1 mask, lets start figuring out the timeseries
-lhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz']));
-rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz']));
-
-combinedV1Mask = lhV1Mask; % make sure combinedV1Mask has the appropriate header information
-combinedV1Mask.vol = [];
-combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
-MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
-
+% lhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_lh_v1_registeredToFunctional.nii.gz']));
+% rhV1Mask = MRIread(fullfile(outputDir, [subjectID '_' runName '_rh_v1_registeredToFunctional.nii.gz']));
+% 
+% combinedV1Mask = lhV1Mask; % make sure combinedV1Mask has the appropriate header information
+% combinedV1Mask.vol = [];
+% combinedV1Mask.vol = rhV1Mask.vol + lhV1Mask.vol;
+% MRIwrite(combinedV1Mask, fullfile(outputDir, [subjectID '_' runName '_bothHemispheres_v1_registeredToFunctional.nii.gz']));
+combinedV1Mask = MRIread(fullfile(outputDir, [subjectID, '_', runName, '_benson_registeredToFunctional.nii.gz']));
 
 
 functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));

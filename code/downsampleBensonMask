@@ -1,0 +1,26 @@
+#!/bin/bash
+
+## set up the environment for FreeSurfer and FSL (which is necessary for registration)
+export FREESURFER_HOME=/Applications/freesurfer
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
+
+# FSL Setup
+FSLDIR=/usr/local/fsl
+PATH=${FSLDIR}/bin:${PATH}
+export FSLDIR PATH
+. ${FSLDIR}/etc/fslconf/fsl.sh
+
+# set up the FreeSurfer data lives
+freeSurferDir=$3
+export SUBJECTS_DIR=$freeSurferDir
+
+subjectID=$1
+outputDir=$2
+functionalDir=$4
+runName=$5
+
+
+runNameLong=${runName}_native.nii.gz
+
+mri_vol2vol --mov $outputDir/mask_area_V1_ecc_0_to_20.nii.gz --targ $functionalDir/${runNameLong} --o $outputDir/${subjectID}_${runName}_benson_registeredToFunctional.nii.gz --regheader --interp nearest
