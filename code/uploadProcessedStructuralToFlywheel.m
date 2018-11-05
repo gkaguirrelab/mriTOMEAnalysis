@@ -23,12 +23,12 @@ analyses = analyses(~cellfun('isempty', analyses));
 
 numberOfSubjects = size(analyses,1);
 %% from each session, download the hcp-struct.zip
-for ss = 1:1
+for ss = 1:numberOfSubjects
     
     subject = analyses{ss}.subject.code;
-    file_name = analyses{ss}.analysis.id;
+    file_name = analyses{ss}.file.name;
     analysis_id = analyses{ss}.analysis.id;
-    session_id = analyses{1}.session.id;
+    session_id = analyses{ss}.session.id;
     dataDownloadDir = '/Users/harrisonmcadams/Desktop/flywheel';
     output_name = fullfile(dataDownloadDir, file_name);
     
@@ -46,7 +46,7 @@ for ss = 1:1
     fileToUpload = fullfile(unzipDir, subject, 'T1w', 'T1w_acpc_dc_restore.nii.gz');
     
     fw.uploadFileToSession(session_id,fileToUpload);
-    delete(unzipDir);
+    rmdir(unzipDir, 's');
     
 end
 
