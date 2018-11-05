@@ -169,6 +169,17 @@ for ii=nParamRows+1:nRows
                 theType = 'session';
                 theAcqLabel = 'session_file';
             end
+            % Check if theInputLabel is the rootSessionInputLabel
+            if strcmp(p.Results.rootSessionInputLabel,theInputLabel)
+                % Get the root session information. This is the session to
+                % which the analysis product will be assigned
+                rootSessionID = allSessions{sessionIdx}.id;
+                % The root session tag is used to label the outputs of the
+                % gear. Sometimes there is leading or trailing white space
+                % in the acquisition label. We trim that off here as it can
+                % cause troubles in gear execution.
+                rootSessionTag = strtrim(theName);
+            end            
         else
             % It is an acqusition file. If a file entry was specified, go
             % find that.
