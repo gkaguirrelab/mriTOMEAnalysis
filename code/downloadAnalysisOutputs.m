@@ -1,7 +1,7 @@
 % Download TOME hcp-struct analysis result to local directory
 
 projectName = 'tome';
-gearName = 'hcp-func';
+gearName = 'hcp-struct';
 rootSaveDir = '/Users/aguirre/Desktop/test';
 outputFileStem = '.hcpstruct_QC.inflated_MyelinMap_BC.png';
 
