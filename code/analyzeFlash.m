@@ -17,125 +17,120 @@ leftHemisphere = MRIread('/Users/harrisonmcadams/Dropbox-Aguirre-Brainard-Lab/ME
 targetFile = '/Users/harrisonmcadams/Dropbox-Aguirre-Brainard-Lab/MELA_analysis/mriTOMEAnalysis/flywheelOutput/TOME_3003/tfMRI_FLASH_PA_run2_native.nii.gz';
 
 savePath = '/Users/harrisonmcadams/Dropbox-Aguirre-Brainard-Lab/MELA_analysis/mriTOMEAnalysis/flywheelOutput/TOME_3003/';
-
+maskList = {'V1d_lh_mask', 'V1d_rh_mask', 'V1v_lh_mask', 'V1v_rh_mask', 'V2d_lh_mask', 'V2d_rh_mask', 'V2v_lh_mask', 'V2v_rh_mask', 'V3d_lh_mask', 'V3d_rh_mask', 'V3v_lh_mask', 'V3v_rh_mask'};
+areasList = {1, 2, 3};
+anglesList = {[0 90], [90 180]};
 eccenRange = [0 20];
+laterality = {'lh', 'rh'};
 
-% v1 regions
-areaNum = 1;
-anglesRange = [0 90]; % ventral
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V1v_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
+for area = 1:length(areasList)
+    
+    for aa = 1:length(anglesList)
+        
+        for side = 1:length(laterality)
+           
+            if isequal(anglesList{aa}, [0 90])                
+                dorsalOrVentral = 'v';                
+            elseif isequal(anglesList{aa}, [90 180])                
+                dorsalOrVentral = 'd';  
+            end
+            
+            if strcmp(laterality{side}, 'lh')
+                hemisphere = leftHemisphere;
+            elseif strcmp(laterality{side}, 'rh')
+                hemisphere = rightHemisphere;
+            end
+        
+            maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
+            makeMaskFromRetino(eccen, areas, angles, areasList{area}, eccenRange, anglesList{aa}, savePath, 'laterality', hemisphere, 'saveName', [maskName, '.nii.gz']);
+            [ masks.(maskName) ] = resample(fullfile(savePath, [maskName, '.nii.gz']), targetFile, fullfile(savePath, [maskName, '_downsampled.nii.gz']));
 
-areaNum = 1;
-anglesRange = [0 90]; % ventral
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V1v_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
 
+            
+        end
+        
+    end
 
-areaNum = 1;
-anglesRange = [90 180]; % dorsal
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V1d_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
+end
 
-
-areaNum = 1;
-anglesRange = [90 180]; % dorsal
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V1d_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-% v2 regions
-areaNum = 2;
-anglesRange = [0 90]; % ventral
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V2v_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 2;
-anglesRange = [0 90]; % ventral
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V2v_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 2;
-anglesRange = [90 180]; % dorsal
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V2d_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 2;
-anglesRange = [90 180]; % dorsal
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V2d_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-% v3 regions
-areaNum = 3;
-anglesRange = [0 90]; % ventral
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V3v_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 3;
-anglesRange = [0 90]; % ventral
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V3v_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 3;
-anglesRange = [90 180]; % dorsal
-laterality = 'rh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', rightHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V3d_rh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
-
-areaNum = 3;
-anglesRange = [90 180]; % dorsal
-laterality = 'lh';
-saveName = ['V', num2str(areaNum), '_eccen', num2str(eccenRange(1)), '-', num2str(eccenRange(2)), '_angles', num2str(anglesRange(1)), '-', num2str(anglesRange(2)), '_', laterality];
-makeMaskFromRetino(eccen, areas, angles, areaNum, eccenRange, anglesRange, savePath, 'laterality', leftHemisphere, 'saveName', [saveName, '.nii.gz']);
-[ V3d_lh_mask ] = resample(fullfile(savePath, [saveName, '.nii.gz']), targetFile, fullfile(savePath, [saveName, '_downsampled.nii.gz']));
 
 %% extract the time series from the mask
-maskList = {'V1d_lh_mask', 'V1d_rh_mask', 'V1v_lh_mask', 'V1v_rh_mask', 'V2d_lh_mask', 'V2d_rh_mask', 'V2v_lh_mask', 'V2v_rh_mask', 'V3d_lh_mask', 'V3d_rh_mask', 'V3v_lh_mask', 'V3v_rh_mask'};
+for area = 1:length(areasList)
+    
+    for aa = 1:length(anglesList)
+        
+        for side = 1:length(laterality)
+           
+            if isequal(anglesList{aa}, [0 90])                
+                dorsalOrVentral = 'v';                
+            elseif isequal(anglesList{aa}, [90 180])                
+                dorsalOrVentral = 'd';  
+            end
+            
+            if strcmp(laterality{side}, 'lh')
+                hemisphere = leftHemisphere;
+            elseif strcmp(laterality{side}, 'rh')
+                hemisphere = rightHemisphere;
+            end
+            
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
+            maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
+            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries']);
 
-[ meanTimeSeries.V1d_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V1d_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V1d_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V1d_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V1v_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V1v_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V1v_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V1v_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
+            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMask( functionalScan, masks.(maskName), 'whichCentralTendency', 'median', 'saveName', saveName);
 
-[ meanTimeSeries.V2d_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V2d_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V2d_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V2d_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V2v_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V2v_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V2v_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V2v_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
 
-[ meanTimeSeries.V3d_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V3d_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V3d_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V3d_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V3v_rh_mask ] = extractTimeSeriesFromMask( functionalScan, V3v_rh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-[ meanTimeSeries.V3v_lh_mask ] = extractTimeSeriesFromMask( functionalScan, V3v_lh_mask, 'whichCentralTendency', 'median', 'savePath', savePath);
-%% Extract V1 time series
+            
+        end
+        
+    end
 
-[ meanV1TimeSeries, v1TimeSeriesCollapsed_meanCentered, voxelIndices, combinedV1Mask, functionalScan ] = extractV1TimeSeries(subjectID, 'runName', runName);
+end
+
 
 %% Clean time series from physio regressors
-[] = cleanTimeSeries
+
+physioRegressors = load('/Users/harrisonmcadams/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/mriTOMEAnalysis/flywheelOutput/TOME_3003/tfMRI_FLASH_PA_run2_puls.mat');
+physioRegressors = physioRegressors.output;
+
+regressors = physioRegressors.all;
+
+for area = 1:length(areasList)
+    
+    for aa = 1:length(anglesList)
+        
+        for side = 1:length(laterality)
+            
+            if isequal(anglesList{aa}, [0 90])
+                dorsalOrVentral = 'v';
+            elseif isequal(anglesList{aa}, [90 180])
+                dorsalOrVentral = 'd';
+            end
+            
+            if strcmp(laterality{side}, 'lh')
+                hemisphere = leftHemisphere;
+            elseif strcmp(laterality{side}, 'rh')
+                hemisphere = rightHemisphere;
+            end
+            
+            maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
+            
+            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors);
+            
+            
+            
+        end
+        
+    end
+    
+end
+
+
+[ cleanedMeanTimeSeries.V1d_rh_mask ] = cleanTimeSeries( meanTimeSeries.V1d_rh_mask, regressors);
 
 %% Correlate time series from different ROIs
+desiredOrder = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+makeCorrelationMatrix(cleanedMeanTimeSeries, 'desiredOrder', desiredOrder);
 
 %% Remove eye signals from BOLD data
 [] = cleanTimeSeries
