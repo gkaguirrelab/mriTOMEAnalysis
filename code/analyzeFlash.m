@@ -28,7 +28,7 @@ areas = MRIread(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.
 rightHemisphere = MRIread(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz']));
 leftHemisphere = MRIread(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz']));
 
-targetFile = MRIread(fullfile(p.Results.functionalDir, [runName, '_native.nii.gz']));
+targetFile = (fullfile(p.Results.functionalDir, [runName, '_native.nii.gz']));
 
 savePath = p.Results.anatDir;
 maskList = {'V1d_lh_mask', 'V1d_rh_mask', 'V1v_lh_mask', 'V1v_rh_mask', 'V2d_lh_mask', 'V2d_rh_mask', 'V2v_lh_mask', 'V2v_rh_mask', 'V3d_lh_mask', 'V3d_rh_mask', 'V3v_lh_mask', 'V3v_rh_mask'};
