@@ -1,12 +1,9 @@
 function [ meanTimeSeries, timeSeriesPerVoxel ] = extractTimeSeriesFromMask( functionalScan, mask, varargin )
 %% Input Parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
-p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
-p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('meanCenter', true, @islogical);
 p.addParameter('whichCentralTendency', 'mean', @ischar);
+p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
 %% Apply the mask
@@ -61,7 +58,7 @@ for rr = 1:size(timeSeriesPerVoxel)
     end
     
 end
-    
+
 
 % take the mean
 plotFig = figure;
@@ -70,26 +67,36 @@ plotFig = figure;
 if strcmp(p.Results.whichCentralTendency, 'mean')
     
     meanTimeSeries = mean(timeSeriesPerVoxel,1);
-elseif strcmp(p.Results.whichCentralTendnecy, 'median')
+elseif strcmp(p.Results.whichCentralTendency, 'median')
     meanTimeSeries = median(timeSeriesPerVoxel,1);
-elseif strcmp(p.Results.whichCentralTendnecy, 'PCA')
+elseif strcmp(p.Results.whichCentralTendency, 'PCA')
     [coeffs] = pca(timeSeriesPerVoxel);
-    meanTimeSeries = coeffs(:,1);    
+    meanTimeSeries = coeffs(:,1);
 end
-    
-    
+
+
 tr = functionalScan.tr/1000;
 timebase = 0:tr:(length(meanTimeSeries)*tr-tr);
 plot(timebase, meanTimeSeries)
+set(gcf, 'un', 'n', 'pos', [0.05 .05 1 0.4])
 xlabel('Time (s)')
 ylabel('BOLD Signal')
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
-if ~exist(savePath, 'dir')
-    mkdir(savePath);
-end
+if ~isempty(p.Results.saveName)
+    
+    
+    saveName = p.Results.saveName;
+    [savePath, fileName ] = fileparts(saveName);
+    
+    if ~exist(savePath, 'dir')
+        mkdir(savePath);
+    end
+    
+    saveas(plotFig, [saveName, '.png'], 'png')
 
-save(fullfile(savePath, [runName '_meanV1TimeSeries']), 'meanV1TimeSeries', 'v1TimeSeriesCollapsed', 'voxelIndices', '-v7.3');
+    save(saveName, 'meanTimeSeries', 'timeSeriesPerVoxel', 'voxelIndices', '-v7.3');
+    
+end
 
 
 end
