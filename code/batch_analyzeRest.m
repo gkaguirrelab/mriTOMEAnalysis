@@ -32,6 +32,8 @@ for ss = 1:numberOfSubjects
         runName = restScans{rr};
         analyzeRest(subjectID, runName);
         
+        close all
+        
     end
 end
 
