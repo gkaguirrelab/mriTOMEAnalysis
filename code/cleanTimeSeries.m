@@ -65,7 +65,6 @@ if ~isempty(p.Results.saveName)
         mkdir(savePath);
     end
     
-    saveas(plotFig, [saveName, '.png'], 'png')
 
     save(saveName, 'cleanedTimeSeries', '-v7.3');
     
