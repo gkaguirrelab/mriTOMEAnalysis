@@ -1,9 +1,10 @@
-function [ cleanedTimeSeries ] = cleanTimeSeries( inputTimeSeries, regressors, varargin)
+function [ cleanedTimeSeries ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('TR',800, @isnumber);
 p.addParameter('totalTime',336000, @isnumber);
 p.addParameter('meanCenterRegressors', true, @islogical);
+p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
 
@@ -18,15 +19,9 @@ thePacket.response.values = [];
 
 % based on the number of samples, we can figure out the timebase
 totalTime = p.Results.totalTime;
-deltaT = totalTime/size(regressors,1);
-
-
-% this will serve as the timebase for both the response as well as the
-% regressors
-timebase = 0:deltaT:totalTime-deltaT;
 
 % add the timebases to the packets.
-thePacket.stimulus.timebase = timebase;
+thePacket.stimulus.timebase = regressorsTimebase;
 thePacket.response.timebase = 0:p.Results.TR:totalTime-p.Results.TR;
 
 % mean center the regressors, if asked
