@@ -1,4 +1,4 @@
-function makeCorrelationMatrix(timeSeriesStruct, varargin)
+function [ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(timeSeriesStruct, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('desiredOrder',[], @iscell);
@@ -51,8 +51,8 @@ end
 
 
 % compute the correlation matrix for left and right sides
-[rhCorrelationMatrix] = corrcoef(rhTimeSeriesAccumulator);
-[lhCorrelationMatrix] = corrcoef(lhTimeSeriesAccumulator);
+[rhCorrelationMatrix] = corrcoef(rhTimeSeriesAccumulator, 'Rows', 'complete');
+[lhCorrelationMatrix] = corrcoef(lhTimeSeriesAccumulator, 'Rows', 'complete');
 
 combinedCorrelationMatrix = [(rhCorrelationMatrix + lhCorrelationMatrix)/2];
 
@@ -78,15 +78,17 @@ caxis([-1 1])
 for rr = 1:length(rhLabel)
     for ll = 1:length(lhLabel)
         
-        pearsonCorrelation = corr2(rhTimeSeriesAccumulator(:,rr), lhTimeSeriesAccumulator(:,ll));
         
-        combinedCorrelationMatrix(rr,ll) = pearsonCorrelation;
+        pearsonCorrelation = corrcoef(rhTimeSeriesAccumulator(:,rr), lhTimeSeriesAccumulator(:,ll), 'Rows', 'complete');
+        pearsonCorrelation = pearsonCorrelation(1,2);
+        
+        acrossHemisphereCorrelationMatrix(rr,ll) = pearsonCorrelation;
         
     end
 end
 
 plotFig = figure;
-imagesc(combinedCorrelationMatrix)
+imagesc(acrossHemisphereCorrelationMatrix)
 
 % pretty it up
 set(gca, 'XTick', 1:length(rhLabel))
