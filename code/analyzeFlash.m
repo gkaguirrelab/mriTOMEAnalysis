@@ -89,11 +89,10 @@ for area = 1:length(areasList)
             
 
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
-            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries']);
 
-            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMask( functionalScan, masks.(maskName), 'whichCentralTendency', 'median', 'saveName', saveName);
+            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMask( functionalScan, masks.(maskName), 'whichCentralTendency', 'median');
 
-
+            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
             
         end
         
@@ -109,6 +108,11 @@ physioRegressors = physioRegressors.output;
 motionTable = readtable((fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt'])));
 motionRegressors = table2array(motionTable(:,7:12));
 regressors = [physioRegressors.all, motionRegressors];
+
+TR = functionalScan.tr; % in ms
+nFrames = functionalScan.nframes;
+
+regressorTimebase = 0:TR:nFrames*TR-TR;
 
 for area = 1:length(areasList)
     
@@ -130,10 +134,10 @@ for area = 1:length(areasList)
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries_physioMotionCorrected']);
             
-            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, 'saveName', saveName);
-            
+            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, regressorTimebase);
+            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
+
             
             
         end
@@ -154,6 +158,8 @@ makeCorrelationMatrix(cleanedMeanTimeSeries, 'desiredOrder', desiredOrder);
 pupilResponse = load(fullfile(p.Results.pupilDir, [runName, '_pupil.mat']));
 pupilArea = pupilResponse.pupilData.initial.ellipses.values(:,3);
 pupilRegressors = [pupilArea];
+pupilTimebase = load(fullfile(p.Results.pupilDir, [runName, '_timebase.mat']));
+pupilTimebase = pupilTimebase.timebase.values';
 
 for area = 1:length(areasList)
     
@@ -174,10 +180,10 @@ for area = 1:length(areasList)
             end
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
-            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries_physioMotionCorrected_eyeSignalsRemoved']);
             
-            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( cleanedMeanTimeSeries.(maskName), pupilRegressors, 'saveName', saveName);
-            
+            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( cleanedMeanTimeSeries.(maskName), pupilRegressors, pupilTimebase);
+            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected_eyeSignalsRemoved']), 'cleanedMeanTimeSeries', '-v7.3');
+
             
             
         end
