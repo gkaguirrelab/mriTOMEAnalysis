@@ -91,8 +91,11 @@ for area = 1:length(areasList)
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
 
             [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMask( functionalScan, masks.(maskName), 'whichCentralTendency', 'median');
-
-            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
+            savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
+            if ~exist(savePath, 'dir')
+                mkdir(savePath);
+            end
+            save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
             
         end
         
@@ -150,7 +153,12 @@ end
 
 %% Correlate time series from different ROIs
 desiredOrder = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
-makeCorrelationMatrix(cleanedMeanTimeSeries, 'desiredOrder', desiredOrder);
+[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(cleanedMeanTimeSeries, 'desiredOrder', desiredOrder);
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', subjectID);
+if ~exist(savePath, 'dir')
+    mkdir(savePath);
+end
+save(fullfile(savePath, runName), 'combinedCorrelationMatrix', 'acrossHemisphereCorrelationMatrix', '-v7.3');
 
 %% Remove eye signals from BOLD data
 % make pupil regressors
@@ -193,6 +201,6 @@ for area = 1:length(areasList)
 end
 
 %% Re-examine correlation of time series from different ROIs
-makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder);
-
+[ combinedCorrelationMatrix_postEye, acrossHemisphereCorrelationMatrix_postEye] = makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder);
+save(fullfile(savePath, [runName, '_postEye']), 'combinedCorrelationMatrix_postEye', 'acrossHemisphereCorrelationMatrix_postEye', '-v7.3');
 end
