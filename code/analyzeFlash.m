@@ -130,7 +130,9 @@ for area = 1:length(areasList)
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors);
+            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries_physioMotionCorrected']);
+            
+            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, 'saveName', saveName);
             
             
             
@@ -172,8 +174,9 @@ for area = 1:length(areasList)
             end
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
+            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [maskName '_timeSeries_physioMotionCorrected_eyeSignalsRemoved']);
             
-            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( cleanedMeanTimeSeries.(maskName), pupilRegressors);
+            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( cleanedMeanTimeSeries.(maskName), pupilRegressors, 'saveName', saveName);
             
             
             
