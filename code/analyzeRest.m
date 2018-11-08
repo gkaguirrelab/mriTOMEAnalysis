@@ -13,6 +13,8 @@ p.parse(varargin{:});
 
 %% Get the data and organize it
 
+getSubjectData(subjectID, runName);
+
 %% Register functional scan to anatomical scan
 
 [ functionalScan ] = registerFunctionalToAnatomical(subjectID, runName);
