@@ -17,6 +17,9 @@ fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 %% Get pupil data
 % we want the timebase and the pupil file
 
+if (~exist(p.Results.pupilDir,'dir'))
+    mkdir(p.Results.pupilDir);
+end
 % one annoying wrinkle is that the run number associated with the pupil
 % file has a leading zero. let's get ready for that
 if strcmp(runName(1), 't')
