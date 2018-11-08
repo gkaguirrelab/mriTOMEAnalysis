@@ -6,12 +6,81 @@ p.addParameter('dataDownloadDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analy
 p.addParameter('paramsFileName','analysesLabels.csv', @ischar);
 p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
+p.addParameter('pupilDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
+p.addParameter('pupilProcessingDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_processingPath')),  @isstring);
+
 p.parse(varargin{:});
 
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 
 
+%% Get pupil data
+% we want the timebase and the pupil file
+
+% one annoying wrinkle is that the run number associated with the pupil
+% file has a leading zero. let's get ready for that
+if strcmp(runName(1), 't')
+    splitRunName = strsplit(runName, 'run');
+    runNumber = str2num(splitRunName{end});
+    pupilFileNameBase = [splitRunName{1}, 'run', sprintf('%02d', runNumber)];
+    pupilFileName = [pupilFileNameBase, '_pupil.mat'];
+    targetPupilFileName = [splitRunName{1}, 'run', num2str(runNumber), '_pupil.mat'];
+    pupilTimebaseName = [pupilFileNameBase, '_timebase.mat'];
+    targetTimebaseName = [splitRunName{1}, 'run', num2str(runNumber), '_timebase.mat'];
+elseif strcmp(runName(1), 'r')
+    splitRunName = strsplit(runName, 'Run');
+    runNumber = str2num(splitRunName{end});
+    pupilFileNameBase = [splitRunName{1}, 'run', sprintf('%02d', runNumber)];
+    pupilFileName = [pupilFileNameBase, '_pupil.mat'];
+    targetPupilFileName = [splitRunName{1}, 'Run', num2str(runNumber), '_pupil.mat'];
+    pupilTimebaseName = [pupilFileNameBase, '_timebase.mat'];
+    targetTimebaseName = [splitRunName{1}, 'Run', num2str(runNumber), '_timebase.mat'];
+end
+
+% figure out the date and session of this run
+searchStruct = struct(...
+    'returnType', 'file', ...
+    'filters', {{ ...
+    struct('wildcard', struct('analysis0x2elabel', ['*hcp-func*'])), ...
+    struct('match', struct('project0x2elabel', 'tome')), ...
+    }} ...
+    );
+analyses = [];
+analyses = fw.search(searchStruct, 'size', '10000');
+
+for ii = 1:numel(analyses)
+    
+    if ~strcmp(analyses{ii}.subject.code, subjectID) || ~strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_', runName, '_hcpfunc.zip'])
+        analyses{ii} = [];
+    end
+end
+
+analyses = analyses(~cellfun('isempty', analyses));
+
+if strcmp(analyses{1}.session.label, 'Session 1')
+    sessionName = 'session1_restAndStructure';
+elseif  strcmp(analyses{1}.session.label, 'Session 2')
+    sessionName = 'session2_spatialStimuli';
+end
+
+sessionDate = NaT(1,'TimeZone','America/New_York');
+sessionDate = analyses{1}.session.timestamp;
+formatOut = 'mmddyy';
+dateString = datestr(sessionDate(1),formatOut);
+
+pupilFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilFileName);
+timebaseFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilTimebaseName);
+
+copyfile(pupilFile, fullfile(p.Results.pupilDir, targetPupilFileName));
+copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
+
+
+
+
 %% Get structural stuff first
+if (~exist(p.Results.anatDir,'dir'))
+    mkdir(p.Results.anatDir);
+end
 searchStruct = struct(...
     'returnType', 'file', ...
     'filters', {{ ...
@@ -64,6 +133,9 @@ rmdir(unzipDir, 's');
 
 
 %% Get functional data
+if (~exist(p.Results.functionalDir,'dir'))
+    mkdir(p.Results.functionalDir);
+end
 searchStruct = struct(...
     'returnType', 'file', ...
     'filters', {{ ...
@@ -113,7 +185,9 @@ copyfile(movementRegressors, destinationOfMovementRegressors);
 rmdir(unzipDir, 's');
 
 %% Get physio
-
+if (~exist(p.Results.functionalDir,'dir'))
+    mkdir(p.Results.functionalDir);
+end
 searchCategory = 'acquisition0x2elabel';
 searchStruct = struct('returnType', 'file', ...
     'filters', {{struct('term', ...
@@ -186,13 +260,71 @@ for session = 1:numel(allSessions)
     end
 end
 [ acqToUpload ] = fw.getAcquisition(acquisition_id);
-
+file_name = strrep(file_name, ' ', '%20');
 fw.downloadFileFromAcquisition(acquisition_id, file_name, fullfile(dataDownloadDir, file_name));
 
 copyfile(fullfile(dataDownloadDir, file_name), fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
 
 delete(fullfile(dataDownloadDir, file_name));
 
+%% Get the Benson gear output
+if (~exist(p.Results.anatDir,'dir'))
+    mkdir(p.Results.anatDir);
+end
+searchStruct = struct(...
+    'returnType', 'file', ...
+    'filters', {{ ...
+    struct('wildcard', struct('analysis0x2elabel', 'retinotopy-templates*')), ...
+    struct('match', struct('project0x2elabel', 'tome')), ...
+    }} ...
+    );
+analyses = [];
+analyses = fw.search(searchStruct, 'size', '10000');
+
+for ii = 1:numel(analyses)
+    
+    if ~strcmp(analyses{ii}.subject.code, subjectID) 
+        analyses{ii} = [];
+    end
+end
+analyses = analyses(~cellfun('isempty', analyses));
+
+analysesWeWant = [];
+for ii = 1:numel(analyses)
+    if strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_lh.ribbon.nii.gz'])
+        analysesWeWant{ii} = analyses{ii};
+    elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_rh.ribbon.nii.gz'])
+        analysesWeWant{ii} = analyses{ii};
+    elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_native.template_eccen.nii.gz'])
+        analysesWeWant{ii} = analyses{ii};
+    elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_native.template_angle.nii.gz'])
+        analysesWeWant{ii} = analyses{ii};
+    elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_native.template_areas.nii.gz'])
+        analysesWeWant{ii} = analyses{ii};
+    end
+end
+
+analysesWeWant = analysesWeWant(~cellfun('isempty', analysesWeWant));
+analyses = analysesWeWant;
+
+for ii = 1:length(analyses)
+    file_name = analyses{ii}.file.name;
+    analysis_id = analyses{ii}.analysis.id;
+    session_id = analyses{ii}.session.id;
+    dataDownloadDir = p.Results.dataDownloadDir;
+    output_name = fullfile(dataDownloadDir, file_name);
+    
+    % flywheel gets angry when we search for something with spaces
+    file_name = strrep(file_name, ' ', '%20');
+    fw.downloadOutputFromAnalysis(analysis_id, file_name, fullfile(dataDownloadDir, file_name));
+    
+    
+    copyfile(fullfile(dataDownloadDir, file_name), fullfile(p.Results.anatDir, file_name));
+    
+    
+    
+    delete(fullfile(dataDownloadDir, file_name));
+end
 
 
 end
