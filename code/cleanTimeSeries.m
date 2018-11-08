@@ -55,4 +55,20 @@ for tt = 1:nTimeSeries
     
 end
 
+if ~isempty(p.Results.saveName)
+    
+    
+    saveName = p.Results.saveName;
+    [savePath, fileName ] = fileparts(saveName);
+    
+    if ~exist(savePath, 'dir')
+        mkdir(savePath);
+    end
+    
+    saveas(plotFig, [saveName, '.png'], 'png')
+
+    save(saveName, 'cleanedTimeSeries', '-v7.3');
+    
+end
+
 end
