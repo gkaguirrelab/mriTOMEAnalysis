@@ -4,7 +4,9 @@
 projectName = 'tome';
 gearName = 'hcp-func';
 scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
+resultSaveDir = 
 outputFileSuffix = '_hcpfunc.zip';
+resultFileSuffix = 'Movement_Regressors.txt';
 
 %% Instantiate the flywheel object
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -36,11 +38,16 @@ for ii = 1:numel(analyses)
     thisName = thisAnalysis.files{fileMatchIdx}.name;
     zipFileName = fw.downloadOutputFromAnalysis(thisAnalysis.id,thisName,fullfile(scratchSaveDir,thisName));
 
-    % Unzip the downloaded file
-    command = ['unzip -a ' zipFileName ' -d ' zipFileName '_unzip >/dev/null 2>/dev/null'];
+    % Unzip the downloaded file; pipe the terminal output to dev/null
+    command = ['unzip -a ' zipFileName ' -d ' zipFileName '_unzip >/dev/null'];
     tmp = system(command);
     
-    % Locate the 
+    % Locate the resultFile
+    command = [zipFilename '_unzip/**/' resultFileSuffix];
+    targetFiles = dir(command);
+    
+    % Copy the result file to the results save dir
+    
     
 end
 
