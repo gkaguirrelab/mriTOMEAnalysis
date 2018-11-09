@@ -256,7 +256,7 @@ end
 
 %% Get functional data
 destinationOfFunctionalScan = fullfile(p.Results.functionalDir, [runName, '_mni.nii.gz']);
-destinationOfMovementRegressors = fullfile(p.Results.functionalDir, [subjectID, '_Movement_Regressors.txt']);
+destinationOfMovementRegressors = fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt']);
 
 if ~exist(destinationOfFunctionalScan) || ~exist(destinationOfMovementRegressors)
     
