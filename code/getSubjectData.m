@@ -2,7 +2,8 @@ function getSubjectData(subjectID, runName, varargin)
 
 %% input parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('dataDownloadDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/temp'), @isstring);
+p.addParameter('dataDownloadDir', '~/Desktop/temp', @isstring);
+%p.addParameter('dataDownloadDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/temp'), @isstring);
 p.addParameter('paramsFileName','analysesLabels.csv', @ischar);
 p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
@@ -13,9 +14,14 @@ p.parse(varargin{:});
 
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 
+if (~exist(p.Results.dataDownloadDir,'dir'))
+    mkdir(p.Results.dataDownloadDir);
+end
 
 %% Get physio
 if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
+    fprintf('Downloading physio file.\n');
+
     if (~exist(p.Results.functionalDir,'dir'))
         mkdir(p.Results.functionalDir);
     end
@@ -124,6 +130,9 @@ if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     copyfile(fullfile(dataDownloadDir, file_name), fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
     
     delete(fullfile(dataDownloadDir, file_name));
+else
+    fprintf('Physio file found. Skipping downloading.\n');
+
 end
 
 %% Get pupil data
@@ -150,6 +159,8 @@ if ~exist(fullfile(p.Results.pupilDir, targetPupilFileName)) || ~exist(fullfile(
     if (~exist(p.Results.pupilDir,'dir'))
         mkdir(p.Results.pupilDir);
     end
+    fprintf('Downloading pupil data.\n');
+
     % one annoying wrinkle is that the run number associated with the pupil
     % file has a leading zero. let's get ready for that
 
@@ -190,6 +201,9 @@ if ~exist(fullfile(p.Results.pupilDir, targetPupilFileName)) || ~exist(fullfile(
     
     copyfile(pupilFile, fullfile(p.Results.pupilDir, targetPupilFileName));
     copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
+else
+    fprintf('Pupil files found. Skipping downloading.\n');
+
 end
 
 
@@ -199,7 +213,8 @@ destinationOfStructuralScan = fullfile(p.Results.anatDir, 'T1w_acpc_dc_restore.n
 destinationOfRegistrationInfo = fullfile(p.Results.anatDir, 'standard2acpc_dc.nii.gz');
 
 if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
-    
+    fprintf('Downloading structural scans.\n');
+
     
     if (~exist(p.Results.anatDir,'dir'))
         mkdir(p.Results.anatDir);
@@ -251,6 +266,9 @@ if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
     copyfile(registrationInfo, destinationOfRegistrationInfo);
     
     rmdir(unzipDir, 's');
+else
+    fprintf('Structural scans found. Skipping downloading.\n');
+
 end
 
 
