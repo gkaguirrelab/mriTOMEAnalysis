@@ -23,13 +23,42 @@ analyses = analyses(~cellfun('isempty', analyses));
 
 
 numberOfSubjects = size(analyses,1);
-restScans = {'rfMRI_REST_AP_Run1', 'rfMRI_REST_PA_Run2', 'rfMRI_REST_AP_Run3', 'rfMRI_REST_PA_Run4'};
 %% from each session, download the hcp-struct.zip
 for ss = 1:numberOfSubjects
-    for rr = 1:length(restScans)
+    
+    searchStruct = struct(...
+        'returnType', 'file', ...
+        'filters', {{ ...
+        struct('wildcard', struct('analysis0x2elabel', ['*hcp-func*'])), ...
+        struct('match', struct('project0x2elabel', 'tome')), ...
+        }} ...
+        );
+    analyses = [];
+    analyses = fw.search(searchStruct, 'size', '10000');
+    
+    for ii = 1:numel(analyses)
+        
+        if ~strcmp(analyses{ii}.subject.code, subjectID) || ~contains(analyses{ii}.file.name, 'REST') || ~contains(analyses{ii}.file.name, 'hcpfunc.zip') || contains(analyses{ii}.file.name, 'log')
+            analyses{ii} = [];
+        end
+    end
+    
+    analyses = analyses(~cellfun('isempty', analyses));
+    
+    runNames = [];
+    for ii = 1:length(analyses)
+        
+        wholeFileName = analyses{ii}.file.name;
+        wholeFileName_split = strsplit(wholeFileName, '_');
+        runName = [wholeFileName_split{3}, '_', wholeFileName_split{4}, '_', wholeFileName_split{5}, '_', wholeFileName_split{6}];
+        runNames{end+1} = runName;
+        
+    end
+    
+    for rr = 1:length(runNames)
         
         subjectID = analyses{ss}.subject.code;
-        runName = restScans{rr};
+        runName = runNames{rr};
         analyzeRest(subjectID, runName);
         
         close all
