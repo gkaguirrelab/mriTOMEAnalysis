@@ -27,7 +27,7 @@ analyses = fw.search(searchStruct, 'size', '1000');
 
 %% Loop through the analyses and download
 for ii = 1:numel(analyses)
-    
+        
     % Get the analysis object
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
     
@@ -53,6 +53,9 @@ for ii = 1:numel(analyses)
     if sum(sessionLabelIdx)>1
         error('This subject has more than one session of this type that contains this analysis');
     end
+
+    % Time the loop from here
+    tic
 
     % Get the subject ID
     thisSubject = thisSession.subject.code;
@@ -84,9 +87,12 @@ for ii = 1:numel(analyses)
     rmdir([zipFileName '_unzip'], 's');
     delete(zipFileName);
     
+    % Record the time
+    minutesPassed = toc/60;
+    
     % Report completion of this step
     reportLineOut = [sessionLabelReplacement{sessionLabelIdx} ' - ' saveStem];
-    fprintf([reportLineOut '\n']);
+    fprintf([reportLineOut '%2.2f \n'],minutesPassed);
 end
 
 
