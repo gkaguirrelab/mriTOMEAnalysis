@@ -11,6 +11,7 @@ sessionLabelPrefix = {'Session 1','Session 2'};
 sessionLabelPrefix = {'Session 1'};
 sessionLabelReplacement = {'session1_restAndStructure','session2_spatialStimuli'};
 sessionLabelReplacement = {'session1_restAndStructure'};
+devNull = ' >/dev/null';
 
 %% Instantiate the flywheel object
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -26,7 +27,7 @@ searchStruct = struct(...
 analyses = fw.search(searchStruct, 'size', '1000');
 
 %% Loop through the analyses and download
-for ii = 6:numel(analyses)
+for ii = 1:numel(analyses)
         
     % Get the analysis object
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
@@ -57,22 +58,32 @@ for ii = 6:numel(analyses)
     % Time the loop from here
     timerVal = tic;
 
-    % Get the subject ID
+    % Get the subject ID, session label, and study date
     thisSubject = thisSession.subject.code;
-   
+    thisSessionLabel = thisSession.label;
+    timeFormat = 'mmddyy';
+    thisSessionDate = datestr(thisSession.timestamp,timeFormat);
+    
     % Download the matching file to the rootSaveDir
     thisName = thisAnalysis.files{analysisFileMatchIdx}.name;
     zipFileName = fw.downloadOutputFromAnalysis(thisAnalysis.id,thisName,fullfile(scratchSaveDir,thisName));
 
     % Unzip the downloaded file; overwright existing; pipe the terminal
     % output to dev/null
-    command = ['unzip -o -a ' zipFileName ' -d ' zipFileName '_unzip >/dev/null'];
+    command = ['unzip -o -a ' zipFileName ' -d ' zipFileName '_unzip' devNull];
     system(command);
 
     % Derive the saveStem from the analysisFile name
     tmp = strsplit(thisName,outputFileSuffix);
     saveStem = tmp{1};
-    
+
+    % Save a .mat file with session label, study date, and subject
+    sessionInfo.subject = thisSubject;
+    sessionInfo.session = thisSessionLabel;
+    sessionInfo.date = thisSessionDate;    
+    destinationFile = fullfile(resultSaveDirStem,sessionLabelReplacement{sessionLabelIdx},[saveStem '_sessionInfo.mat']);
+    save(destinationFile,'sessionInfo');
+
     % Copy the result files to the resultsSaveDir. If there are
     % duplicates of the target file, just copy the first.
     for jj=1:length(resultFileSuffix)
@@ -82,7 +93,7 @@ for ii = 6:numel(analyses)
         destinationFile = fullfile(resultSaveDirStem,sessionLabelReplacement{sessionLabelIdx},[saveStem '_' targetFiles(1).name]);
         copyfile(sourceFile,destinationFile);
     end
-    
+        
     % Delete the downloaded files in the scratch dir
     rmdir([zipFileName '_unzip'], 's');
     delete(zipFileName);
@@ -94,58 +105,4 @@ for ii = 6:numel(analyses)
     reportLineOut = [sessionLabelReplacement{sessionLabelIdx} ' - ' saveStem];
     fprintf([reportLineOut ' - %2.1f mins \n'],minutesPassed);
 end
-
-
-
-%
-%
-%
-%
-% movementTable = readtable('Movement_Regressors.txt','Delimiter','space','MultipleDelimsAsOne',true);
-%
-% t1EyeVoxel = [72, 250, 42];
-% t1VoxelSizeMm = 0.8;
-% epiVoxelSizeMm = 2.0;
-% epiEyeVoxel =  t1EyeVoxel .* t1VoxelSizeMm ./ epiVoxelSizeMm;
-%
-% epiDims = [104, 104, 72];
-% epiCenterVoxelCoord = epiDims ./2;
-%
-% eyeCoordMm = (epiEyeVoxel-epiCenterVoxelCoord).*epiVoxelSizeMm;
-%
-% for ii = 1:size(movementTable,1)
-%     T = eye(4);
-%     T(4,1:3)=table2array(movementTable(ii,1:3));
-%     R.x = [1 0 0; 0 cosd(movementTable{ii,4}) -sind(movementTable{ii,4}); 0 sind(movementTable{ii,4}) cosd(movementTable{ii,4})];
-%     R.y = [cosd(movementTable{ii,5}) 0 sind(movementTable{ii,5}); 0 1 0; -sind(movementTable{ii,5}) 0 cosd(movementTable{ii,5})];
-%     R.z = [cosd(movementTable{ii,6}) -sind(movementTable{ii,6}) 0; sind(movementTable{ii,6}) cosd(movementTable{ii,6}) 0; 0 0 1];
-%     Rzyx = R.z * R.y * R.x;
-%     eyePosition(ii,:)=Rzyx * eyeCoordMm';
-% end
-%
-% eyePosition = eyePosition-eyePosition(1,:);
-%
-% scanDeltaT = 800;
-% eyeTrackDeltaT = mean(diff(timebase.values));
-%
-% scanTimebase = 0:800:800*(420-1);
-% eyeTrackTimebase = 0:eyeTrackDeltaT:(800*420)-eyeTrackDeltaT;
-%
-% nElementsPre = sum(timebase.values<0);
-% nElementsPost = sum(timebase.values>max(eyeTrackTimebase));
-% nElementsMid = numel(eyeTrackTimebase);
-%
-% relativeCameraPosition = zeros(3,length(timebase.values));
-%
-% % The scanner coordinates x,y,z correspond to right-left,
-% % posterior-anterior, inferior-superior. The camera world coordinates are
-% % x,y,z corresponding to right-left, down-up, back-front (towards the
-% % camera)
-% scanToCameraCoords = [1,3,2];
-%
-% for dd = 1:3
-%     relativeCameraPosition(scanToCameraCoords(dd),:) = [zeros(1,nElementsPre) ...
-%         -interp1(scanTimebase,eyePosition(:,dd),eyeTrackTimebase,'PCHIP') ...
-%         -repmat(eyePosition(end,dd),1,nElementsPost)];
-% end
 
