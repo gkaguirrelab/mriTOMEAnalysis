@@ -88,7 +88,7 @@ for ii = 6:numel(analyses)
     delete(zipFileName);
     
     % Record the time    
-    minutesPassed = toc(timeVal)/60;
+    minutesPassed = toc(timerVal)/60;
     
     % Report completion of this step
     reportLineOut = [sessionLabelReplacement{sessionLabelIdx} ' - ' saveStem];
