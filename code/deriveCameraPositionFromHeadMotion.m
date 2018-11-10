@@ -26,7 +26,7 @@ searchStruct = struct(...
 analyses = fw.search(searchStruct, 'size', '1000');
 
 %% Loop through the analyses and download
-for ii = 1:numel(analyses)
+for ii = 6:numel(analyses)
         
     % Get the analysis object
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
@@ -55,7 +55,7 @@ for ii = 1:numel(analyses)
     end
 
     % Time the loop from here
-    tic
+    timerVal = tic;
 
     % Get the subject ID
     thisSubject = thisSession.subject.code;
@@ -87,12 +87,12 @@ for ii = 1:numel(analyses)
     rmdir([zipFileName '_unzip'], 's');
     delete(zipFileName);
     
-    % Record the time
-    minutesPassed = toc/60;
+    % Record the time    
+    minutesPassed = toc(timeVal)/60;
     
     % Report completion of this step
     reportLineOut = [sessionLabelReplacement{sessionLabelIdx} ' - ' saveStem];
-    fprintf([reportLineOut '%2.2f \n'],minutesPassed);
+    fprintf([reportLineOut ' - %2.1f mins \n'],minutesPassed);
 end
 
 
