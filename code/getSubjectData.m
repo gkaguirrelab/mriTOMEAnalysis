@@ -2,7 +2,7 @@ function getSubjectData(subjectID, runName, varargin)
 
 %% input parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('dataDownloadDir', '~/Desktop/temp', @isstring);
+p.addParameter('dataDownloadDir', '/Users/harrisonmcadams/Desktop/temp', @isstring);
 %p.addParameter('dataDownloadDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/temp'), @isstring);
 p.addParameter('paramsFileName','analysesLabels.csv', @ischar);
 p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
