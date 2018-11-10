@@ -30,7 +30,16 @@ for ii = 1:numel(subjects)
     %% Find the right corneal surface coordinate in the EPI scout space
     % Place a point in the T1 volume corresponding to the right cornea
     mri.vol = mri.vol.*0;
+    % The coordinates in the flywheel viewer are relative to the opposite
+    % corner of the volume, so we subtract the value from the dimensions of
+    % the volume. This puts the coordinate into the same frame that would
+    % be found in the fslEyes viewer.
     coord = t1Dims-rightCornealCoords{ii};
+    % In fslEyes, the dimensions are right-left, anterior-posterior,
+    % inferior-superior when loaded in matlab, the mri.vol dimensions are
+    % anterior-posterior, right-left, inferior-superior So the fslEyes
+    % viewer coordinate [73, 250, 42] corresponds to the mri.vol coordinate
+    % in matlab of [251, 74, 43]
     mri.vol(coord(2)+1,coord(3)+1,coord(1)+1)=100;
     
     % Save the volume in a tmp location
