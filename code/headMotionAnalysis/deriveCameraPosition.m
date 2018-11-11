@@ -278,12 +278,34 @@ relativeCameraPosition.values = zeros(3,length(timebase.values));
 trim = (nElementsPre+nElementsPost+numel(eyeTrackTimebase)) - length(timebase.values);
 nElementsPost = nElementsPost-trim;
 
+%% Switch axes to camera world coordinates.
+% This coordinate frame is in mm units and has the dimensions (X,Y,Z).
+% The diagram is of a cartoon head (taken from Leszek Swirski), being
+% viewed from above:
+%
+%    ^
+%    |
+%    |    .-.
+% -Z |   |   | <- Head
+%    +   `^u^'
+% +Z |      
+%    |      
+%    |      W <- Camera    (As seen from above)
+%    V     
+%
+%     <-----+----->
+%        -X   +X
+%
+% +X = right
+% +Y = up
+% +Z = front (towards the camera)
+
 % The scanner coordinates x,y,z correspond to right-left,
 % posterior-anterior, inferior-superior. The camera world coordinates are
 % x,y,z corresponding to right-left, down-up, back-front (towards the
 % camera)
 scanToCameraCoords = [1,3,2];
-scanToCameraSign = [1,1,-1];
+scanToCameraSign = [-1,1,-1];
 
 % Loop over the world coordinate dimensions and create the relative camera
 % position vector, with a length equal to the timebase of the video
