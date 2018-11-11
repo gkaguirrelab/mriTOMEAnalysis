@@ -7,9 +7,7 @@ scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
 resultSaveDirStem = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion';
 outputFileSuffix = '_hcpfunc.zip';
 resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
-sessionLabelPrefix = {'Session 1','Session 2'};
 sessionLabelPrefix = {'Session 1'};
-sessionLabelReplacement = {'session1_restAndStructure','session2_spatialStimuli'};
 sessionLabelReplacement = {'session1_restAndStructure'};
 devNull = ' >/dev/null';
 
@@ -55,27 +53,35 @@ for ii = 1:numel(analyses)
         error('This subject has more than one session of this type that contains this analysis');
     end
 
-    % Time the loop from here
-    timerVal = tic;
-
     % Get the subject ID, session label, and study date
     thisSubject = thisSession.subject.code;
     thisSessionLabel = thisSession.label;
     timeFormat = 'mmddyy';
     thisSessionDate = datestr(thisSession.timestamp,timeFormat);
     
-    % Download the matching file to the rootSaveDir
+    % Get some more information about the analysis and define a saveStem
     thisName = thisAnalysis.files{analysisFileMatchIdx}.name;
+    tmp = strsplit(thisName,outputFileSuffix);
+    saveStem = tmp{1};
+
+    % Check to see if we have already processed this session
+    checkFileName = fullfile(resultSaveDirStem,sessionLabelReplacement{sessionLabelIdx},[saveStem '*' ]);
+    if ~isempty(dir(checkFileName))
+        reportLineOut = [sessionLabelReplacement{sessionLabelIdx} ' - ' saveStem ' - already processed; skipping'];
+        fprintf([reportLineOut '\n']);
+        continue
+    end
+
+    % Time the loop from here
+    timerVal = tic;
+
+    % Download the matching file to the rootSaveDir. This can take a while
     zipFileName = fw.downloadOutputFromAnalysis(thisAnalysis.id,thisName,fullfile(scratchSaveDir,thisName));
 
     % Unzip the downloaded file; overwright existing; pipe the terminal
     % output to dev/null
     command = ['unzip -o -a ' zipFileName ' -d ' zipFileName '_unzip' devNull];
     system(command);
-
-    % Derive the saveStem from the analysisFile name
-    tmp = strsplit(thisName,outputFileSuffix);
-    saveStem = tmp{1};
 
     % Save a .mat file with session label, study date, and subject
     sessionInfo.subject = thisSubject;
