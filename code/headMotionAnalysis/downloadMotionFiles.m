@@ -43,7 +43,7 @@ for ii = 1:numel(analyses)
         
     % Get the session info for this analysis
     thisSession = fw.getSession(thisAnalysis.parent.id);
-    sessionLabelIdx = startsWith(sessionLabelPrefix,thisSession.label);
+    sessionLabelIdx = startsWith(thisSession.label,sessionLabelPrefix);
 
     % This is not the session you are looking for: move along, move along.
     if sum(sessionLabelIdx)==0

@@ -1,33 +1,67 @@
-
-
-
-processingDir = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_processing';
-analysisDir = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion/';
-%scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
-scratchSaveDir = '/tmp/flywheel';
-sessionDir = 'session1_restAndStructure';
-freesurferBinDir = '/Applications/freesurfer/bin/';
-freesurferSetUp = 'export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; ';
-devNull = ' >/dev/null';
-resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
-
-epiVoxelSizeMm = 2.0;
-msecsTR = 800;
-
-subjects = {'TOME_3001','TOME_3002'};
-
-% These are the coordinates as expressed in the Flywheel viewer
-rightCornealCoords = {[189 29 160],[190 23 162]};
-
+function deriveCameraPosition(subjectCellArray, cornealCoords, varargin)
+% Derive a vector of relative position of the eye from fMRI motion params
+%
+% Syntax:
+%  deriveCameraPosition(subjectCellArray, cornealCoords)
+%
+% Description:
+%
+%
+%
 % Dimensions of the T1 image as expressed in Flywheel viewer
-t1Dims = [227 272 227];
+% These are the coordinates as expressed in the Flywheel viewer
 
-% Load a T1 volume
-t1FileName = fullfile(analysisDir,'T1w_acpc_dc_restore.nii.gz');
+% Examples:
+%{
+    subjectCellArray = {'TOME_3001','TOME_3002','TOME_3003','TOME_3004','TOME_3005'};
+    cornealCoords = {[189 29 160],[190 23 162],[187 24 154],[194 33 151],[180 35 157]};
+    deriveCameraPosition(subjectCellArray, cornealCoords)
+%}
+
+%% Parse vargin for options passed here
+p = inputParser; p.KeepUnmatched = true;
+
+% Required
+p.addRequired('subjectCellArray',@iscell);
+p.addRequired('cornealCoords',@iscell);
+
+% Optional display and I/O params
+p.addParameter('verbose',true,@islogical);
+p.addParameter('showPlots',true,@islogical);
+
+% Optional environment params
+p.addParameter('tbSnapshot',[],@(x)(isempty(x) | isstruct(x)));
+p.addParameter('timestamp',char(datetime('now')),@ischar);
+p.addParameter('hostname',char(java.lang.System.getProperty('user.name')),@ischar);
+p.addParameter('username',char(java.net.InetAddress.getLocalHost.getHostName),@ischar);
+
+% Optional analysis params
+p.addParameter('processingDir','/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_processing',@ischar);
+p.addParameter('analysisDir', '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion/',@ischar);
+p.addParameter('scratchSaveDir',getpref('flywheelMRSupport','flywheelScratchDir'),@ischar);
+p.addParameter('sessionDir','session1_restAndStructure',@ischar);
+p.addParameter('freesurferBinDir','/Applications/freesurfer/bin/',@ischar);
+p.addParameter('epiVoxelSizeMm', 2, @isnumeric);
+p.addParameter('msecsTR', 800, @isnumeric);
+p.addParameter('t1Dims', [227 272 227], @isnumeric);
+
+
+%% Parse and check the parameters
+p.parse(subjectCellArray, cornealCoords, varargin{:});
+
+% This string precedes system calls to freesurfer commands to set the
+% environment variables
+freesurferSetUp = 'export FREESURFER_HOME=/Applications/freesurfer; source $FREESURFER_HOME/SetUpFreeSurfer.sh; ';
+
+% This string follows system calls to silence consult output
+devNull = ' >/dev/null';
+
+% Load a T1 reference volume
+t1FileName = fullfile(p.Results.analysisDir,'T1w_acpc_dc_restore.nii.gz');
 mri = MRIread(escapeFileCharacters(t1FileName));
 
 %% Loop through the subjects
-for ii = 1:numel(subjects)
+for ii = 1:numel(subjectCellArray)
     
     %% Find the right corneal surface coordinate in the EPI scout space
     % Place a point in the T1 volume corresponding to the right cornea
@@ -36,7 +70,7 @@ for ii = 1:numel(subjects)
     % corner of the volume, so we subtract the value from the dimensions of
     % the volume. This puts the coordinate into the same frame that would
     % be found in the fslEyes viewer.
-    coord = t1Dims-rightCornealCoords{ii};
+    coord = p.Results.t1Dims-cornealCoords{ii};
     % In fslEyes, the dimensions are right-left, anterior-posterior,
     % inferior-superior when loaded in matlab, the mri.vol dimensions are
     % anterior-posterior, right-left, inferior-superior So the fslEyes
@@ -45,11 +79,11 @@ for ii = 1:numel(subjects)
     mri.vol(coord(2)+1,coord(3)+1,coord(1)+1)=100;
     
     % Save the volume in a tmp location
-    t1SpaceEyeCoordFileName = fullfile(scratchSaveDir,['t1SpaceEyeCoord_' num2str(tic()) '.nii.gz']);
+    t1SpaceEyeCoordFileName = fullfile(p.Results.scratchSaveDir,['t1SpaceEyeCoord_' num2str(tic()) '.nii.gz']);
     MRIwrite(mri,escapeFileCharacters(t1SpaceEyeCoordFileName));
     
     % Find the Scout EPI targets in the analysisDir
-    targetFiles = dir(fullfile(analysisDir,sessionDir,[subjects{ii} '*' 'Scout_gdc.nii.gz']));
+    targetFiles = dir(fullfile(p.Results.analysisDir,p.Results.sessionDir,[subjectCellArray{ii} '*' 'Scout_gdc.nii.gz']));
     
     % Loop through the target files and project the eye coordinate in T1
     % space to scout EPI space
@@ -61,13 +95,13 @@ for ii = 1:numel(subjects)
         infoFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_sessionInfo.mat']);
         regFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_EPItoT1w.dat']);
         moveRegressorsFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_Movement_Regressors.txt']);
-        outFile = fullfile(scratchSaveDir,[num2str(tic()) acquisitionRootName '_eyeVoxel_ScoutSpace.nii.gz']);
+        outEyeVoxelFile = fullfile(p.Results.scratchSaveDir,[num2str(tic()) acquisitionRootName '_eyeVoxel_ScoutSpace.nii.gz']);
         
         % Assemble the vol2vol command
-        command = [freesurferBinDir 'mri_vol2vol' ...
+        command = [p.Results.freesurferBinDir 'mri_vol2vol' ...
             ' --mov ' escapeFileCharacters(t1SpaceEyeCoordFileName) ...
             ' --targ ' escapeFileCharacters(fullfile(targetFiles(jj).folder,targetFiles(jj).name)) ...
-            ' --o '  escapeFileCharacters(outFile) ...
+            ' --o '  escapeFileCharacters(outEyeVoxelFile) ...
             ' --reg ' escapeFileCharacters(regFile) ...
             ' --cubic' ];
         
@@ -75,7 +109,7 @@ for ii = 1:numel(subjects)
         system([freesurferSetUp command devNull]);
         
         % Load the resulting volume
-        mriEyeVoxel = MRIread(escapeFileCharacters(outFile));
+        mriEyeVoxel = MRIread(escapeFileCharacters(outEyeVoxelFile));
         
         % Find the eye voxel coordinate
         [~,ind] = max(mriEyeVoxel.vol(:));
@@ -83,7 +117,7 @@ for ii = 1:numel(subjects)
         
         % Find the position of the eyeVoxel in mm relative to the volume
         % center
-        eyePositionWRTCenter = (eyeVoxel-size(mriEyeVoxel.vol)./2).*epiVoxelSizeMm;
+        eyePositionWRTCenter = (eyeVoxel-size(mriEyeVoxel.vol)./2).*p.Results.epiVoxelSizeMm;
         
         % Determine the corresponding video acquisition stem
         dataLoad = load(infoFile);
@@ -95,19 +129,39 @@ for ii = 1:numel(subjects)
         tmpString = strrep(tmpString,'Run2','run02');
         tmpString = strrep(tmpString,'Run3','run03');
         tmpString = strrep(tmpString,'Run4','run04');
-        videoAcqStemName = fullfile(processingDir,sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
+        videoAcqStemName = fullfile(p.Results.processingDir,p.Results.sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
         
-        % Create the camera position vector file
-        createCameraPositionFile(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, msecsTR)
+        % Create the relativeCameraPosition
+        relativeCameraPosition = calcRelativeCameraPosition(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, p.Results.msecsTR);
         
+        % add meta data
+        relativeCameraPosition.meta = p.Results;
+        relativeCameraPosition.meta.sessionInfo = sessionInfo;
+        
+        % Save the relativeCameraPosition variable
+        outCameraPositionFile = [videoAcqStemName '_relativeCameraPosition.mat'];
+        save(outCameraPositionFile,'relativeCameraPosition');
+
+        % Plot the relativeCameraPosition variables
+        if p.Results.showPlots
+            figure
+            plot(relativeCameraPosition.values(1,:));
+            hold on
+            plot(relativeCameraPosition.values(2,:));
+            plot(relativeCameraPosition.values(3,:));
+            ylim([-4 4]);
+        end
+
         % Report completion of this step
+        if p.Results.verbose
         reportLineOut = sprintf([acquisitionRootName ' eye coords relative to volume center (mm): %d %d %2d'],eyePositionWRTCenter(1),eyePositionWRTCenter(2),eyePositionWRTCenter(3));
         fprintf([reportLineOut ' \n']);
+        end
         
         % Clean up the files we have generated thus far
-        delete([outFile]);
-        delete([outFile '.lta']);
-        delete([outFile '.reg']);
+        delete([outEyeVoxelFile]);
+        delete([outEyeVoxelFile '.lta']);
+        delete([outEyeVoxelFile '.reg']);
         
     end
     
@@ -115,9 +169,9 @@ for ii = 1:numel(subjects)
     delete(t1SpaceEyeCoordFileName);
 end
 
+end % deriveCameraPosition
 
-
-function createCameraPositionFile(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, msecsTR)
+function relativeCameraPosition = calcRelativeCameraPosition(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, msecsTR)
 
 % Load the head motion regressors
 movementTable = readtable(moveRegressorsFile,'Delimiter','space','MultipleDelimsAsOne',true);
@@ -140,7 +194,7 @@ for ii = 1:numTRs
     % Translate the eye position. The first three columns of the head
     % motion regressors correspond to x, y, z
     T = table2array(movementTable(ii,1:3));
-    newEyePosition = newEyePosition - T';
+    newEyePosition = newEyePosition + T';
     
     % Store the newEyePosition
     eyePosition(ii,:)=newEyePosition;
@@ -169,7 +223,7 @@ nElementsPre = sum(timebase.values<0);
 nElementsPost = sum(timebase.values>max(eyeTrackTimebase));
 
 % Create a variable to hold the relative camera position
-relativeCameraPosition = zeros(3,length(timebase.values));
+relativeCameraPosition.values = zeros(3,length(timebase.values));
 
 % We are sometimes off by one frame due to rounding errors and missed
 % frames. We fix that here.
@@ -187,18 +241,10 @@ scanToCameraCoords = [1,3,2];
 % acquisition. Interpolate from the coarse TR sampling to the fine video
 % sampling.
 for dd = 1:3
-    relativeCameraPosition(scanToCameraCoords(dd),:) = [zeros(1,nElementsPre) ...
+    relativeCameraPosition.values(scanToCameraCoords(dd),:) = [zeros(1,nElementsPre) ...
         -interp1(scanTimebase,eyePosition(:,dd),eyeTrackTimebase,'PCHIP') ...
         -repmat(eyePosition(end,dd),1,nElementsPost)];
 end
-
-% Save the relativeCameraPosition variable
-figure
-plot(relativeCameraPosition(1,:));
-hold on
-plot(relativeCameraPosition(2,:));
-plot(relativeCameraPosition(3,:));
-
 
 end
 
