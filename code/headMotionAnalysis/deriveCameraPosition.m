@@ -1,6 +1,7 @@
 
 
 
+processingDir = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_processing';
 analysisDir = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion/';
 %scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
 scratchSaveDir = '/tmp/flywheel';
@@ -11,6 +12,7 @@ devNull = ' >/dev/null';
 resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
 
 epiVoxelSizeMm = 2.0;
+msecsTR = 800;
 
 subjects = {'TOME_3001','TOME_3002'};
 
@@ -55,11 +57,13 @@ for ii = 1:numel(subjects)
         
         % Assemble the file strings
         acquisitionRootName = strsplit(targetFiles(jj).name,'_Scout_gdc.nii.gz');
-        acquisitionRootName = acquisitionRootName{1};
+        acquisitionRootName = acquisitionRootName{1};        
+        infoFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_sessionInfo.mat']);
         regFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_EPItoT1w.dat']);
+        moveRegressorsFile = fullfile(targetFiles(jj).folder,[acquisitionRootName '_Movement_Regressors.txt']);
         outFile = fullfile(scratchSaveDir,[num2str(tic()) acquisitionRootName '_eyeVoxel_ScoutSpace.nii.gz']);
         
-        % Assemble the command
+        % Assemble the vol2vol command
         command = [freesurferBinDir 'mri_vol2vol' ...
             ' --mov ' escapeFileCharacters(t1SpaceEyeCoordFileName) ...
             ' --targ ' escapeFileCharacters(fullfile(targetFiles(jj).folder,targetFiles(jj).name)) ...
@@ -81,6 +85,21 @@ for ii = 1:numel(subjects)
         % center
         eyePositionWRTCenter = (eyeVoxel-size(mriEyeVoxel.vol)./2).*epiVoxelSizeMm;
         
+        % Determine the corresponding video acquisition stem
+        dataLoad = load(infoFile);
+        sessionInfo = dataLoad.sessionInfo;
+        clear dataLoad        
+        tmpString = strsplit(acquisitionRootName,[sessionInfo.subject '_' ]);
+        tmpString = tmpString{2};
+        tmpString = strrep(tmpString,'Run1','run01');
+        tmpString = strrep(tmpString,'Run2','run02');
+        tmpString = strrep(tmpString,'Run3','run03');
+        tmpString = strrep(tmpString,'Run4','run04');
+        videoAcqStemName = fullfile(processingDir,sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
+        
+        % Create the camera position vector file
+        createCameraPositionFile(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, msecsTR)
+        
         % Report completion of this step
         reportLineOut = sprintf([acquisitionRootName ' eye coords relative to volume center (mm): %d %d %2d'],eyePositionWRTCenter(1),eyePositionWRTCenter(2),eyePositionWRTCenter(3));
         fprintf([reportLineOut ' \n']);
@@ -98,10 +117,10 @@ end
 
 
 
-function createCameraPositionFile(movementRegressorsFileName, acqusitionStemName, eyePositionWRTCenter, msecsTR)
+function createCameraPositionFile(moveRegressorsFile, videoAcqStemName, eyePositionWRTCenter, msecsTR)
 
 % Load the head motion regressors
-movementTable = readtable(movementRegressorsFileName,'Delimiter','space','MultipleDelimsAsOne',true);
+movementTable = readtable(moveRegressorsFile,'Delimiter','space','MultipleDelimsAsOne',true);
 
 numTRs = size(movementTable,1);
 
@@ -120,7 +139,8 @@ for ii = 1:numTRs
     
     % Translate the eye position. The first three columns of the head
     % motion regressors correspond to x, y, z
-    newEyePosition = newEyePosition + table2array(movementTable(ii,1:3));
+    T = table2array(movementTable(ii,1:3));
+    newEyePosition = newEyePosition - T';
     
     % Store the newEyePosition
     eyePosition(ii,:)=newEyePosition;
@@ -130,7 +150,9 @@ end
 eyePosition = eyePosition-eyePosition(1,:);
 
 % Load the eyetracking timebase
-
+dataLoad = load([videoAcqStemName '_timebase.mat']);
+timebase = dataLoad.timebase;
+clear dataLoad
 
 % Establish the timebase of the scan acquisition
 scanTimebase = 0:msecsTR:msecsTR*(numTRs-1);
@@ -149,6 +171,11 @@ nElementsPost = sum(timebase.values>max(eyeTrackTimebase));
 % Create a variable to hold the relative camera position
 relativeCameraPosition = zeros(3,length(timebase.values));
 
+% We are sometimes off by one frame due to rounding errors and missed
+% frames. We fix that here.
+trim = (nElementsPre+nElementsPost+numel(eyeTrackTimebase)) - length(timebase.values);
+nElementsPost = nElementsPost-trim;
+
 % The scanner coordinates x,y,z correspond to right-left,
 % posterior-anterior, inferior-superior. The camera world coordinates are
 % x,y,z corresponding to right-left, down-up, back-front (towards the
@@ -166,6 +193,12 @@ for dd = 1:3
 end
 
 % Save the relativeCameraPosition variable
+figure
+plot(relativeCameraPosition(1,:));
+hold on
+plot(relativeCameraPosition(2,:));
+plot(relativeCameraPosition(3,:));
+
 
 end
 
