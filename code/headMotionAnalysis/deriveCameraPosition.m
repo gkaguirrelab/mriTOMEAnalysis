@@ -9,12 +9,12 @@ function deriveCameraPosition(subjectCellArray, cornealCoords, varargin)
 %
 %
 % Dimensions of the T1 image as expressed in Flywheel viewer
-% These are the coordinates as expressed in the Flywheel viewer
+% These are the coordinates as expressed in the Flywheel viewer - sar order
 
 % Examples:
 %{
-    subjectCellArray = {'TOME_3001','TOME_3002','TOME_3003','TOME_3004','TOME_3005'};
-    cornealCoords = {[189 29 160],[190 23 162],[187 24 154],[194 33 151],[180 35 157]};
+    subjectCellArray = {'TOME_3001','TOME_3002','TOME_3003','TOME_3004','TOME_3005','TOME_3007','TOME_3008'};
+    cornealCoords = {[189 29 160],[190 23 162],[187 24 154],[194 33 151],[180 35 157],[194 31 157], [194 35 153]};
     deriveCameraPosition(subjectCellArray, cornealCoords)
 %}
 
@@ -68,14 +68,12 @@ for ii = 1:numel(subjectCellArray)
     mri.vol = mri.vol.*0;
     % The coordinates in the flywheel viewer are relative to the opposite
     % corner of the volume, so we subtract the value from the dimensions of
-    % the volume. This puts the coordinate into the same frame that would
-    % be found in the fslEyes viewer.
+    % the volume. These dimensions are SAR order..
     coord = p.Results.t1Dims-cornealCoords{ii};
-    % In fslEyes, the dimensions are right-left, anterior-posterior,
-    % inferior-superior when loaded in matlab, the mri.vol dimensions are
-    % anterior-posterior, right-left, inferior-superior So the fslEyes
-    % viewer coordinate [73, 250, 42] corresponds to the mri.vol coordinate
-    % in matlab of [251, 74, 43]
+    % In matlab, the mri.vol dimensions are
+    % anterior-posterior, right-left, inferior-superior So the flywheel
+    % viewer coordinate [189 29 160] corresponds to the mri.vol coordinate
+    % in matlab of
     mri.vol(coord(2)+1,coord(3)+1,coord(1)+1)=100;
     
     % Save the volume in a tmp location
@@ -118,6 +116,9 @@ for ii = 1:numel(subjectCellArray)
         % Find the position of the eyeVoxel in mm relative to the volume
         % center
         eyePositionWRTCenter = (eyeVoxel-size(mriEyeVoxel.vol)./2).*p.Results.epiVoxelSizeMm;
+        
+        % Conert dimension order to ras
+        eyePositionWRTCenter = eyePositionWRTCenter([2 1 3]);
         
         % Determine the corresponding video acquisition stem
         dataLoad = load(infoFile);
@@ -235,13 +236,15 @@ nElementsPost = nElementsPost-trim;
 % x,y,z corresponding to right-left, down-up, back-front (towards the
 % camera)
 scanToCameraCoords = [1,3,2];
+scanToCameraSign = [1,1,-1];
 
 % Loop over the world coordinate dimensions and create the relative camera
 % position vector, with a length equal to the timebase of the video
 % acquisition. Interpolate from the coarse TR sampling to the fine video
 % sampling.
 for dd = 1:3
-    relativeCameraPosition.values(scanToCameraCoords(dd),:) = [zeros(1,nElementsPre) ...
+    relativeCameraPosition.values(scanToCameraCoords(dd),:) = scanToCameraSign(dd) .* ...
+        [zeros(1,nElementsPre) ...
         -interp1(scanTimebase,eyePosition(:,dd),eyeTrackTimebase,'PCHIP') ...
         -repmat(eyePosition(end,dd),1,nElementsPost)];
 end
