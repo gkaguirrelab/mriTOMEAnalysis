@@ -71,7 +71,7 @@ p.addRequired('cornealCoord',@isnumeric);
 
 % Optional display and I/O params
 p.addParameter('verbose',true,@islogical);
-p.addParameter('showPlots',true,@islogical);
+p.addParameter('showPlots',false,@islogical);
 
 % Optional environment params
 p.addParameter('tbSnapshot',[],@(x)(isempty(x) | isstruct(x)));
@@ -169,6 +169,13 @@ for ii=1:length(targetFiles)
     dataLoad = load(infoFile);
     sessionInfo = dataLoad.sessionInfo;
     clear dataLoad
+    
+    % Handle the special case of TOME_3019, 042617
+    if strcmp(sessionInfo.subject,'TOME_3019') && strcmp(sessionInfo.date,'042617')
+        sessionInfo.date = '042617a';
+    end
+    
+    % Convert the rootName format of the run number    
     tmpString = strsplit(acquisitionRootName,[sessionInfo.subject '_' ]);
     tmpString = tmpString{2};
     tmpString = strrep(tmpString,'Run1','run01');
