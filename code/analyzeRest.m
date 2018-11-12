@@ -119,6 +119,15 @@ nFrames = functionalScan.nframes;
 
 regressorTimebase = 0:TR:nFrames*TR-TR;
 
+% remove all regressors that are all 0
+emptyColumns = [];
+for column = 1:size(regressors,2)
+    if ~any(regressors(:,column))
+        emptyColumns = [emptyColumns, column];
+    end
+end
+regressors(:,emptyColumns) = [];
+
 for area = 1:length(areasList)
     
     for aa = 1:length(anglesList)
@@ -132,9 +141,9 @@ for area = 1:length(areasList)
             end
             
             if strcmp(laterality{side}, 'lh')
-                hemisphere = leftHemisphere;
+                %hemisphere = leftHemisphere;
             elseif strcmp(laterality{side}, 'rh')
-                hemisphere = rightHemisphere;
+                %hemisphere = rightHemisphere;
             end
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
