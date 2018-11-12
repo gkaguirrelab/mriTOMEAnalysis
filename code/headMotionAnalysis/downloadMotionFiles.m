@@ -29,16 +29,7 @@ for ii = 1:numel(analyses)
         
     % Get the analysis object
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
-    
-    % Find the file with the matching stem
-    analysisFileMatchIdx = cellfun(@(x) endsWith(x.name,outputFileSuffix),thisAnalysis.files);
-    
-    % Sanity checking for one matching file
-    if sum(analysisFileMatchIdx)~=1
-        warning('There are either zero or more than one files found for this analysis; skipping');
-        continue
-    end
-        
+
     % Get the session info for this analysis
     thisSession = fw.getSession(thisAnalysis.parent.id);
     sessionLabelIdx = startsWith(thisSession.label,sessionLabelPrefix);
@@ -53,6 +44,15 @@ for ii = 1:numel(analyses)
         error('This subject has more than one session of this type that contains this analysis');
     end
 
+    % Find the file with the matching stem
+    analysisFileMatchIdx = cellfun(@(x) endsWith(x.name,outputFileSuffix),thisAnalysis.files);
+    
+    % Sanity checking for one matching file
+    if sum(analysisFileMatchIdx)~=1
+        warning('There are either zero or more than one files found for this analysis; skipping');
+        continue
+    end
+        
     % Get the subject ID, session label, and study date
     thisSubject = thisSession.subject.code;
     thisSessionLabel = thisSession.label;
