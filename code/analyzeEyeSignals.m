@@ -74,18 +74,19 @@ for ss = 1:length(subjectIDs)
                 [ kernelStruct ] = normalizeKernelArea( kernelStruct );
                 temporalFit = tfeIAMP('verbosity','none');
                 
-                responseStruct.values = pupilDiameter';
+                startingPupilValue = pupilDiameter(1);
+                responseStruct.values = pupilDiameter' - startingPupilValue;
                 responseStruct.timebase = pupilTimebase;
                 [convResponseStruct,resampledKernelStruct] = temporalFit.applyKernel(responseStruct,kernelStruct);
                 % censor out values less than the time of the kernel
                 [value, index] = min(abs(pupilTimebase - (16000+pupilTimebase(1))));
-                convResponseStruct.values(1:index) = NaN;
+                %convResponseStruct.values(1:index) = NaN;
                 
                 
                 % Normalize the kernel to have unit amplitude
                 %[ kernelStruct ] = normalizeKernelArea( kernelStruct );
                 %pupilDiameterConvolved = conv(pupilDiameter', kernelStruct.values, 'full')*(pupilTimebase(2) - pupilTimebase(1));
-                pupilDiameterConvolved = convResponseStruct.values;
+                pupilDiameterConvolved = convResponseStruct.values + startingPupilValue;
                 
                 % remove bad data points
                 RMSEThreshold = prctile(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE, 90);
