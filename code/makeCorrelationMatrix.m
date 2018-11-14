@@ -10,30 +10,34 @@ nTimeSeries = length(labels);
 
 % pool our time series together into a matrix for ease of operation
 for ii = 1:nTimeSeries
-    timeSeriesAccumulator(:,ii) = timeSeriesStruct.(labels{ii});
-    splitNewLabel = strsplit(labels{ii}, '_');
-    newLabels{ii} = [splitNewLabel{1}, ' ' splitNewLabel{2}];
+    if ~strcmp(labels{ii}, 'V1Combined')
+        timeSeriesAccumulator(:,ii) = timeSeriesStruct.(labels{ii});
+        splitNewLabel = strsplit(labels{ii}, '_');
+        newLabels{ii} = [splitNewLabel{1}, ' ' splitNewLabel{2}];
+    end
 end
 
 %% pool our time series together into left or right hemisphere groups
 leftCounter = 1;
 rightCounter = 1;
 for ii = 1:nTimeSeries
-    splitNewLabel = strsplit(labels{ii}, '_');
-    if strcmp(splitNewLabel{2}, 'rh')
-        rhTimeSeriesAccumulator(:, rightCounter) = timeSeriesStruct.(labels{ii});
+    if ~strcmp(labels{ii}, 'V1Combined')
         splitNewLabel = strsplit(labels{ii}, '_');
-        
-        rhLabel{rightCounter} = [splitNewLabel{1}];
-        rightCounter = rightCounter + 1;
-    elseif strcmp(splitNewLabel{2}, 'lh')
-        lhTimeSeriesAccumulator(:, leftCounter) = timeSeriesStruct.(labels{ii});
-        splitNewLabel = strsplit(labels{ii}, '_');
-        
-        lhLabel{leftCounter} = [splitNewLabel{1}];
-        
-        leftCounter = leftCounter + 1;
-        
+        if strcmp(splitNewLabel{2}, 'rh')
+            rhTimeSeriesAccumulator(:, rightCounter) = timeSeriesStruct.(labels{ii});
+            splitNewLabel = strsplit(labels{ii}, '_');
+            
+            rhLabel{rightCounter} = [splitNewLabel{1}];
+            rightCounter = rightCounter + 1;
+        elseif strcmp(splitNewLabel{2}, 'lh')
+            lhTimeSeriesAccumulator(:, leftCounter) = timeSeriesStruct.(labels{ii});
+            splitNewLabel = strsplit(labels{ii}, '_');
+            
+            lhLabel{leftCounter} = [splitNewLabel{1}];
+            
+            leftCounter = leftCounter + 1;
+            
+        end
     end
     
 end

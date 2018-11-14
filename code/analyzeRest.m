@@ -69,6 +69,9 @@ for area = 1:length(areasList)
 
 end
 
+makeMaskFromRetino(eccen, areas, angles, 1, eccenRange, [0 180], savePath, 'saveName', 'V1Combined.nii.gz');
+[ masks.V1Combined ] = resample(fullfile(savePath, ['V1Combined.nii.gz']), targetFile, fullfile(savePath, ['V1Combined_downsampled.nii.gz']));
+
 
 %% extract the time series from the mask
 for area = 1:length(areasList)
@@ -105,7 +108,8 @@ for area = 1:length(areasList)
 
 end
 
-
+[ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMask( functionalScan, masks.V1combined, 'whichCentralTendency', 'median');
+save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
 %% Clean time series from physio regressors
 
 physioRegressors = load(fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
@@ -160,6 +164,9 @@ for area = 1:length(areasList)
     
 end
 
+[ cleanedMeanTimeSeries.V1combined ] = cleanTimeSeries( meanTimeSeries.V1combined, regressors, regressorTimebase);
+save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
+
 
 
 %% Correlate time series from different ROIs
@@ -206,6 +213,10 @@ for area = 1:length(areasList)
     end
     
 end
+
+[ pupilFreeMeanTimeSeries.V1Combined ] = cleanTimeSeries( cleanedMeanTimeSeries.V1Combined, pupilRegressors, pupilTimebase);
+save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected_eyeSignalsRemoved']), 'cleanedMeanTimeSeries', '-v7.3');
+
 
 %% Re-examine correlation of time series from different ROIs
 [ combinedCorrelationMatrix_postEye, acrossHemisphereCorrelationMatrix_postEye] = makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder);
