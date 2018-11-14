@@ -29,7 +29,7 @@ for ss = 1:length(subjectIDs)
     pupilDir = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectIDs{ss});
     for rr = 1:length(runNames)
         for ROI = 1:length(regionsWeCareAbout)
-            %try
+            try
                 runNameClean = strsplit(runNames{rr}, '_timeSeries');
                 runNameClean = runNameClean{1};
                 cleanedTimeSeries = pooledCleanedTimeSeries.(subjectIDs{ss}).(runNames{rr}).(regionsWeCareAbout{ROI});
@@ -77,14 +77,18 @@ for ss = 1:length(subjectIDs)
                 responseStruct.values = pupilDiameter';
                 responseStruct.timebase = pupilTimebase;
                 [convResponseStruct,resampledKernelStruct] = temporalFit.applyKernel(responseStruct,kernelStruct);
+                % censor out values less than the time of the kernel
+                [value, index] = min(abs(pupilTimebase - (16000+pupilTimebase(1))));
+                convResponseStruct.values(1:index) = NaN;
+                
                 
                 % Normalize the kernel to have unit amplitude
-                [ kernelStruct ] = normalizeKernelArea( kernelStruct );
-                pupilDiameterConvolved = conv(pupilDiameter', kernelStruct.values, 'full')*(pupilTimebase(2) - pupilTimebase(1));
-                pupilDiameterConvolved = pupilDiameterConvolved(1:length(pupilTimebase));
+                %[ kernelStruct ] = normalizeKernelArea( kernelStruct );
+                %pupilDiameterConvolved = conv(pupilDiameter', kernelStruct.values, 'full')*(pupilTimebase(2) - pupilTimebase(1));
+                pupilDiameterConvolved = convResponseStruct.values;
                 
                 % remove bad data points
-                RMSEThreshold = prctile(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE, 95);
+                RMSEThreshold = prctile(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE, 90);
                 badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > RMSEThreshold);
                 badIndices = [badIndices; NaNIndices];
                 pupilDiameterConvolved(badIndices) = NaN;
@@ -95,10 +99,10 @@ for ss = 1:length(subjectIDs)
                 
                 
                 
-                [ ~, stats ] = cleanTimeSeries( cleanedTimeSeries, pupilDiameterConvolved, pupilTimebase);
+                [ ~, stats ] = cleanTimeSeries( cleanedTimeSeries, pupilDiameterConvolved', pupilTimebase+1000);
                 pooledRSquared(end + 1) = stats.rSquared;
-            %catch
-            %end
+            catch
+            end
             
         end
         
