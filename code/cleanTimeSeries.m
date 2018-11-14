@@ -1,4 +1,4 @@
-function [ cleanedTimeSeries ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase, varargin)
+function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('TR',800, @isnumber);
@@ -47,13 +47,20 @@ for tt = 1:nTimeSeries
     
     % TFE linear regression here
     [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
-        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2');
+        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
  %       'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
     
     % remove signal related to regressors to yield clean time series
     cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
+    beta(tt) = paramsFit.paramMainMatrix(1);
+    %rSquared(tt) = 1 - fVal;
+    correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
+    rSquared(tt) = correlationMatrix(1,2)^2;
     
 end
+
+stats.beta = beta;
+stats.rSquared = rSquared;
 
 if ~isempty(p.Results.saveName)
     
