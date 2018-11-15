@@ -12,8 +12,8 @@ for ss = 1:length(potentialSubjects)
                 runNameSplit = strsplit(runNameFull, '.');
                 runName = runNameSplit{1};
                 correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
-                pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = correlationMatrix.acrossHemisphereCorrelationMatrix;
-                pooledCorrelationMatrices_combined.(subjectID).(runName) = correlationMatrix.combinedCorrelationMatrix;
+                pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix));
+                pooledCorrelationMatrices_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix) - log(1-correlationMatrix.combinedCorrelationMatrix));
             end
         end
     end
@@ -47,7 +47,7 @@ title('Within Hemisphere')
 colorbar
 colors = redblue(100);
 colormap(colors)
-caxis([-1 1])
+caxis([-1.25 1.25])
 pbaspect([1 1 1])
 
 
@@ -80,7 +80,7 @@ title('Between Hemispheres')
 colorbar
 colors = redblue(100);
 colormap(colors)
-caxis([-1 1])      
+caxis([-1.25 1.25])      
 pbaspect([1 1 1])
 
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
