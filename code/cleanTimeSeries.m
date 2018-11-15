@@ -52,7 +52,7 @@ for tt = 1:nTimeSeries
     
     % remove signal related to regressors to yield clean time series
     cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
-    beta(tt) = paramsFit.paramMainMatrix(1);
+    beta(tt,:) = paramsFit.paramMainMatrix;
     %rSquared(tt) = 1 - fVal;
     correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
     rSquared(tt) = correlationMatrix(1,2)^2;
