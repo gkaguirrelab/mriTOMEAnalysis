@@ -21,7 +21,7 @@ end
 %% Get physio
 if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     fprintf('Downloading physio file.\n');
-
+    
     if (~exist(p.Results.functionalDir,'dir'))
         mkdir(p.Results.functionalDir);
     end
@@ -132,7 +132,7 @@ if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     delete(fullfile(dataDownloadDir, file_name));
 else
     fprintf('Physio file found. Skipping downloading.\n');
-
+    
 end
 
 %% Get pupil data
@@ -142,6 +142,8 @@ if strcmp(runName(1), 't')
     runNumber = str2num(splitRunName{end});
     pupilFileNameBase = [splitRunName{1}, 'run', sprintf('%02d', runNumber)];
     pupilFileName = [pupilFileNameBase, '_pupil.mat'];
+    controlFileName = [pupilFileNameBase, '_controlFile.csv'];
+    targetControlFileName = [splitRunName{1}, 'run', num2str(runNumber), '_controlFile.csv'];
     targetPupilFileName = [splitRunName{1}, 'run', num2str(runNumber), '_pupil.mat'];
     pupilTimebaseName = [pupilFileNameBase, '_timebase.mat'];
     targetTimebaseName = [splitRunName{1}, 'run', num2str(runNumber), '_timebase.mat'];
@@ -151,60 +153,60 @@ elseif strcmp(runName(1), 'r')
     pupilFileNameBase = [splitRunName{1}, 'run', sprintf('%02d', runNumber)];
     pupilFileName = [pupilFileNameBase, '_pupil.mat'];
     targetPupilFileName = [splitRunName{1}, 'Run', num2str(runNumber), '_pupil.mat'];
+    controlFileName = [pupilFileNameBase, '_controlFile.csv'];
+    targetControlFileName = [splitRunName{1}, 'Run', num2str(runNumber), '_controlFile.csv'];
     pupilTimebaseName = [pupilFileNameBase, '_timebase.mat'];
     targetTimebaseName = [splitRunName{1}, 'Run', num2str(runNumber), '_timebase.mat'];
 end
 
-if ~exist(fullfile(p.Results.pupilDir, targetPupilFileName)) || ~exist(fullfile(p.Results.pupilDir, targetTimebaseName))
-    if (~exist(p.Results.pupilDir,'dir'))
-        mkdir(p.Results.pupilDir);
-    end
-    fprintf('Downloading pupil data.\n');
-
-    % one annoying wrinkle is that the run number associated with the pupil
-    % file has a leading zero. let's get ready for that
-
-    
-    % figure out the date and session of this run
-    searchStruct = struct(...
-        'returnType', 'file', ...
-        'filters', {{ ...
-        struct('wildcard', struct('analysis0x2elabel', ['*hcp-func*'])), ...
-        struct('match', struct('project0x2elabel', 'tome')), ...
-        }} ...
-        );
-    analyses = [];
-    analyses = fw.search(searchStruct, 'size', '10000');
-    
-    for ii = 1:numel(analyses)
-        
-        if ~strcmp(analyses{ii}.subject.code, subjectID) || ~strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_', runName, '_hcpfunc.zip'])
-            analyses{ii} = [];
-        end
-    end
-    
-    analyses = analyses(~cellfun('isempty', analyses));
-    
-    if strcmp(analyses{1}.session.label, 'Session 1') || strcmp(analyses{1}.session.label, 'Session 1a') || strcmp(analyses{1}.session.label, 'Session 1b')
-        sessionName = 'session1_restAndStructure';
-    elseif  strcmp(analyses{1}.session.label, 'Session 2')
-        sessionName = 'session2_spatialStimuli';
-    end
-    
-    sessionDate = NaT(1,'TimeZone','America/New_York');
-    sessionDate = analyses{1}.session.timestamp;
-    formatOut = 'mmddyy';
-    dateString = datestr(sessionDate(1),formatOut);
-    
-    pupilFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilFileName);
-    timebaseFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilTimebaseName);
-    
-    copyfile(pupilFile, fullfile(p.Results.pupilDir, targetPupilFileName));
-    copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
-else
-    fprintf('Pupil files found. Skipping downloading.\n');
-
+if (~exist(p.Results.pupilDir,'dir'))
+    mkdir(p.Results.pupilDir);
 end
+fprintf('Downloading pupil data.\n');
+
+% one annoying wrinkle is that the run number associated with the pupil
+% file has a leading zero. let's get ready for that
+
+
+% figure out the date and session of this run
+searchStruct = struct(...
+    'returnType', 'file', ...
+    'filters', {{ ...
+    struct('wildcard', struct('analysis0x2elabel', ['*hcp-func*'])), ...
+    struct('match', struct('project0x2elabel', 'tome')), ...
+    }} ...
+    );
+analyses = [];
+analyses = fw.search(searchStruct, 'size', '10000');
+
+for ii = 1:numel(analyses)
+    
+    if ~strcmp(analyses{ii}.subject.code, subjectID) || ~strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_', runName, '_hcpfunc.zip'])
+        analyses{ii} = [];
+    end
+end
+
+analyses = analyses(~cellfun('isempty', analyses));
+
+if strcmp(analyses{1}.session.label, 'Session 1') || strcmp(analyses{1}.session.label, 'Session 1a') || strcmp(analyses{1}.session.label, 'Session 1b')
+    sessionName = 'session1_restAndStructure';
+elseif  strcmp(analyses{1}.session.label, 'Session 2')
+    sessionName = 'session2_spatialStimuli';
+end
+
+sessionDate = NaT(1,'TimeZone','America/New_York');
+sessionDate = analyses{1}.session.timestamp;
+formatOut = 'mmddyy';
+dateString = datestr(sessionDate(1),formatOut);
+
+pupilFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilFileName);
+timebaseFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilTimebaseName);
+controlFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', controlFileName);
+
+copyfile(pupilFile, fullfile(p.Results.pupilDir, targetPupilFileName));
+copyfile(controlFile, fullfile(p.Results.pupilDir, targetControlFileName));
+copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
+
 
 
 
@@ -214,7 +216,7 @@ destinationOfRegistrationInfo = fullfile(p.Results.anatDir, 'standard2acpc_dc.ni
 
 if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
     fprintf('Downloading structural scans.\n');
-
+    
     
     if (~exist(p.Results.anatDir,'dir'))
         mkdir(p.Results.anatDir);
@@ -268,7 +270,7 @@ if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
     rmdir(unzipDir, 's');
 else
     fprintf('Structural scans found. Skipping downloading.\n');
-
+    
 end
 
 
