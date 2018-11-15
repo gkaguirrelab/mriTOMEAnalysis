@@ -108,7 +108,7 @@ for area = 1:length(areasList)
 
 end
 
-[ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMask( functionalScan, masks.V1combined, 'whichCentralTendency', 'median');
+[ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMask( functionalScan, masks.V1Combined, 'whichCentralTendency', 'median');
 save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
 %% Clean time series from physio regressors
 
@@ -164,7 +164,7 @@ for area = 1:length(areasList)
     
 end
 
-[ cleanedMeanTimeSeries.V1combined ] = cleanTimeSeries( meanTimeSeries.V1combined, regressors, regressorTimebase);
+[ cleanedMeanTimeSeries.V1Combined ] = cleanTimeSeries( meanTimeSeries.V1Combined, regressors, regressorTimebase);
 save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
 
 
