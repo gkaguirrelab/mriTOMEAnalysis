@@ -161,7 +161,7 @@ for rr = 1:length(runNames)
         regressors = [blinksConvolved; firstDerivativeBlinksConvolved];
     elseif strcmp(p.Results.whichRegressors, 'allRegressors')
         %regressors = [elevationConvolved; firstDerivativeElevationConvolved; azimuthConvolved; firstDerivativeAzimuthConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
-        regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
+        regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved];
 
     end
     
