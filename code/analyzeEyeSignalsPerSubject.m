@@ -38,6 +38,22 @@ for rr = 1:length(runNames)
     azimuth = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,1);
     elevation = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,2);
     
+    eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
+    
+    % get blinks
+    controlFile = fopen(fullfile(pupilDir, [runNameClean, '_controlFile.csv']));
+
+    % import values in a cell with textscan
+    instructionCell = textscan(controlFile,'%f%s%[^\n]','Delimiter',',');
+    blinkRows = find(contains(instructionCell{2}, 'blink'));
+    
+    blinkFrames = [];
+    for ii = blinkRows
+        blinkFrames = [blinkFrames, instructionCell{1}(blinkRows(ii))];
+    end
+    blinks = zeros(1,length(pupilTimebase));
+    blinks(blinkFrames) = 1;
+    
     % interpolate pupil diameter
     theNans = [];
     NaNIndices = [];
@@ -73,10 +89,25 @@ for rr = 1:length(runNames)
         elevation = x;
     end
     
+    theNans = [];
+    NaNIndices = [];
+    theNaNs = isnan(eyeDisplacement);
+    NaNIndices = find(isnan(eyeDisplacement));
+    
+    if sum(theNaNs) ~=0
+        x = eyeDisplacement;
+        x(theNaNs) = interp1(pupilTimebase(~theNaNs), eyeDisplacement(~theNaNs), pupilTimebase(theNaNs), 'linear');
+        eyeDisplacement = x;
+    end
+    eyeDisplacement = [0; eyeDisplacement];
+    
     % convolve regressors
     [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
     [elevationConvolved] = convolveRegressorWithHRF(elevation, pupilTimebase);
     [azimuthConvolved] = convolveRegressorWithHRF(azimuth, pupilTimebase);
+    [eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
+    [blinksConvolved] = convolveRegressorWithHRF(blinks', pupilTimebase);
+
     
     % get first derivative of regressors
     firstDerivativePupilDiameterConvolved = diff(pupilDiameterConvolved);
@@ -87,6 +118,12 @@ for rr = 1:length(runNames)
     
     firstDerivativeAzimuthConvolved = diff(azimuthConvolved);
     firstDerivativeAzimuthConvolved = [NaN, firstDerivativeAzimuthConvolved];
+    
+    firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
+    firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
+    
+    firstDerivativeBlinksConvolved = diff(blinksConvolved);
+    firstDerivativeBlinksConvolved = [NaN, firstDerivativeBlinksConvolved];
     
     
     
@@ -106,13 +143,26 @@ for rr = 1:length(runNames)
     elevationConvolved(badIndices) = NaN;
     firstDerivativeElevationConvolved(badIndices) = NaN;
     
+    eyeDisplacementConvolved(badIndices) = NaN;
+    firstDerivativeEyeDiscplacementConvolved(badIndices) = NaN;
+    
+    blinksConvolved(badIndices) = NaN;
+    firstDerivativeBlinksConvolved(badIndices) = NaN;
+    
     % assemble regressor variable
     if strcmp(p.Results.whichRegressors, 'pupilDiameter')
         regressors = [pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
     elseif strcmp(p.Results.whichRegressors, 'eyePosition')
         regressors = [elevationConvolved; firstDerivativeElevationConvolved; azimuthConvolved; firstDerivativeAzimuthConvolved];
+        
+    elseif strcmp(p.Results.whichRegressors, 'eyeDisplacement')
+        regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved];
+    elseif strcmp(p.Results.whichRegressors, 'blinks')
+        regressors = [blinksConvolved; firstDerivativeBlinksConvolved];
     elseif strcmp(p.Results.whichRegressors, 'allRegressors')
-        regressors = [elevationConvolved; firstDerivativeElevationConvolved; azimuthConvolved; firstDerivativeAzimuthConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
+        %regressors = [elevationConvolved; firstDerivativeElevationConvolved; azimuthConvolved; firstDerivativeAzimuthConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
+        regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];
+
     end
     
     
