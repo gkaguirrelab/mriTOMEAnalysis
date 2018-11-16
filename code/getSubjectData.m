@@ -335,7 +335,7 @@ end
 
 %% Get the Benson gear output
 
-if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~exist(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_eccen.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_angle.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.nii.gz']))
+if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~exist(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_eccen.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_angle.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']))
     if (~exist(p.Results.anatDir,'dir'))
         mkdir(p.Results.anatDir);
     end
@@ -368,6 +368,8 @@ if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~ex
         elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_native.template_angle.nii.gz'])
             analysesWeWant{ii} = analyses{ii};
         elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_native.template_areas.nii.gz'])
+            analysesWeWant{ii} = analyses{ii};
+        elseif strcmp(analyses{ii}.file.name, [analyses{ii}.subject.code, '_aparc+aseg.nii.gz'])
             analysesWeWant{ii} = analyses{ii};
         end
     end
