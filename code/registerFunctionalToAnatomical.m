@@ -21,17 +21,21 @@ structuralName = p.Results.structuralName;
 
 %% Align functional and structural scan in native space of structural scan
 % run bash script to do the alignment
-system(['bash HCPbringFunctionalToStructural.sh ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
-
-% save out the first acquisition of the aligned functional scan to make
-% sure it is aligned like we think
-functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
-functionalScan_firstAq = functionalScan;
-functionalScan_firstAq.vol = functionalScan.vol(:,:,:,1);
-MRIwrite(functionalScan_firstAq, fullfile(functionalDir, [runName, '_native_firstAq.nii.gz']));
-
-if (p.Results.visualizeAlignment)
-    system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fsleyes ' '"', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
+if ~exist(fullfile(functionalDir, [runName, '_native.nii.gz']))
+    system(['bash HCPbringFunctionalToStructural.sh ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
+    
+    % save out the first acquisition of the aligned functional scan to make
+    % sure it is aligned like we think
+    functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+    functionalScan_firstAq = functionalScan;
+    functionalScan_firstAq.vol = functionalScan.vol(:,:,:,1);
+    MRIwrite(functionalScan_firstAq, fullfile(functionalDir, [runName, '_native_firstAq.nii.gz']));
+    
+    if (p.Results.visualizeAlignment)
+        system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fsleyes ' '"', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
+    end
+else
+    functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
 end
 
 end
