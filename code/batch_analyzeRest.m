@@ -30,7 +30,7 @@ analyses = analyses(~cellfun('isempty', analyses));
 
 numberOfSubjects = size(analyses,1);
 %% from each session, download the hcp-struct.zip
-for ss = 4:numberOfSubjects
+for ss = 26:numberOfSubjects
     
     subjectID = analyses{ss}.subject.code;
 
