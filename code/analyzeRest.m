@@ -72,6 +72,9 @@ end
 makeMaskFromRetino(eccen, areas, angles, 1, eccenRange, [0 180], savePath, 'saveName', 'V1Combined.nii.gz');
 [ masks.V1Combined ] = resample(fullfile(savePath, ['V1Combined.nii.gz']), targetFile, fullfile(savePath, ['V1Combined_downsampled.nii.gz']));
 
+% make white matter and ventricular masks
+aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
+[whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
 
 %% extract the time series from the mask
 for area = 1:length(areasList)
@@ -107,9 +110,16 @@ for area = 1:length(areasList)
     end
 
 end
-
+% extract time series from all of v1
 [ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMask( functionalScan, masks.V1Combined, 'whichCentralTendency', 'median');
+
+% extract time series from white matter and ventricles to be used as
+% nuisance regressors
+[ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
+[ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
 save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
+
+
 %% Clean time series from physio regressors
 
 physioRegressors = load(fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
@@ -118,6 +128,18 @@ motionTable = readtable((fullfile(p.Results.functionalDir, [runName, '_Movement_
 motionRegressors = table2array(motionTable(:,7:12));
 regressors = [physioRegressors.all, motionRegressors];
 
+% mean center these motion and physio regressors
+for rr = 1:size(regressors,2)
+    regressor = regressors(:,rr);
+    regressor = regressor - nanmean(regressor);
+    regressor = regressor ./ nanstd(regressor);
+    regressors(:,rr) = regressor;
+end
+
+% also add the white matter and ventricular time series
+regressors(:,end+1) = meanTimeSeries.whiteMatter;
+regressors(:,end+1) = meanTimeSeries.ventricles;
+    
 TR = functionalScan.tr; % in ms
 nFrames = functionalScan.nframes;
 
@@ -153,7 +175,7 @@ for area = 1:length(areasList)
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
             
-            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, regressorTimebase);
+            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, regressorTimebase, 'meanCenterRegressors', false);
             save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
 
             
