@@ -30,7 +30,7 @@ analyses = analyses(~cellfun('isempty', analyses));
 
 numberOfSubjects = size(analyses,1);
 %% from each session, download the hcp-struct.zip
-for ss = 26:numberOfSubjects
+for ss = 1:numberOfSubjects
     
     subjectID = analyses{ss}.subject.code;
 
@@ -66,6 +66,8 @@ for ss = 26:numberOfSubjects
     for rr = 1:length(runNames)
         
         runName = runNames{rr};
+        
+        fprintf('Now analyzing Subject %s, Run %s\n', subjectID, runName);
         
         try
         analyzeRest(subjectID, runName);
