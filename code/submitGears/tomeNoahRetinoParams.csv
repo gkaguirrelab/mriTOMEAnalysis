@@ -1,4 +1,4 @@
-projectName,tome,gearName,retinotopy-templates,rootSessionInputLabel,anatomical,includeFreeSurferLicenseFile,false,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
+projectName,tome,gearName,retinotopy-templates,rootSessionInputLabel,anatomical,includeFreeSurferLicenseFile,FALSE,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
 Inputs,anatomical,,,,,,,,,,
 DefaultLabel,T1w_acpc_dc_restore.nii.gz,,,,,,,,,,
 IsSessionFile,1,,,,,,,,,,
@@ -44,3 +44,4 @@ TOME_3039,TOME_3039/Session 1,,,,,,,,,,
 TOME_3040,TOME_3040/Session 1,,,,,,,,,,
 TOME_3042,TOME_3042/Session 1,,,,,,,,,,
 TOME_3043,TOME_3043/Session 1,,,,,,,,,,
+TOME_3044,TOME_3044/Session 2,,hcp-struct is in session 2,,,,,,,,

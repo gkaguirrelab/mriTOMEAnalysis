@@ -11,8 +11,18 @@ function submitHCPGears(paramsFileName)
 
 % Examples:
 %{
+    submitHCPGears('tomeHCPStructParams.csv');
+%}
+%{
     submitHCPGears('tomeNoahRetinoParams.csv');
 %}
+%{
+    submitHCPGears('tomeHCPFuncParams_Session1.csv');
+%}
+%{
+    submitHCPGears('tomeHCPFuncParams_Session2.csv');
+%}
+
 
 %% Load and parse the params table
 % This identifies the subjects and inputs to be processed
