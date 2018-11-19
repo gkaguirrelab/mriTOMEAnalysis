@@ -46,6 +46,7 @@ else
             tryAttempt = tryAttempt + 1;
             stillTrying = tryAttempt < 6;
         end
+    end
 end
 
 end
