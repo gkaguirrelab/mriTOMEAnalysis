@@ -1,12 +1,12 @@
 function analyzeEyeSignalsPerSubject(subjectID, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('whichRegressors','pupilDiameter', @ischar);
-p.addParameter('RMSEThreshold',2, @isnum);
+p.addParameter('RMSEThreshold',3, @isnum);
 
 p.parse(varargin{:});
 
 %% We know TOME_3005 to be a good subject in terms of pupillometry quality, so how does it look?
-potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, '*physioMotionCorrected.mat'));
+potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, '*physioMotionWMVCorrected.mat'));
 for rr = 1:length(potentialRuns)
     runNameFull = potentialRuns(rr).name;
     runNameSplit = strsplit(runNameFull, '.');
