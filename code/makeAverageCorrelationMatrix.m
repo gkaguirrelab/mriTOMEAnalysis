@@ -1,6 +1,10 @@
 function [ averageCorrelationMatrix ] = makeAverageCorrelationMatrix(varargin)
 
-potentialSubjects = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices'));
+potentialSubjects = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', 'TOME_3005'));
+subjects = {'TOME_3005', 'TOME_3035', 'TOME_3037', 'TOME_3020', 'TOME_3029', 'TOME_3042'};
+for ss = 1:length(subjects)
+    potentialSubjects(ss).name = subjects{ss};
+end
 
 for ss = 1:length(potentialSubjects)
     potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
