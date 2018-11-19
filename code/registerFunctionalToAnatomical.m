@@ -35,7 +35,17 @@ if ~exist(fullfile(functionalDir, [runName, '_native.nii.gz']))
         system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fsleyes ' '"', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
     end
 else
-    functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+    stillTrying = true; tryAttempt = 0;
+    while stillTrying
+        try
+            system(['touch -a "', fullfile(functionalDir, [runName, '_native.nii.gz']), '"']);
+            pause(tryAttempt*60);
+            functionalScan = MRIread(fullfile(functionalDir, [runName, '_native.nii.gz']));
+            stillTrying = false;
+        catch
+            tryAttempt = tryAttempt + 1;
+            stillTrying = tryAttempt < 6;
+        end
 end
 
 end
