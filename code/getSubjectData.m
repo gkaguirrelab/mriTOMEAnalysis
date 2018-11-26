@@ -9,8 +9,23 @@ p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'
 p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
 p.addParameter('pupilDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
 p.addParameter('pupilProcessingDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_processingPath')),  @isstring);
+p.addParameter('downloadOnly', 'all', @ischar);
 
 p.parse(varargin{:});
+
+if strcmp(p.Results.downloadOnly, 'all')
+    downloadPhysio = true;
+    downloadPupil = true;
+    downloadFunctional = true;
+    downloadStructural = true;
+    downloadBenson = true;
+elseif strcmp(p.Results.downloadOnly, 'pupil')
+    downloadPhysio = false;
+    downloadPupil = true;
+    downloadFunctional = false;
+    downloadStructural = false;
+    downloadBenson = false;
+end
 
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 
@@ -19,6 +34,7 @@ if (~exist(p.Results.dataDownloadDir,'dir'))
 end
 
 %% Get physio
+if (downloadPhysio)
 if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     fprintf('Downloading physio file.\n');
     
@@ -134,9 +150,11 @@ else
     fprintf('Physio file found. Skipping downloading.\n');
     
 end
+end
 
 %% Get pupil data
 % we want the timebase and the pupil file
+if (downloadPupil)
 if strcmp(runName(1), 't')
     splitRunName = strsplit(runName, 'run');
     runNumber = str2num(splitRunName{end});
@@ -209,8 +227,9 @@ copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
 
 
 
-
+end
 %% Get structural stuff first
+if (downloadStructural)
 destinationOfStructuralScan = fullfile(p.Results.anatDir, 'T1w_acpc_dc_restore.nii.gz');
 destinationOfRegistrationInfo = fullfile(p.Results.anatDir, 'standard2acpc_dc.nii.gz');
 
@@ -272,9 +291,10 @@ else
     fprintf('Structural scans found. Skipping downloading.\n');
     
 end
-
+end
 
 %% Get functional data
+if (downloadFunctional)
 destinationOfFunctionalScan = fullfile(p.Results.functionalDir, [runName, '_mni.nii.gz']);
 destinationOfMovementRegressors = fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt']);
 
@@ -332,9 +352,9 @@ if ~exist(destinationOfFunctionalScan) || ~exist(destinationOfMovementRegressors
 end
 
 
-
+end
 %% Get the Benson gear output
-
+if (downloadBenson)
 if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~exist(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_eccen.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_angle.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']))
     if (~exist(p.Results.anatDir,'dir'))
         mkdir(p.Results.anatDir);
@@ -396,7 +416,7 @@ if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~ex
         delete(fullfile(dataDownloadDir, file_name));
     end
 end
-
+end
 
 end
 
