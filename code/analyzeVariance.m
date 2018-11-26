@@ -1,4 +1,4 @@
-function analyzeVariance(subjectList)
+function [meanRSquared, meanRSquaredShuffled] = analyzeVariance(subjectList)
 
 if isempty(subjectList)
     subjectList = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TOME_3007', 'TOME_3008', 'TOME_3009', 'TOME_3011', 'TOME_3012', 'TOME_3013', 'TOME_3014', 'TOME_3015', 'TOME_3016', 'TOME_3017', 'TOME_3018', 'TOME_3019', 'TOME_3020', 'TOME_3021', 'TOME_3022'};
@@ -185,6 +185,7 @@ for rr = 1:length(runListPooled)
     
 end
 
+meanRSquared = mean(rSquaredPooled);
 
 %% Now shuffle ordering of pupil data, so we randomly pair a BOLD run with a pupil run
 % See strength of variance explained after many iterations
@@ -349,5 +350,5 @@ for ii = 1:nIterations
     end
     rSquaredShuffled = [rSquaredShuffled, mean(rSquaredPooled)];
 end
-
+meanRSquaredShuffled = mean(rSquaredShuffled);
 end
