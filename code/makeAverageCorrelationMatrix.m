@@ -1,7 +1,10 @@
 function [ averageCorrelationMatrix ] = makeAverageCorrelationMatrix(varargin)
 
-potentialSubjects = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', 'TOME_3005'));
-subjects = {'TOME_3005', 'TOME_3035', 'TOME_3037', 'TOME_3020', 'TOME_3029', 'TOME_3042'};
+%potentialSubjects = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', 'TOME_3005'));
+subjects = {'TOME_3005', 'TOME_3035', 'TOME_3037', 'TOME_3020', 'TOME_3029', 'TOME_3042', 'TOME_3003', 'TOME_3007', 'TOME_3036', 'TOME_3031', 'TOME_3030', 'TOME_3032', 'TOME_3038', 'TOME_3040',' TOME_3039', 'TOME_3034'};
+subjects = {'TOME_3004'};
+subjects = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TOME_3007', 'TOME_3008', 'TOME_3009', 'TOME_3011', 'TOME_3012', 'TOME_3013', 'TOME_3014', 'TOME_3015', 'TOME_3016', 'TOME_3017', 'TOME_3018', 'TOME_3019', 'TOME_3020', 'TOME_3021', 'TOME_3022'};
+
 for ss = 1:length(subjects)
     potentialSubjects(ss).name = subjects{ss};
 end
@@ -9,18 +12,18 @@ end
 for ss = 1:length(potentialSubjects)
     potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
     subjectID = potentialSubjects(ss).name;
-    if ~strcmp(subjectID, 'TOME_3003')
-        for rr = 1:length(potentialRuns)
-            if ~contains(potentialRuns(rr).name, 'postEye')
-                runNameFull = potentialRuns(rr).name;
-                runNameSplit = strsplit(runNameFull, '.');
-                runName = runNameSplit{1};
-                correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
-                pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix));
-                pooledCorrelationMatrices_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix) - log(1-correlationMatrix.combinedCorrelationMatrix));
-            end
+    
+    for rr = 1:length(potentialRuns)
+        if ~contains(potentialRuns(rr).name, 'postEye')
+            runNameFull = potentialRuns(rr).name;
+            runNameSplit = strsplit(runNameFull, '.');
+            runName = runNameSplit{1};
+            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
+            pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix));
+            pooledCorrelationMatrices_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix) - log(1-correlationMatrix.combinedCorrelationMatrix));
         end
     end
+    
 end
 
 pooledMatrices = zeros(6,6);
@@ -35,7 +38,7 @@ for ss = 1:length(subjectIDs)
 end
 
 meanMatrix = pooledMatrices./totalRuns;
-        
+
 plotFig = figure;
 subplot(1,2,1);
 imagesc(meanMatrix)
@@ -67,7 +70,7 @@ for ss = 1:length(subjectIDs)
 end
 
 meanMatrix = pooledMatrices./totalRuns;
-        
+
 subplot(1,2,2);
 imagesc(meanMatrix)
 
@@ -84,7 +87,7 @@ title('Between Hemispheres')
 colorbar
 colors = redblue(100);
 colormap(colors)
-caxis([-1.25 1.25])      
+caxis([-1.25 1.25])
 pbaspect([1 1 1])
 
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
@@ -94,40 +97,40 @@ print(plotFig, fullfile(savePath,'averagedCorrelationMatrices'), '-dpdf', '-fill
 
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
-function c = redblue(m)
-%REDBLUE    Shades of red and blue color map
-%   REDBLUE(M), is an M-by-3 matrix that defines a colormap.
-%   The colors begin with bright blue, range through shades of
-%   blue to white, and then through shades of red to bright red.
-%   REDBLUE, by itself, is the same length as the current figure's
-%   colormap. If no figure exists, MATLAB creates one.
-%
-%   For example, to reset the colormap of the current figure:
-%
-%             colormap(redblue)
-%
-%   See also HSV, GRAY, HOT, BONE, COPPER, PINK, FLAG, 
-%   COLORMAP, RGBPLOT.
-%   Adam Auton, 9th October 2009
-if nargin < 1, m = size(get(gcf,'colormap'),1); end
-if (mod(m,2) == 0)
-    % From [0 0 1] to [1 1 1], then [1 1 1] to [1 0 0];
-    m1 = m*0.5;
-    r = (0:m1-1)'/max(m1-1,1);
-    g = r;
-    r = [r; ones(m1,1)];
-    g = [g; flipud(g)];
-    b = flipud(r);
-else
-    % From [0 0 1] to [1 1 1] to [1 0 0];
-    m1 = floor(m*0.5);
-    r = (0:m1-1)'/max(m1,1);
-    g = r;
-    r = [r; ones(m1+1,1)];
-    g = [g; 1; flipud(g)];
-    b = flipud(r);
-end
-c = [r g b]; 
-end
+    function c = redblue(m)
+        %REDBLUE    Shades of red and blue color map
+        %   REDBLUE(M), is an M-by-3 matrix that defines a colormap.
+        %   The colors begin with bright blue, range through shades of
+        %   blue to white, and then through shades of red to bright red.
+        %   REDBLUE, by itself, is the same length as the current figure's
+        %   colormap. If no figure exists, MATLAB creates one.
+        %
+        %   For example, to reset the colormap of the current figure:
+        %
+        %             colormap(redblue)
+        %
+        %   See also HSV, GRAY, HOT, BONE, COPPER, PINK, FLAG,
+        %   COLORMAP, RGBPLOT.
+        %   Adam Auton, 9th October 2009
+        if nargin < 1, m = size(get(gcf,'colormap'),1); end
+        if (mod(m,2) == 0)
+            % From [0 0 1] to [1 1 1], then [1 1 1] to [1 0 0];
+            m1 = m*0.5;
+            r = (0:m1-1)'/max(m1-1,1);
+            g = r;
+            r = [r; ones(m1,1)];
+            g = [g; flipud(g)];
+            b = flipud(r);
+        else
+            % From [0 0 1] to [1 1 1] to [1 0 0];
+            m1 = floor(m*0.5);
+            r = (0:m1-1)'/max(m1,1);
+            g = r;
+            r = [r; ones(m1+1,1)];
+            g = [g; 1; flipud(g)];
+            b = flipud(r);
+        end
+        c = [r g b];
+    end
 
 end
