@@ -228,7 +228,7 @@ for ii = 1:nIterations
         eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
         
         % get blinks
-        controlFile = fopen(fullfile(pupilDir, [runName, '_controlFile.csv']));
+        controlFile = fopen(fullfile(pupilDir, [runNameShuffled, '_controlFile.csv']));
         
         % import values in a cell with textscan
         instructionCell = textscan(controlFile,'%f%s%[^\n]','Delimiter',',');
