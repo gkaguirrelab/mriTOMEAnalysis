@@ -1,6 +1,8 @@
 function [convolvedRegressor] = convolveRegressorWithHRF(regressorTimeSeries, regressorTimebase)
 
-startingRegressorValue = regressorTimeSeries(1);
+nonNaNIndices = find(~isnan(regressorTimeSeries));
+
+startingRegressorValue = regressorTimeSeries(nonNaNIndices(1));
 responseStruct.values = regressorTimeSeries' - startingRegressorValue;
 responseStruct.timebase = regressorTimebase;
 
