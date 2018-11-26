@@ -190,7 +190,7 @@ meanRSquared = mean(rSquaredPooled);
 %% Now shuffle ordering of pupil data, so we randomly pair a BOLD run with a pupil run
 % See strength of variance explained after many iterations
 
-nIterations = 100;
+nIterations = 1000;
 rSquaredShuffled = [];
 for ii = 1:nIterations
     rSquaredPooled = [];
