@@ -77,6 +77,7 @@ for rr = 1:length(runListPooled)
     end
     blinks = zeros(1,length(pupilTimebase));
     blinks(blinkFrames) = 1;
+    fclose(controlFile);
     
     % interpolate pupil diameter
     theNans = [];
@@ -241,6 +242,7 @@ for ii = 1:nIterations
         end
         blinks = zeros(1,length(pupilTimebase));
         blinks(blinkFrames) = 1;
+        fclose(controlFile);
         
         % interpolate pupil diameter
         theNans = [];
