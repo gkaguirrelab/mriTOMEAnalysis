@@ -510,4 +510,14 @@ for ii = 1:nIterations
     rSquaredShuffledDistribution = [rSquaredShuffledDistribution, mean(rSquaredPooled)];
 end
 meanRSquaredShuffled = mean(rSquaredShuffledDistribution);
+
+%% Do some summary plotting
+plotFig = figure;
+hold on
+histogram(rSquaredShuffledDistribution*100)
+histogram(rSquaredDistribution*100)
+xlabel('Percentage of Variance Explained')
+ylabel('Frequency')
+legend('Shuffled', 'Veridical')
+xlabel('Percentage of BOLD Signal Variance Explained')
 end
