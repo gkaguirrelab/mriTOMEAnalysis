@@ -1,10 +1,10 @@
 function [ averageCorrelationMatrix ] = makeAverageCorrelationMatrix(varargin)
 
-%potentialSubjects = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', 'TOME_3005'));
-subjects = {'TOME_3005', 'TOME_3035', 'TOME_3037', 'TOME_3020', 'TOME_3029', 'TOME_3042', 'TOME_3003', 'TOME_3007', 'TOME_3036', 'TOME_3031', 'TOME_3030', 'TOME_3032', 'TOME_3038', 'TOME_3040',' TOME_3039', 'TOME_3034'};
-subjects = {'TOME_3004'};
+%% Define relevant subjects
 subjects = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TOME_3007', 'TOME_3008', 'TOME_3009', 'TOME_3011', 'TOME_3012', 'TOME_3013', 'TOME_3014', 'TOME_3015', 'TOME_3016', 'TOME_3017', 'TOME_3018', 'TOME_3019', 'TOME_3020', 'TOME_3021', 'TOME_3022'};
 
+
+%% make average correlation matrix prior to removal of eye signals
 for ss = 1:length(subjects)
     potentialSubjects(ss).name = subjects{ss};
 end
@@ -37,11 +37,11 @@ for ss = 1:length(subjectIDs)
     end
 end
 
-meanMatrix = pooledMatrices./totalRuns;
+withinHemisphere_preEye_meanMatrix = pooledMatrices./totalRuns;
 
 plotFig = figure;
 subplot(1,2,1);
-imagesc(meanMatrix)
+im = imagesc(withinHemisphere_preEye_meanMatrix)
 
 % pretty it up
 rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
@@ -56,6 +56,20 @@ colors = redblue(100);
 colormap(colors)
 caxis([-1.25 1.25])
 pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
 
 
 pooledMatrices = zeros(6,6);
@@ -69,10 +83,10 @@ for ss = 1:length(subjectIDs)
     end
 end
 
-meanMatrix = pooledMatrices./totalRuns;
+betweenHemisphere_preEye_meanMatrix = pooledMatrices./totalRuns;
 
 subplot(1,2,2);
-imagesc(meanMatrix)
+imagesc(betweenHemisphere_preEye_meanMatrix)
 
 % pretty it up
 rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
@@ -95,6 +109,168 @@ h = gcf;
 set(h,'PaperOrientation','landscape');
 print(plotFig, fullfile(savePath,'averagedCorrelationMatrices'), '-dpdf', '-fillpage')
 
+%% make average correlation matrix for after removal of eye signals
+for ss = 1:length(subjects)
+    potentialSubjects(ss).name = subjects{ss};
+end
+
+for ss = 1:length(potentialSubjects)
+    potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
+    subjectID = potentialSubjects(ss).name;
+    
+    for rr = 1:length(potentialRuns)
+        if contains(potentialRuns(rr).name, 'postEye')
+            runNameFull = potentialRuns(rr).name;
+            runNameSplit = strsplit(runNameFull, '.');
+            runName = runNameSplit{1};
+            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
+            pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix_postEye) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix_postEye));
+            pooledCorrelationMatrices_postEye_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix_postEye) - log(1-correlationMatrix.combinedCorrelationMatrix_postEye));
+        end
+    end
+    
+end
+
+pooledMatrices = zeros(6,6);
+subjectIDs = fieldnames(pooledCorrelationMatrices_postEye_combined);
+totalRuns = 0;
+for ss = 1:length(subjectIDs)
+    runNames = fieldnames(pooledCorrelationMatrices_postEye_combined.(subjectIDs{ss}));
+    for rr = 1:length(runNames)
+        pooledMatrices = pooledMatrices + pooledCorrelationMatrices_postEye_combined.(subjectIDs{ss}).(runNames{rr});
+        totalRuns = totalRuns + 1;
+    end
+end
+
+withinHemisphere_postEye_meanMatrix = pooledMatrices./totalRuns;
+
+plotFig = figure;
+subplot(1,2,1);
+imagesc(withinHemisphere_postEye_meanMatrix)
+
+% pretty it up
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+title('Within Hemisphere')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
+
+pooledMatrices = zeros(6,6);
+subjectIDs = fieldnames(pooledCorrelationMatrices_postEye_acrossHemisphere);
+totalRuns = 0;
+for ss = 1:length(subjectIDs)
+    runNames = fieldnames(pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectIDs{ss}));
+    for rr = 1:length(runNames)
+        pooledMatrices = pooledMatrices + pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectIDs{ss}).(runNames{rr});
+        totalRuns = totalRuns + 1;
+    end
+end
+
+betweenHemisphere_postEye_meanMatrix = pooledMatrices./totalRuns;
+
+subplot(1,2,2);
+imagesc(betweenHemisphere_postEye_meanMatrix)
+
+% pretty it up
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+xlabel('Left Hemisphere')
+ylabel('Right Hemisphere')
+title('Between Hemispheres')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
+h = gcf;
+set(h,'PaperOrientation','landscape');
+print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_eyeSignalsRemoved'), '-dpdf', '-fillpage')
+
+%% make difference correlation matrix
+withinHemisphereDifference = withinHemisphere_postEye_meanMatrix - withinHemisphere_preEye_meanMatrix;
+betweenHemisphereDifference = betweenHemisphere_postEye_meanMatrix - betweenHemisphere_preEye_meanMatrix;
+
+plotFig = figure;
+subplot(1,2,1);
+imagesc(withinHemisphereDifference)
+
+% pretty it up
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+title('Within Hemisphere Difference')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
+subplot(1,2,2);
+imagesc(betweenHemisphereDifference)
+
+% pretty it up
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+xlabel('Left Hemisphere')
+ylabel('Right Hemisphere')
+title('Between Hemispheres Difference')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
+h = gcf;
+set(h,'PaperOrientation','landscape');
+print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_difference'), '-dpdf', '-fillpage')
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
     function c = redblue(m)
