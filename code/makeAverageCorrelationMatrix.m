@@ -1,4 +1,4 @@
-function [ averageCorrelationMatrix ] = makeAverageCorrelationMatrix(varargin)
+function [ preEyeCorrelationsByType, postEyeCorrelationsByType ] = makeAverageCorrelationMatrix(varargin)
 
 %% Define relevant subjects
 subjects = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TOME_3007', 'TOME_3008', 'TOME_3009', 'TOME_3011', 'TOME_3012', 'TOME_3013', 'TOME_3014', 'TOME_3015', 'TOME_3016', 'TOME_3017', 'TOME_3018', 'TOME_3019', 'TOME_3020', 'TOME_3021', 'TOME_3022'};
@@ -8,6 +8,19 @@ subjects = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TO
 for ss = 1:length(subjects)
     potentialSubjects(ss).name = subjects{ss};
 end
+
+homotopicIndices_within = [6,11,16,21,26,31];
+hierarchicalIndices_within = [2,3,7,9,13,14,24,23,30,28,34,35];
+backgroundIndices_within = [5,4,12,10,18,17,20,19,27,25,33,32];
+
+homotopicIndices_between = [6, 11, 16, 21, 26, 31, 1, 8, 15, 22, 29, 36];
+hierarchicalIndices_between = [];
+backgroundIndices_between = [5,4,12,10,18,17,20,19,27,25,33,32];
+
+
+homotopicCorrelations_preEye = [];
+hierarchicalCorrelations_preEye = [];
+backgroundCorrelations_preEye = [];
 
 for ss = 1:length(potentialSubjects)
     potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
@@ -19,12 +32,27 @@ for ss = 1:length(potentialSubjects)
             runNameSplit = strsplit(runNameFull, '.');
             runName = runNameSplit{1};
             correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
+            % between hemispheres
             pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix));
+            homotopicCorrelations_preEye = [homotopicCorrelations_preEye, pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName)(homotopicIndices_between)];
+            hierarchicalCorrelations_preEye = [hierarchicalCorrelations_preEye, pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName)(hierarchicalIndices_between)];
+            backgroundCorrelations_preEye = [backgroundCorrelations_preEye, pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName)(backgroundIndices_between)];
+            
+            % within hemisphere
             pooledCorrelationMatrices_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix) - log(1-correlationMatrix.combinedCorrelationMatrix));
+            homotopicCorrelations_preEye = [homotopicCorrelations_preEye, pooledCorrelationMatrices_combined.(subjectID).(runName)(homotopicIndices_within)];
+            hierarchicalCorrelations_preEye = [hierarchicalCorrelations_preEye, pooledCorrelationMatrices_combined.(subjectID).(runName)(hierarchicalIndices_within)];
+            backgroundCorrelations_preEye = [backgroundCorrelations_preEye, pooledCorrelationMatrices_combined.(subjectID).(runName)(backgroundIndices_within)];
+
+            
         end
     end
     
 end
+
+preEyeCorrelationsByType.hierarchical = hierarchicalCorrelations_preEye;
+preEyeCorrelationsByType.homotopic = homotopicCorrelations_preEye;
+preEyeCorrelationsByType.background = backgroundCorrelations_preEye;
 
 pooledMatrices = zeros(6,6);
 subjectIDs = fieldnames(pooledCorrelationMatrices_combined);
@@ -114,6 +142,11 @@ for ss = 1:length(subjects)
     potentialSubjects(ss).name = subjects{ss};
 end
 
+
+homotopicCorrelations_postEye = [];
+hierarchicalCorrelations_postEye = [];
+backgroundCorrelations_postEye = [];
+
 for ss = 1:length(potentialSubjects)
     potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
     subjectID = potentialSubjects(ss).name;
@@ -125,11 +158,22 @@ for ss = 1:length(potentialSubjects)
             runName = runNameSplit{1};
             correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
             pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix_postEye) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix_postEye));
+            homotopicCorrelations_postEye = [homotopicCorrelations_postEye, pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName)(homotopicIndices_between)];
+            hierarchicalCorrelations_postEye = [hierarchicalCorrelations_postEye, pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName)(hierarchicalIndices_between)];
+            backgroundCorrelations_postEye = [backgroundCorrelations_postEye, pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName)(backgroundIndices_between)];
+            
             pooledCorrelationMatrices_postEye_combined.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.combinedCorrelationMatrix_postEye) - log(1-correlationMatrix.combinedCorrelationMatrix_postEye));
+            homotopicCorrelations_postEye = [homotopicCorrelations_postEye, pooledCorrelationMatrices_postEye_combined.(subjectID).(runName)(homotopicIndices_within)];
+            hierarchicalCorrelations_postEye = [hierarchicalCorrelations_postEye, pooledCorrelationMatrices_postEye_combined.(subjectID).(runName)(hierarchicalIndices_within)];
+            backgroundCorrelations_postEye = [backgroundCorrelations_postEye, pooledCorrelationMatrices_postEye_combined.(subjectID).(runName)(backgroundIndices_within)];
         end
     end
     
 end
+
+postEyeCorrelationsByType.hierarchical = hierarchicalCorrelations_postEye;
+postEyeCorrelationsByType.homotopic = homotopicCorrelations_postEye;
+postEyeCorrelationsByType.background = backgroundCorrelations_postEye;
 
 pooledMatrices = zeros(6,6);
 subjectIDs = fieldnames(pooledCorrelationMatrices_postEye_combined);
