@@ -316,6 +316,47 @@ h = gcf;
 set(h,'PaperOrientation','landscape');
 print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_difference'), '-dpdf', '-fillpage')
 
+%% Plot some information about correlation by connection type
+connectionTypes = {'hierarchical', 'homotopic', 'background'};
+
+% first bootstrap to get confidence intervals
+nBootstraps = 1000;
+for cc = 1:length(connectionTypes)
+    bootstrapResultsPreEye.(connectionTypes{cc}) = [];
+    for bb = 1:nBootstraps
+        bootstrapIndices = datasample(1:length(preEyeCorrelationsByType.(connectionTypes{cc})), length(preEyeCorrelationsByType.(connectionTypes{cc})));
+        bootstrapResultsPreEye.(connectionTypes{cc}) = [bootstrapResultsPreEye.(connectionTypes{cc}), mean(preEyeCorrelationsByType.(connectionTypes{cc})(bootstrapIndices))];
+    end
+    SEMPreEye.(connectionTypes{cc}) = std(bootstrapResultsPreEye.(connectionTypes{cc}));
+    meanPreEye.(connectionTypes{cc}) = mean(bootstrapResultsPreEye.(connectionTypes{cc}));
+end
+
+for cc = 1:length(connectionTypes)
+    bootstrapResultsPostEye.(connectionTypes{cc}) = [];
+    for bb = 1:nBootstraps
+        bootstrapIndices = datasample(1:length(postEyeCorrelationsByType.(connectionTypes{cc})), length(postEyeCorrelationsByType.(connectionTypes{cc})));
+        bootstrapResultsPostEye.(connectionTypes{cc}) = [bootstrapResultsPostEye.(connectionTypes{cc}), mean(postEyeCorrelationsByType.(connectionTypes{cc})(bootstrapIndices))];
+    end
+    SEMPostEye.(connectionTypes{cc}) = std(bootstrapResultsPostEye.(connectionTypes{cc}));
+    meanPostEye.(connectionTypes{cc}) = mean(bootstrapResultsPostEye.(connectionTypes{cc}));
+end
+
+plotFig = figure;
+subplot(1,2,1);
+barwitherr([SEMPreEye.hierarchical, SEMPreEye.homotopic, SEMPreEye.background], [meanPreEye.hierarchical, meanPreEye.homotopic, meanPreEye.background]);
+title('Pre-Eye Signal Removal')
+ylabel('Regional Correlation, +/- SEM')
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45);
+
+subplot(1,2,2);
+barwitherr([SEMPostEye.hierarchical, SEMPostEye.homotopic, SEMPostEye.background], [meanPostEye.hierarchical, meanPostEye.homotopic, meanPostEye.background]);
+title('Post-Eye Signal Removal')
+ylabel('Regional Correlation, +/- SEM')
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45);
+    
+
 %% Local function just to make colormap for easier comparison to Butt et al 2015
     function c = redblue(m)
         %REDBLUE    Shades of red and blue color map
