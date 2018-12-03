@@ -69,7 +69,7 @@ withinHemisphere_preEye_meanMatrix = pooledMatrices./totalRuns;
 
 plotFig = figure;
 subplot(1,2,1);
-im = imagesc(withinHemisphere_preEye_meanMatrix)
+im = imagesc(withinHemisphere_preEye_meanMatrix);
 
 % pretty it up
 rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
@@ -276,7 +276,7 @@ title('Within Hemisphere Difference')
 colorbar
 colors = redblue(100);
 colormap(colors)
-caxis([-1.25 1.25])
+caxis([-0.25 0.25])
 pbaspect([1 1 1])
 hold on;
 rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
@@ -308,7 +308,7 @@ title('Between Hemispheres Difference')
 colorbar
 colors = redblue(100);
 colormap(colors)
-caxis([-1.25 1.25])
+caxis([-0.25 0.25])
 pbaspect([1 1 1])
 
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
@@ -320,7 +320,7 @@ print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_difference'), '-dp
 connectionTypes = {'hierarchical', 'homotopic', 'background'};
 
 % first bootstrap to get confidence intervals
-nBootstraps = 1000;
+nBootstraps = 10000;
 for cc = 1:length(connectionTypes)
     bootstrapResultsPreEye.(connectionTypes{cc}) = [];
     for bb = 1:nBootstraps
@@ -331,6 +331,16 @@ for cc = 1:length(connectionTypes)
     meanPreEye.(connectionTypes{cc}) = mean(bootstrapResultsPreEye.(connectionTypes{cc}));
 end
 
+bootstrapResultsPreEye.homotopicHierarchicalCombined = [];
+for bb = 1:nBootstraps
+    bootstrapIndicesHomotopic = datasample(1:length(preEyeCorrelationsByType.homotopic), length(preEyeCorrelationsByType.homotopic));
+    bootstrapIndicesHierarchical = datasample(1:length(preEyeCorrelationsByType.hierarchical), length(preEyeCorrelationsByType.hierarchical));
+    bootstrapResultsPreEye.homotopicHierarchicalCombined = [bootstrapResultsPreEye.homotopicHierarchicalCombined, mean([preEyeCorrelationsByType.homotopic(bootstrapIndicesHomotopic), preEyeCorrelationsByType.hierarchical(bootstrapIndicesHierarchical)])];
+end
+SEMPreEye.homotopicHierarchicalCombined = std(bootstrapResultsPreEye.homotopicHierarchicalCombined);
+meanPreEye.homotopicHierarchicalCombined = mean(bootstrapResultsPreEye.homotopicHierarchicalCombined);
+
+
 for cc = 1:length(connectionTypes)
     bootstrapResultsPostEye.(connectionTypes{cc}) = [];
     for bb = 1:nBootstraps
@@ -340,6 +350,16 @@ for cc = 1:length(connectionTypes)
     SEMPostEye.(connectionTypes{cc}) = std(bootstrapResultsPostEye.(connectionTypes{cc}));
     meanPostEye.(connectionTypes{cc}) = mean(bootstrapResultsPostEye.(connectionTypes{cc}));
 end
+
+bootstrapResultsPostEye.homotopicHierarchicalCombined = [];
+for bb = 1:nBootstraps
+    bootstrapIndicesHomotopic = datasample(1:length(postEyeCorrelationsByType.homotopic), length(postEyeCorrelationsByType.homotopic));
+    bootstrapIndicesHierarchical = datasample(1:length(postEyeCorrelationsByType.hierarchical), length(postEyeCorrelationsByType.hierarchical));
+    bootstrapResultsPostEye.homotopicHierarchicalCombined = [bootstrapResultsPostEye.homotopicHierarchicalCombined, mean([postEyeCorrelationsByType.homotopic(bootstrapIndicesHomotopic), postEyeCorrelationsByType.hierarchical(bootstrapIndicesHierarchical)])];
+end
+SEMPostEye.homotopicHierarchicalCombined = std(bootstrapResultsPostEye.homotopicHierarchicalCombined);
+meanPostEye.homotopicHierarchicalCombined = mean(bootstrapResultsPostEye.homotopicHierarchicalCombined);
+
 
 plotFig = figure;
 subplot(1,2,1);
@@ -355,6 +375,28 @@ title('Post-Eye Signal Removal')
 ylabel('Regional Correlation, +/- SEM')
 xticklabels({'Hierarhical', 'Homotopic', 'Background'})
 xtickangle(45);
+print(plotFig, fullfile(savePath,'meanCorrelationByConnectionType'), '-dpdf', '-fillpage')
+
+plotFig = figure;
+subplot(1,2,1);
+barwitherr([SEMPreEye.homotopicHierarchicalCombined, SEMPreEye.background], [meanPreEye.homotopicHierarchicalCombined, meanPreEye.background]);
+title('Before Eye Signal Removal')
+ylabel('Regional Correlation (z''), +/- SEM');
+xticklabels({'Hierarchical and Homotopic', 'Background'})
+xtickangle(45)
+pbaspect([1 1 1])
+
+
+subplot(1,2,2);
+barwitherr([SEMPostEye.homotopicHierarchicalCombined, SEMPostEye.background], [meanPostEye.homotopicHierarchicalCombined, meanPostEye.background]);
+title('After Eye Signal Removal')
+ylabel('Regional Correlation (z''), +/- SEM');
+xticklabels({'Hierarchical and Homotopic', 'Background'})
+xtickangle(45)
+pbaspect([1 1 1])
+
+print(plotFig, fullfile(savePath,'meanCorrelatione_hierarchicalHomotopicCombined'), '-dpdf', '-fillpage')
+
     
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
