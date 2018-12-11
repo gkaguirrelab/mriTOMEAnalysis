@@ -137,9 +137,18 @@ for rr = 1:length(runListPooled)
 %         eyeDisplacement = x;
 %     end
     eyeDisplacement = [0; eyeDisplacement];
+        
+%     % remove bad data points on the basis of RMSE
+    badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > 3);
+    
+    pupilDiameter(badIndices) = NaN;
+    azimuth(badIndices) = NaN;
+    elevation(badIndices) = NaN;
+    eyeDisplacement(badIndices) = NaN;
+    %blinks(badIndices) = NaN;
+    
     
     % convolve regressors
-    pupilDiameterConvolved = [];
     [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
     [elevationConvolved] = convolveRegressorWithHRF(elevation, pupilTimebase);
     [azimuthConvolved] = convolveRegressorWithHRF(azimuth, pupilTimebase);
@@ -166,35 +175,14 @@ for rr = 1:length(runListPooled)
     
     
     
-    
-%     % remove bad data points on the basis of RMSE
-%     badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > 3);
-%     % combine these bad data points with original NaNs
-%     badIndices = [badIndices; NaNIndices];
-%     
-%     pupilDiameterConvolved(badIndices) = NaN;
-%     firstDerivativePupilDiameterConvolved(badIndices) = NaN;
-%     
-%     azimuthConvolved(badIndices) = NaN;
-%     firstDerivativeAzimuthConvolved(badIndices) = NaN;
-%     
-%     elevationConvolved(badIndices) = NaN;
-%     firstDerivativeElevationConvolved(badIndices) = NaN;
-%     
-%     eyeDisplacementConvolved(badIndices) = NaN;
-%     firstDerivativeEyeDiscplacementConvolved(badIndices) = NaN;
-%     
-%     blinksConvolved(badIndices) = NaN;
-%     firstDerivativeBlinksConvolved(badIndices) = NaN;
+
     
     
-    regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved];
+    regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved];    
     
     
     
-    
-    
-    [ ~, stats ] = cleanTimeSeries( cleanedTimeSeries, regressors', pupilTimebase,);
+    [ ~, stats ] = cleanTimeSeries( cleanedTimeSeries, regressors', pupilTimebase);
     rSquaredPooled = [rSquaredPooled, stats.rSquared];
     
 end
