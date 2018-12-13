@@ -25,13 +25,17 @@ thePacket.stimulus.timebase = regressorsTimebase;
 thePacket.response.timebase = 0:p.Results.TR:totalTime-p.Results.TR;
 
 % mean center the regressors, if asked
+nRegressors = size(regressors,2);
+regressorsOriginal = regressors;
 if p.Results.meanCenterRegressors
-    regressors = regressors - nanmean(regressors);
-    regressors = regressors ./ nanstd(regressors);
+    for nn = 1:nRegressors
+        regressors(:,nn) = regressors(:,nn) - nanmean(regressors(:,nn));
+        regressors(:,nn) = regressors(:,nn) ./ nanstd(regressors(:,nn));
+        
+    end
 end
 
 % add the regressors to the 
-nRegressors = size(regressors,2);
 for nn = 1:nRegressors
     
     thePacket.stimulus.values(end+1,:) = regressors(:,nn)';

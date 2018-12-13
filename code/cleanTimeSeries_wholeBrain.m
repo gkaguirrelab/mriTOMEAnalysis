@@ -3,6 +3,7 @@ function [ cleanedFunctionalScan, betaVolume, rSquaredVolume, pearsonRVolume ] =
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('meanCenterRegressors', true, @islogical);
 p.addParameter('meanCenterVoxels', true, @islogical);
+p.addParameter('zeroNansInRegressors', true, @islogical);
 p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
@@ -25,8 +26,14 @@ thePacket.response.timebase = 0:functionalScan.tr:totalTime-functionalScan.tr;
 
 % mean center the regressors, if asked
 if p.Results.meanCenterRegressors
-    regressors = regressors - nanmean(regressors);
-    regressors = regressors ./ nanstd(regressors);
+    for nn = 1:nRegressors
+        regressors(:,nn) = regressors(:,nn) - nanmean(regressors(:,nn));
+        regressors(:,nn) = regressors(:,nn) ./ nanstd(regressors(:,nn));
+        if (p.Results.zeroNansInRegressors)
+            nanIndices = find(isnan(regressors(:,nn)));
+            regressors(nanIndices,nn) = 0;
+        end
+    end
 end
 
 % add the regressors to the
@@ -86,7 +93,8 @@ for ii = 1:totalIndices
         end
         % TFE linear regression here
         [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
-            'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
+            'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
+%            'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
         
         % remove signal related to regressors to yield clean time series
         cleanedVoxelTimeSeries = thePacket.response.values - modelResponseStruct.values;
