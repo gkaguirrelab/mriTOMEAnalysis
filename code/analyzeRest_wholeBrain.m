@@ -45,6 +45,8 @@ for rr = 1:size(regressors,2)
     regressor = regressors(:,rr);
     regressor = regressor - nanmean(regressor);
     regressor = regressor ./ nanstd(regressor);
+    nanIndices = find(isnan(regressor));
+    regressor(nanIndices) = 0;
     regressors(:,rr) = regressor;
 end
 
