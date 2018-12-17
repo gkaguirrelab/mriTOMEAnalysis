@@ -1,4 +1,4 @@
-function [ meanTimeSeries, timeSeriesPerVoxel ] = extractTimeSeriesFromMask( functionalScan, mask, varargin )
+function [ meanTimeSeries, timeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, mask, varargin )
 %% Input Parser
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('meanCenter', true, @islogical);
@@ -34,10 +34,8 @@ for xx = 1:nXIndices
     for yy = 1:nYIndices
         for zz = 1:nZIndices
             if ~isempty(find([accumulatedTimeSeries_withZeros(xx,yy,zz,:)] ~= 0))
-                for tr = 1:nTRs
-                    % stash voxels that hvae not been masked out
-                    timeSeriesPerVoxel(nNonZeroVoxel, tr) = accumulatedTimeSeries_withZeros(xx,yy,zz,tr);
-                end
+                timeSeriesPerVoxel(nNonZeroVoxel,:) = functionalScan.vol(xx,yy,zz,:);
+                timeSeriesPerVoxel(nNonZeroVoxel, :) = reshape(timeSeriesPerVoxel(nNonZeroVoxel,:),1,nTRs);
                 voxelIndices{nNonZeroVoxel} = [xx, yy, zz];
                 nNonZeroVoxel = nNonZeroVoxel + 1;
             end
@@ -46,11 +44,12 @@ for xx = 1:nXIndices
 end
 
 % mean center each row
-for rr = 1:size(timeSeriesPerVoxel)
-    
-    runData = timeSeriesPerVoxel(rr,:);
-    
-    if p.Results.meanCenter
+if p.Results.meanCenter
+    for rr = 1:size(timeSeriesPerVoxel)
+        
+        runData = timeSeriesPerVoxel(rr,:);
+        
+        
         % convert to percent signal change relative to the mean
         voxelMeanVec = mean(runData,2);
         PSC = 100*((runData - voxelMeanVec)./voxelMeanVec);
