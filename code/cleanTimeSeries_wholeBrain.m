@@ -25,6 +25,7 @@ thePacket.stimulus.timebase = regressorsTimebase;
 thePacket.response.timebase = 0:functionalScan.tr:totalTime-functionalScan.tr;
 
 % mean center the regressors, if asked
+nRegressors = size(regressors,2);
 if p.Results.meanCenterRegressors
     for nn = 1:nRegressors
         regressors(:,nn) = regressors(:,nn) - nanmean(regressors(:,nn));
@@ -77,7 +78,10 @@ totalIndices = nXIndices * nYIndices * nZIndices;
 
 nWorkers = startParpool( [], true );
 %parfor (ii = 1:totalIndices, nWorkers)
+fprintf('| 0                      50                   100%% |\n');
+    fprintf('.\n');
 for ii = 1:totalIndices
+    fprintf('\b.\n');
     [xx, yy, zz] = ind2sub([nXIndices; nYIndices; nZIndices], ii);
     voxelTimeSeries = functionalScan.vol(xx,yy,zz,:);
     voxelTimeSeries = reshape(voxelTimeSeries,1,nTRs);
@@ -92,7 +96,7 @@ for ii = 1:totalIndices
             thePacket.response.values = (thePacket.response.values - mean(thePacket.response.values))./nanstd(thePacket.response.values);
         end
         % TFE linear regression here
-        [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
+        [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
             'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
 %            'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
         
@@ -122,7 +126,7 @@ for ii = 1:totalIndices
     
     
 end
-
+fprintf('\n');
 %% Local function: to get parpool running
     function [ nWorkers ] = startParpool( nWorkers, verbose )
         % Open and configure the parpool
