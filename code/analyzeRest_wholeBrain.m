@@ -32,6 +32,15 @@ aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
 [ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
 [ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
 
+%% Get gray matter mask
+makeGrayMatterMask(subjectID);
+structuralGrayMatterMaskFile = fullfile(p.Results.anatDir, [subjectID '_GM.nii.gz']);
+grayMatterMaskFile = fullfile(p.Results.anatDir, [subjectID '_GM_resampled.nii.gz']);
+[ grayMatterMask ] = resampleMRI(structuralGrayMatterMaskFile, targetFile, grayMatterMaskFile);
+
+%% Extract time series of each voxel from gray matter mask
+[ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
+
 %% Clean time series from physio regressors
 
 physioRegressors = load(fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
@@ -57,7 +66,7 @@ regressors(:,end+1) = meanTimeSeries.ventricles;
 TR = functionalScan.tr; % in ms
 nFrames = functionalScan.nframes;
 
-regressorTimebase = 0:TR:nFrames*TR-TR;
+regressorsTimebase = 0:TR:nFrames*TR-TR;
 
 % remove all regressors that are all 0
 emptyColumns = [];
@@ -68,19 +77,12 @@ for column = 1:size(regressors,2)
 end
 regressors(:,emptyColumns) = [];
 
-[ cleanedFunctionalScan, betaVolume, rSquaredVolume, pearsonRVolume ] = cleanTimeSeries_wholeBrain( functionalScan, regressors, regressorTimebase, 'meanCenterRegressors', false);
+[ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
 
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
 if ~exist(savePath,'dir')
     mkdir(savePath);
 end
-
-MRIwrite(cleanedFunctionalScan, fullfile(savePath, [runName '_physioMotionWMVCorrected']));
-MRIwrite(betaVolume, fullfile(savePath, [runName '_beta_physioMotionWMV']));
-MRIwrite(rSquaredVolume, fullfile(savePath, [runName '_rSquared_physioMotionWMV']));
-MRIwrite(pearsonRVolume, fullfile(savePath, [runName '_pearsonR_physioMotionWMV']));
-
-clear betaVolume rSquaredVolume pearsonRVolume functionalScan
 
 
 %% Remove eye signals from BOLD data
@@ -94,11 +96,17 @@ pupilTimebase = load(fullfile(pupilDir, [runName, '_timebase.mat']));
 pupilTimebase = pupilTimebase.timebase.values';
 [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
 
-[ cleanedFunctionalScan_eyeSignalsRemoved, betaVolume_eyeSignals, rSquaredVolume_eyeSignals, pearsonRVolume_eyeSignals ] = cleanTimeSeries_wholeBrain( cleanedFunctionalScan, pupilDiameter, pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_eyeSignals ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, pupilDiameter, pupilTimebase, 'meanCenterRegressors', true);
 
-MRIwrite(cleanedFunctionalScan_eyeSignalsRemoved, fullfile(savePath, [runName '_physioMotionWMVCorrected']));
-MRIwrite(betaVolume_eyeSignals, fullfile(savePath, [runName '_beta__eyeSignals']));
-MRIwrite(rSquaredVolume_eyeSignals, fullfile(savePath, [runName '_rSquared__eyeSignals']));
-MRIwrite(pearsonRVolume_eyeSignals, fullfile(savePath, [runName '_pearsonR__eyeSignals']));
+[ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_eyeSignals.rSquared, voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_rSquared.nii.gz'));
+
+[ pupilDiameter_beta ] = makeWholeBrainMap(stats_eyeSignals.beta, voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_beta.nii.gz'));
+
+[ pupilDiameter_pearsonR ] = makeWholeBrainMap(stats_eyeSignals.pearsonR, voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_pearsonR.nii.gz'));
+
+
 
 end
