@@ -4,6 +4,7 @@ p = inputParser; p.KeepUnmatched = true;
 p.addParameter('TR',800, @isnumber);
 p.addParameter('totalTime',336000, @isnumber);
 p.addParameter('meanCenterRegressors', true, @islogical);
+p.addParameter('zeroNansInRegressors', true, @islogical);
 p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
@@ -31,7 +32,10 @@ if p.Results.meanCenterRegressors
     for nn = 1:nRegressors
         regressors(:,nn) = regressors(:,nn) - nanmean(regressors(:,nn));
         regressors(:,nn) = regressors(:,nn) ./ nanstd(regressors(:,nn));
-        
+        if (p.Results.zeroNansInRegressors)
+            nanIndices = find(isnan(regressors(:,nn)));
+            regressors(nanIndices,nn) = 0;
+        end
     end
 end
 
@@ -52,21 +56,23 @@ for tt = 1:nTimeSeries
     thePacket.response.values = inputTimeSeries(tt,:);
     
     % TFE linear regression here
-    [paramsFit,fVal,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
-        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
- %       'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
+    [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
+       'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
+%        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
     
+
     % remove signal related to regressors to yield clean time series
     cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
     beta(tt,:) = paramsFit.paramMainMatrix;
-    %rSquared(tt) = 1 - fVal;
     correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
     rSquared(tt) = correlationMatrix(1,2)^2;
+    pearsonR(tt) = correlationMatrix(1,2);
     
 end
 
 stats.beta = beta;
 stats.rSquared = rSquared;
+stats.pearsonR = pearsonR;
 
 if ~isempty(p.Results.saveName)
     
