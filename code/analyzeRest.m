@@ -59,7 +59,7 @@ for area = 1:length(areasList)
         
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             makeMaskFromRetino(eccen, areas, angles, areasList{area}, eccenRange, anglesList{aa}, savePath, 'laterality', hemisphere, 'saveName', [maskName, '.nii.gz']);
-            [ masks.(maskName) ] = resample(fullfile(savePath, [maskName, '.nii.gz']), targetFile, fullfile(savePath, [maskName, '_downsampled.nii.gz']));
+            [ masks.(maskName) ] = resampleMRI(fullfile(savePath, [maskName, '.nii.gz']), targetFile, fullfile(savePath, [maskName, '_downsampled.nii.gz']));
 
 
             
@@ -70,7 +70,7 @@ for area = 1:length(areasList)
 end
 
 makeMaskFromRetino(eccen, areas, angles, 1, eccenRange, [0 180], savePath, 'saveName', 'V1Combined.nii.gz');
-[ masks.V1Combined ] = resample(fullfile(savePath, ['V1Combined.nii.gz']), targetFile, fullfile(savePath, ['V1Combined_downsampled.nii.gz']));
+[ masks.V1Combined ] = resampleMRI(fullfile(savePath, ['V1Combined.nii.gz']), targetFile, fullfile(savePath, ['V1Combined_downsampled.nii.gz']));
 
 % make white matter and ventricular masks
 aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
