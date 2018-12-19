@@ -20,7 +20,7 @@ for vv = 1:length(voxelIndices)
     zz = voxelIndices{vv}(3);
     
     % stash the result in that voxel
-    statsVolume.vol(xx,yy,zz,:) = stats(vv);
+    statsVolume.vol(xx,yy,zz,:) = stats(vv, :);
     
 end
 
