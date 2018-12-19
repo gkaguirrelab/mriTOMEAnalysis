@@ -2,14 +2,14 @@ function [ statsVolume ] = makeWholeBrainMap(stats, voxelIndices, templateVolume
 
 %% Set up our output variable
 statsVolume = templateVolume;
-nStats = length(stats);
+nStats = size(stats,2);
 statsVolume.vol = zeros(size(templateVolume.vol,1), size(templateVolume.vol,2), size(templateVolume.vol,3), nStats);
 clear templateVolume;
 
 %% checks on the inputted data
 % make sure the length of the stats vector is as long as the length of the
 % cell array voxel indices
-assert(length(stats), length(voxelIndices));
+assert(size(stats,1) == length(voxelIndices));
 
 %% Loop over voxels, stashing the relevant results within the voxel
 for vv = 1:length(voxelIndices)
