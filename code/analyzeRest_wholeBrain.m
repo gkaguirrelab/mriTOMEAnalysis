@@ -123,11 +123,14 @@ dilations(find(pupilChange > 0)) = pupilChange(find(pupilChange > 0));
 
 [constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
 [dilationsConvolved ] = convolveRegressorWithHRF(dilations', pupilTimebase);
+[ pupilChangeConvolved ] = convolveRegressorWithHRF(pupilChange, pupilTimebase);
 
 firstDerivativeConstrictionsConvolved = diff(constrictionsConvolved);
 firstDerivativeConstrictionsConvolved = [NaN, firstDerivativeConstrictionsConvolved];
 firstDerivativeDilationsConvolved = diff(dilationsConvolved);
 firstDerivativeDilationsConvolved = [NaN, firstDerivativeDilationsConvolved];
+firstDerivativePupilChangeConvolved = diff(pupilChangeConvolved);
+firstDerivativePupilChangeConvolved = [NaN, firstDerivativePupilChangeConvolved];
 
 regressors = [constrictionsConvolved; firstDerivativeConstrictionsConvolved];
 [ ~, stats_pupilConstriction ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
@@ -152,6 +155,38 @@ MRIwrite(pupilDilation_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisP
 
 [ pupilDilation_pearsonR ] = makeWholeBrainMap(stats_pupilDilation.pearsonR', voxelIndices, functionalScan);
 MRIwrite(pupilDilation_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDilation_pearsonR.nii.gz']));
+
+
+
+regressors = [pupilChangeConvolved; firstDerivativePupilChangeConvolved];
+[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ pupilChange_rSquared ] = makeWholeBrainMap(stats_pupilChange.rSquared', voxelIndices, functionalScan);
+MRIwrite(pupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChange_rSquared.nii.gz']));
+
+[ pupilChange_beta ] = makeWholeBrainMap(stats_pupilChange.beta, voxelIndices, functionalScan);
+MRIwrite(pupilChange_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_beta.nii.gz']));
+
+[ pupilChange_pearsonR ] = makeWholeBrainMap(stats_pupilChange.pearsonR', voxelIndices, functionalScan);
+MRIwrite(pupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_pearsonR.nii.gz']));
+
+
+azimuth = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,1);
+elevation = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,2);
+eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
+[eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
+firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
+firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
+regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved];
+
+[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ eyeDisplacement_rSquared ] = makeWholeBrainMap(stats_eyeDisplacement.rSquared', voxelIndices, functionalScan);
+MRIwrite(eyeDisplacement_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_eyeDisplacement_rSquared.nii.gz']));
+
+[ eyeDisplacement_beta ] = makeWholeBrainMap(stats_eyeDisplacement.beta, voxelIndices, functionalScan);
+MRIwrite(eyeDisplacement_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_beta.nii.gz']));
+
+[ eyeDisplacement_pearsonR ] = makeWholeBrainMap(stats_eyeDisplacement.pearsonR', voxelIndices, functionalScan);
+MRIwrite(eyeDisplacement_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_pearsonR.nii.gz']));
 
 
 
