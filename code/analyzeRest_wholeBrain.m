@@ -86,26 +86,73 @@ end
 
 
 %% Remove eye signals from BOLD data
-% make pupil regressors
+% pupil diameter
 pupilDir = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID);
 
 pupilResponse = load(fullfile(pupilDir, [runName, '_pupil.mat']));
 pupilDiameter = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,4);
+badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > 3);
+pupilDiameter(badIndices) = NaN;
 
 pupilTimebase = load(fullfile(pupilDir, [runName, '_timebase.mat']));
 pupilTimebase = pupilTimebase.timebase.values';
 [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
 
-[ ~, stats_eyeSignals ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, pupilDiameter, pupilTimebase, 'meanCenterRegressors', true);
+firstDerivativePupilDiameterConvolved = diff(pupilDiameterConvolved);
+firstDerivativePupilDiameterConvolved = [NaN, firstDerivativePupilDiameterConvolved];
+regressors = [pupilDiameterConvolved; firstDerivativePupilDiameterConvolved];    
 
-[ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_eyeSignals.rSquared, voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_rSquared.nii.gz'));
+[ ~, stats_pupilDiameter ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', true);
 
-[ pupilDiameter_beta ] = makeWholeBrainMap(stats_eyeSignals.beta, voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_beta.nii.gz'));
+[ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_pupilDiameter.rSquared', voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameter_rSquared.nii.gz']));
 
-[ pupilDiameter_pearsonR ] = makeWholeBrainMap(stats_eyeSignals.pearsonR, voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, 'pupilDiameter_pearsonR.nii.gz'));
+[ pupilDiameter_beta ] = makeWholeBrainMap(stats_pupilDiameter.beta, voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_beta.nii.gz']));
+
+[ pupilDiameter_pearsonR ] = makeWholeBrainMap(stats_pupilDiameter.pearsonR', voxelIndices, functionalScan);
+MRIwrite(pupilDiameter_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_pearsonR.nii.gz']));
+
+% pupil first derivative
+pupilChange = diff(pupilDiameter);
+pupilChange = [NaN; pupilChange];
+constrictions = zeros(1, length(pupilChange));
+dilations = zeros(1,length(pupilChange));
+constrictions(find(pupilChange < 0)) = pupilChange(find(pupilChange < 0));
+dilations(find(pupilChange > 0)) = pupilChange(find(pupilChange > 0));
+
+[constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
+[dilationsConvolved ] = convolveRegressorWithHRF(dilations', pupilTimebase);
+
+firstDerivativeConstrictionsConvolved = diff(constrictionsConvolved);
+firstDerivativeConstrictionsConvolved = [NaN, firstDerivativeConstrictionsConvolved];
+firstDerivativeDilationsConvolved = diff(dilationsConvolved);
+firstDerivativeDilationsConvolved = [NaN, firstDerivativeDilationsConvolved];
+
+regressors = [constrictionsConvolved; firstDerivativeConstrictionsConvolved];
+[ ~, stats_pupilConstriction ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ pupilConstriction_rSquared ] = makeWholeBrainMap(stats_pupilConstriction.rSquared', voxelIndices, functionalScan);
+MRIwrite(pupilConstriction_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilConstriction_rSquared.nii.gz']));
+
+[ pupilConstriction_beta ] = makeWholeBrainMap(stats_pupilConstriction.beta, voxelIndices, functionalScan);
+MRIwrite(pupilConstriction_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilConstriction_beta.nii.gz']));
+
+[ pupilConstriction_pearsonR ] = makeWholeBrainMap(stats_pupilConstriction.pearsonR', voxelIndices, functionalScan);
+MRIwrite(pupilConstriction_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilConstriction_pearsonR.nii.gz']));
+
+
+
+regressors = [dilationsConvolved; firstDerivativeDilationsConvolved];
+[ ~, stats_pupilDilation ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ pupilDilation_rSquared ] = makeWholeBrainMap(stats_pupilDilation.rSquared', voxelIndices, functionalScan);
+MRIwrite(pupilDilation_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDilation_rSquared.nii.gz']));
+
+[ pupilDilation_beta ] = makeWholeBrainMap(stats_pupilDilation.beta, voxelIndices, functionalScan);
+MRIwrite(pupilDilation_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDilation_beta.nii.gz']));
+
+[ pupilDilation_pearsonR ] = makeWholeBrainMap(stats_pupilDilation.pearsonR', voxelIndices, functionalScan);
+MRIwrite(pupilDilation_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDilation_pearsonR.nii.gz']));
+
 
 
 
