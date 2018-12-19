@@ -37,6 +37,13 @@ if p.Results.meanCenterRegressors
             regressors(nanIndices,nn) = 0;
         end
     end
+else
+    for nn = 1:nRegressors
+        if (p.Results.zeroNansInRegressors)
+            nanIndices = find(isnan(regressors(:,nn)));
+            regressors(nanIndices,nn) = 0;
+        end
+    end
 end
 
 % add the regressors to the 
