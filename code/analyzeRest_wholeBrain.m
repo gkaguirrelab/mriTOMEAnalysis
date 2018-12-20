@@ -173,6 +173,7 @@ MRIwrite(pupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysi
 azimuth = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,1);
 elevation = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,2);
 eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
+eyeDisplacement = [NaN; eyeDisplacement];
 [eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
 firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
 firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
