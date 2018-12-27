@@ -1,14 +1,26 @@
 function submitHCPGears(paramsFileName)
-% Submits jobs to the flywheel instance based upon a table of parameters
+% Submits jobs to a flywheel instance based upon a table of parameters
 %
 % Syntax
 %  result = submitHCPGears(paramsFileName)
 %
 % Description:
+%   This routine implements calls to the Flywheel API to submit analysis
+%   gear jobs. The behavior of the routine is determined by a parameter
+%   file, that itself is a .csv file with a standard format. The first six
+%   rows of the parameter table contain header information. The first row
+%   is treated as a set of key-value pairs which are submitted to the input
+%   parser. The remaining header rows define the type of inputs provided to
+%   the gear. The subsequent rows of the table each define an analysis to
+%   be submitted.
 %
+% Inputs:
+%   paramsFileName        - String. Full path to a csv file that contains
+%                           the analysis specifications
 %
+% Outputs:
+%   none
 %
-
 % Examples:
 %{
     submitHCPGears('tomeHCPStructParams.csv');
@@ -21,6 +33,9 @@ function submitHCPGears(paramsFileName)
 %}
 %{
     submitHCPGears('tomeHCPFuncParams_Session2.csv');
+%}
+%{
+    submitHCPGears('tomeHCPDiffParams.csv');
 %}
 
 
