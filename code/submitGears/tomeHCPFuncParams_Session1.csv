@@ -20,10 +20,10 @@ TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/
 TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1/rfMRI_REST_AP_Run3_SBRef,TOME_3003/Session 1/rfMRI_REST_AP_Run3,,,
 TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1/rfMRI_REST_PA_Run4_SBRef,TOME_3003/Session 1/rfMRI_REST_PA_Run4,,,
 ,,,,,,,,,
-TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_AP_Run1_SBRef,TOME_3004/Session 1a/rfMRI_REST_AP_Run1,,,"Struct from Session 1a, Scans 1 and 2 from session 1a, scans 3 and 4 from session 1b"
+TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_AP_Run1_SBRef,TOME_3004/Session 1a/rfMRI_REST_AP_Run1,,,"Struct from Session 1a, Scans 1 and 2 from session 1a, scans 3 and 4 from session 1b; Runs 3 and 4 collected in reversed order"
 TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_PA_Run2_SBRef,TOME_3004/Session 1a/rfMRI_REST_PA_Run2,,,
-TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_PA_Run3_SBRef,TOME_3004/Session 1b/rfMRI_REST_PA_Run3,,,
-TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_AP_Run4_SBRef,TOME_3004/Session 1b/rfMRI_REST_AP_Run4,,,
+TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_PA_Run4_SBRef,TOME_3004/Session 1b/rfMRI_REST_PA_Run4,,,
+TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_AP_Run3_SBRef,TOME_3004/Session 1b/rfMRI_REST_AP_Run3,,,
 ,,,,,,,,,
 TOME_3005,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1/rfMRI_REST_AP_Run1_SBRef,TOME_3005/Session 1/rfMRI_REST_AP_Run1,,,
 TOME_3005,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1/rfMRI_REST_PA_Run2_SBRef,TOME_3005/Session 1/rfMRI_REST_PA_Run2,,,
