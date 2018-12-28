@@ -77,7 +77,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %                           of the system at the time of analysis.
 %  'timestamp'            - AUTOMATIC; The current time and date
 %  'username'             - AUTOMATIC; The user
-%  'hostname'             - AUTOMATIC; The host%  'verbose'
+%  'hostname'             - AUTOMATIC; The host
 %
 % Optional key/value pairs (analysis)
 %  'processingDir'        - Char vector. The full path to the directory
@@ -107,6 +107,10 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %
 % 
 % Examples:
+%{
+    % One subject with plots
+    deriveCameraPosition('TOME_3004', [194 33 151],'verbose',true,'showPlots',true)
+%}
 %{
     % The coords were obtained within the Flywheel image viewer for the
     % right cornea from the T1w_acpc_dc_restore.nii.gz image.
@@ -239,7 +243,7 @@ for ii=1:length(targetFiles)
         ' --o '  escapeFileCharacters(outEyeVoxelFile) ...
         ' --reg ' escapeFileCharacters(regFile) ...
         ' --cubic' ];
-    
+
     % Issue the command
     system([freesurferSetUp command devNull]);
     
@@ -254,7 +258,7 @@ for ii=1:length(targetFiles)
     % center
     eyePositionWRTCenter = (eyeVoxel-size(mriEyeVoxel.vol)./2).*p.Results.epiVoxelSizeMm;
     
-    % Conert dimension order to ras
+    % Covert dimension order to ras
     eyePositionWRTCenter = eyePositionWRTCenter([2 1 3]);
     
     % Determine the corresponding video acquisition stem
@@ -295,6 +299,7 @@ for ii=1:length(targetFiles)
         plot(relativeCameraPosition.values(2,:));
         plot(relativeCameraPosition.values(3,:));
         ylim([-4 4]);
+        legend({'left->right','down->up','further->closer'})
     end
     
     % Report completion of this step
@@ -341,7 +346,7 @@ for ii = 1:numTRs
     % Translate the eye position. The first three columns of the head
     % motion regressors correspond to x, y, z
     T = table2array(movementTable(ii,1:3));
-    newEyePosition = newEyePosition + T';
+    newEyePosition = newEyePosition - T';
     
     % Store the newEyePosition
     eyePosition(ii,:)=newEyePosition;
