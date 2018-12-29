@@ -1,6 +1,7 @@
 projectName,tome,gearName,hcp-func,rootSessionInputLabel,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
 Inputs,GradientCoeff,SpinEchoNegative,SpinEchoPositive,StructZip,fMRIScout,fMRITimeSeries,,,
 DefaultLabel,coeff.grad,SpinEchoFieldMap_AP,SpinEchoFieldMap_PA,hcp-struct/hcpstruct.zip,,,,,
+AcqFileType,,nifti,nifti,,nifti,nifti,,,
 IsSessionFile,1,0,0,1,0,0,,,
 IsAnalysisFile,0,0,0,1,0,0,,,
 ExactStringMatch,0,0,0,0,0,0,,,Notes

@@ -49,7 +49,6 @@ p.addParameter('projectName','tome',@ischar);
 p.addParameter('gearName','hcp-func',@ischar);
 p.addParameter('rootSessionInputLabel','fMRITimeSeries',@ischar);
 p.addParameter('verbose','true',@ischar);
-p.addParameter('AcqFileType','nifti',@ischar);
 p.addParameter('includeFreeSurferLicenseFile','true', @ischar);
 p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configKeys','',@(x)(isempty(x) || ischar(x)));
@@ -63,15 +62,16 @@ verbose = eval(p.Results.verbose);
 includeFreeSurferLicenseFile = eval(p.Results.includeFreeSurferLicenseFile);
 
 % Define the paramsTable dimensions
-nParamRows = 6; % This is the number of rows that make up the header
+nParamRows = 7; % This is the number of rows that make up the header
 nParamCols = 1; % This is for the first column that has header info
 
 % Hard-coded identity of the header row information
 InputsRow = 2;
 DefaultLabelRow = 3;
-IsSessionFileRow = 4;
-IsAnalysisFileRow = 5;
-ExactStringMatchRow = 6;
+AcqFileTypeRow = 4;
+IsSessionFileRow = 5;
+IsAnalysisFileRow = 6;
+ExactStringMatchRow = 7;
 
 % Determine the number of inputs to specify for this gear
 nInputCols = sum(cellfun(@(x) ~isempty(x),paramsTable{InputsRow,:}));
@@ -217,37 +217,37 @@ for ii=nParamRows+1:nRows
                 theAcqLabel = allAcqs{acqIdx}.label;
             else
                 % Try to find an acquisition that matches the input label
-                % and contains a nifti file. Unless told to use exact
-                % matching, trim off leading and trailing whitespace, as
-                % the stored label in flywheel sometimes has a trailing
-                % space. Also, use a case insensitive match.
+                % and contains the specified AcqFileType. Unless told to
+                % use exact matching, trim off leading and trailing
+                % whitespace, as the stored label in flywheel sometimes has
+                % a trailing space. Also, use a case insensitive match.
                 if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
                     labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
                 else
                     labelMatchIdx = cellfun(@(x) strcmpi(strtrim(x.label),strtrim(targetLabel)),allAcqs);
                 end
-                isNiftiIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),x.files)),allAcqs);
-                acqIdx = logical(labelMatchIdx .* isNiftiIdx);
+                isFileTypeMatchIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),x.files)),allAcqs);
+                acqIdx = logical(labelMatchIdx .* isFileTypeMatchIdx);
                 if ~any(acqIdx)
                     error('No matching acquisition for this input entry')
                 end
                 if sum(acqIdx)>1
                     error('More than one matching acquisition for this input entry')
                 end
-                % We have a match. Re-find the nifti file
-                theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
+                % We have a match. Re-find the specified file
+                theFileTypeMatchIdx = find(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),allAcqs{acqIdx}.files));
                 % Check for an error condition
-                if isempty(theNiftiIdx)
-                    error('No nifti file for this acquisition');
+                if isempty(theFileTypeMatchIdx)
+                    error('No matching file type for this acquisition');
                 end
-                if length(theNiftiIdx)>1
-                    warning('More than one nifti file for this acquisition; using the most recent');
-                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theNiftiIdx)));
-                    theNiftiIdx=theNiftiIdx(mostRecentIdx);
+                if length(theFileTypeMatchIdx)>1
+                    warning('More than one matching file type for this acquisition; using the most recent');
+                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theFileTypeMatchIdx)));
+                    theFileTypeMatchIdx=theFileTypeMatchIdx(mostRecentIdx);
                 end
                 % Get the file name, ID, and acquisition label
                 theID = allAcqs{acqIdx}.id;
-                theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
+                theName = allAcqs{acqIdx}.files{theFileTypeMatchIdx}.name;
                 theAcqLabel = allAcqs{acqIdx}.label;
             end
             theType = 'acquisition';
