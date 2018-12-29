@@ -156,7 +156,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3043', [192 31 153] ...
                 };
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'showPlots',true)
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2})
     end
 %}
 
