@@ -32,6 +32,9 @@ function submitHCPGears(paramsFileName)
     submitHCPGears('tomeHCPFuncParams_Session1.csv');
 %}
 %{
+    submitHCPGears('tomeHCPFuncICAFIX_Session1.csv');
+%}
+%{
     submitHCPGears('tomeHCPFuncParams_Session2.csv');
 %}
 %{
@@ -121,7 +124,7 @@ for i = 1:numel(keys)
         configDefault.(keys{i}) = val.default;
     else
         if verbose
-        fprintf('No default value for %s\n. It must be set prior to execution.', keys{i});
+            fprintf('No default value for %s\n. It must be set prior to execution.', keys{i});
         end
     end
 end
@@ -137,7 +140,7 @@ for ii=nParamRows+1:nRows
     
     % Get the subject name
     subjectName = char(paramsTable{ii,1});
-
+    
     %% Assemble Inputs
     % Create an empty inputs struct
     inputs = struct();
@@ -161,8 +164,8 @@ for ii=nParamRows+1:nRows
         allAcqs = fw.getSessionAcquisitions(allSessions{sessionIdx}.id);
         % Check to see if there is a custom file label. If not, use the
         % default label
-        if length(entry)==3
-            targetLabel = entry(3);
+        if length(entry)>=3
+            targetLabel = strjoin(entry(3:end),'/');
         else
             targetLabel = char(paramsTable{DefaultLabelRow,jj});
         end
@@ -175,11 +178,14 @@ for ii=nParamRows+1:nRows
                 allAnalyses=fw.getSessionAnalyses(allSessions{sessionIdx}.id);
                 targetLabelParts = strsplit(targetLabel,'/');
                 analysisIdx = find(strcmp(cellfun(@(x) x.gearInfo.name,allAnalyses,'UniformOutput',false),targetLabelParts{1}));
-                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx}.files));
-                theID = allAnalyses{analysisIdx}.id;
-                theName = allAnalyses{analysisIdx}.files{fileIdx}.name;
+                % Find which of the analyses contains the target file
+                whichAnalysis = find(cellfun(@(y) ~isempty(find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),y.files))),allAnalyses(analysisIdx)));
+                % Get this file
+                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx(whichAnalysis)}.files));
+                theID = allAnalyses{analysisIdx(whichAnalysis)}.id;
+                theName = allAnalyses{analysisIdx(whichAnalysis)}.files{fileIdx}.name;
                 theType = 'analysis';
-            theAcqLabel = 'analysis_file';
+                theAcqLabel = 'analysis_file';
             else
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
@@ -204,7 +210,7 @@ for ii=nParamRows+1:nRows
                 % in the acquisition label. We trim that off here as it can
                 % cause troubles in gear execution.
                 rootSessionTag = strtrim(theName);
-            end            
+            end
         else
             % It is an acqusition file. If a file entry was specified, go
             % find that.
@@ -283,7 +289,7 @@ for ii=nParamRows+1:nRows
     %% Customize gear configuration
     configKeys = eval(p.Results.configKeys);
     configVals = eval(p.Results.configVals);
-    config = configDefault;    
+    config = configDefault;
     if ~isempty(configKeys)
         for kk=1:length(configKeys)
             config.(configKeys{kk})=configVals{kk};
@@ -339,7 +345,7 @@ for ii=nParamRows+1:nRows
     
     %% Add a notes entry to the analysis object
     note = ['InputLabel  -+-  AcquisitionLabel  -+-  FileName\n' ...
-            '-------------|----------------------|-----------\n'];
+        '-------------|----------------------|-----------\n'];
     inputFieldNames = fieldnames(inputs);
     for nn = 1:numel(inputFieldNames)
         newLine = [inputFieldNames{nn} '  -+-  ' acqNotes.(inputFieldNames{nn}) '  -+-  ' inputs.(inputFieldNames{nn}).name '\n'];
