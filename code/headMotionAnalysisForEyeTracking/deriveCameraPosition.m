@@ -409,7 +409,7 @@ nElementsPost = nElementsPost-trim;
 % x,y,z corresponding to right-left, down-up, back-front (towards the
 % camera)
 scanToCameraCoords = [1,3,2];
-scanToCameraSign = [-1,1,1];
+scanToCameraSign = [-1,-1,-1];
 
 % Loop over the world coordinate dimensions and create the relative camera
 % position vector, with a length equal to the timebase of the video
