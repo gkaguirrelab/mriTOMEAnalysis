@@ -134,7 +134,7 @@ firstDerivativePupilChangeConvolved = diff(pupilChangeConvolved);
 firstDerivativePupilChangeConvolved = [NaN, firstDerivativePupilChangeConvolved];
 
 regressors = [constrictionsConvolved; firstDerivativeConstrictionsConvolved];
-[ ~, stats_pupilConstriction ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ ~, stats_pupilConstriction ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', true);
 [ pupilConstriction_rSquared ] = makeWholeBrainMap(stats_pupilConstriction.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilConstriction_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilConstriction_rSquared.nii.gz']));
 
@@ -147,7 +147,7 @@ MRIwrite(pupilConstriction_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_a
 
 
 regressors = [dilationsConvolved; firstDerivativeDilationsConvolved];
-[ ~, stats_pupilDilation ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ ~, stats_pupilDilation ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', true);
 [ pupilDilation_rSquared ] = makeWholeBrainMap(stats_pupilDilation.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilDilation_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDilation_rSquared.nii.gz']));
 
@@ -160,7 +160,7 @@ MRIwrite(pupilDilation_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analy
 
 
 regressors = [pupilChangeConvolved; firstDerivativePupilChangeConvolved];
-[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', true);
 [ pupilChange_rSquared ] = makeWholeBrainMap(stats_pupilChange.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChange_rSquared.nii.gz']));
 
@@ -180,7 +180,7 @@ firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
 firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
 regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved];
 
-[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', false);
+[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', pupilTimebase, 'meanCenterRegressors', true);
 [ eyeDisplacement_rSquared ] = makeWholeBrainMap(stats_eyeDisplacement.rSquared', voxelIndices, functionalScan);
 MRIwrite(eyeDisplacement_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_eyeDisplacement_rSquared.nii.gz']));
 
