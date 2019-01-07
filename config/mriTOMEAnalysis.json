@@ -45,7 +45,7 @@
 		"localHookTemplate": "config/mriTOMEAnalysisLocalHookTemplate.m",
 		"name": "mriTOMEAnalysis",
 		"pathPlacement": "append",
-		"subfolder": "",
+		"subfolder": "code",
 		"toolboxRoot": "",
 		"type": "git",
 		"update": "",
