@@ -18,11 +18,13 @@ functionalDir = paths.functionalDir;
 outputDir = paths.outputDir;
 
 matlabBasePath = mfilename('fullpath');
+matlabBasePathSplit = strsplit(matlabBasePath, 'mriTOMEAnalysis');
+matlabBasePath = matlabBasePathSplit{1};
 
 %% Align functional and structural scan in native space of structural scan
 % run bash script to do the alignment
 if ~exist(fullfile(functionalDir, [runName, '_native.nii.gz']))
-    system(['bash HCPbringFunctionalToStructural.sh ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
+    system(['bash ', fullfile(matlabBasePath, 'mriTOMEAnalysis', 'code', 'preprocessing', 'HCPbringFunctionalToStructural.sh'), ' ', subjectID, ' "', anatDir, '" "', functionalDir, '" "', outputDir, '" "', runName, '"']);
     
     % save out the first acquisition of the aligned functional scan to make
     % sure it is aligned like we think
