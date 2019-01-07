@@ -96,7 +96,6 @@ pupilDiameter(badIndices) = NaN;
 
 pupilTimebase = load(fullfile(pupilDir, [runName, '_timebase.mat']));
 pupilTimebase = pupilTimebase.timebase.values';
-[pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
 
 firstDerivativePupilDiameterConvolved = diff(pupilDiameterConvolved);
 firstDerivativePupilDiameterConvolved = [NaN, firstDerivativePupilDiameterConvolved];
