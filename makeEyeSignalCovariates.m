@@ -38,12 +38,25 @@ elevation(badIndices) = NaN;
 eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
 eyeDisplacement = [NaN; eyeDisplacement];
 
+% blinks
+controlFile = fopen(fullfile(pupilDir, [runName, '_controlFile.csv']));
+instructionCell = textscan(controlFile,'%f%s%[^\n]','Delimiter',',');
+blinkRows = find(contains(instructionCell{2}, 'blink'));
+blinkFrames = [];
+for ii = blinkRows
+    blinkFrames = [blinkFrames, instructionCell{1}(blinkRows(ii))];
+end
+blinks = zeros(1,length(pupilTimebase));
+blinks(blinkFrames) = 1;
+fclose(controlFile);
+
 %% Convolve with HRF
 [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
 [constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
 [dilationsConvolved] = convolveRegressorWithHRF(dilations', pupilTimebase);
 [pupilChangeConvolved] = convolveRegressorWithHRF(pupilChange, pupilTimebase);
 [eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
+[blinksConvolved] = convolveRegressorWithHRF(blinks', pupilTimebase);
 
 %% Make first derivative of convolved HRF to account for temporal timing differences
 
@@ -57,6 +70,8 @@ firstDerivativePupilChangeConvolved = diff(pupilChangeConvolved);
 firstDerivativePupilChangeConvolved = [NaN, firstDerivativePupilChangeConvolved];
 firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
 firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
+firstDerivativeBlinksConvolved = diff(blinksConvolved);
+firstDerivativeBlinksConvolved = [NaN, firstDerivativeBlinksConvolved];
 
 %% Package them up
 covariates = [];
@@ -70,6 +85,8 @@ covariates.pupilChangeConvolved = pupilChangeConvolved;
 covariates.firstDerivativePupilChangeConvolved = firstDerivativePupilChangeConvolved;
 covariates.eyeDisplacementConvolved = eyeDisplacementConvolved;
 covariates.firstDerivativeEyeDisplacementConvolved = firstDerivativeEyeDisplacementConvolved;
+covariates.blinksConvolved = blinksConvolved;
+covariates.firstDerivativeBlinksConvolved = firstDerivativeBlinksConvolved;
 
 
 end
