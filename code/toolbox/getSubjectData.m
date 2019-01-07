@@ -2,17 +2,22 @@ function getSubjectData(subjectID, runName, varargin)
 
 %% input parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('dataDownloadDir', '/Users/harrisonmcadams/Desktop/temp', @isstring);
-%p.addParameter('dataDownloadDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/temp'), @isstring);
 p.addParameter('paramsFileName','analysesLabels.csv', @ischar);
-p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
-p.addParameter('pupilDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
-p.addParameter('pupilProcessingDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_processingPath')),  @isstring);
 p.addParameter('downloadOnly', 'all', @ischar);
-
 p.parse(varargin{:});
 
+%% Define paths
+[ paths ] = definePaths(subjectID);
+freeSurferDir = paths.freeSurferDir;
+anatDir = paths.anatDir;
+pupilDir = paths.pupilDir;
+functionalDir = paths.functionalDir;
+outputDir = paths.outputDir;
+pupilProcessingDir = paths.pupilProcessingDir;
+dataDownloadDir = paths.dataDownloadDir;
+
+
+%% Figure out what we're downloading
 if strcmp(p.Results.downloadOnly, 'all')
     downloadPhysio = true;
     downloadPupil = true;
@@ -29,17 +34,17 @@ end
 
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 
-if (~exist(p.Results.dataDownloadDir,'dir'))
-    mkdir(p.Results.dataDownloadDir);
+if (~exist(dataDownloadDir,'dir'))
+    mkdir(dataDownloadDir);
 end
 
 %% Get physio
 if (downloadPhysio)
-if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
+if ~exist(fullfile(functionalDir, [runName, '_puls.mat']))
     fprintf('Downloading physio file.\n');
     
-    if (~exist(p.Results.functionalDir,'dir'))
-        mkdir(p.Results.functionalDir);
+    if (~exist(functionalDir,'dir'))
+        mkdir(functionalDir);
     end
     searchCategory = 'acquisition0x2elabel';
     searchStruct = struct('returnType', 'file', ...
@@ -108,7 +113,7 @@ if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     file_name = analyses{1}.file.name;
     analysis_id = analyses{1}.analysis.id;
     session_id = analyses{1}.session.id;
-    dataDownloadDir = p.Results.dataDownloadDir;
+    dataDownloadDir = dataDownloadDir;
     output_name = fullfile(dataDownloadDir, file_name);
     
     
@@ -143,7 +148,7 @@ if ~exist(fullfile(p.Results.functionalDir, [runName, '_puls.mat']))
     file_name = strrep(file_name, ' ', '%20');
     fw.downloadFileFromAcquisition(acquisition_id, file_name, fullfile(dataDownloadDir, file_name));
     
-    copyfile(fullfile(dataDownloadDir, file_name), fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
+    copyfile(fullfile(dataDownloadDir, file_name), fullfile(functionalDir, [runName, '_puls.mat']));
     
     delete(fullfile(dataDownloadDir, file_name));
 else
@@ -177,8 +182,8 @@ elseif strcmp(runName(1), 'r')
     targetTimebaseName = [splitRunName{1}, 'Run', num2str(runNumber), '_timebase.mat'];
 end
 
-if (~exist(p.Results.pupilDir,'dir'))
-    mkdir(p.Results.pupilDir);
+if (~exist(pupilDir,'dir'))
+    mkdir(pupilDir);
 end
 fprintf('Downloading pupil data.\n');
 
@@ -217,28 +222,28 @@ sessionDate = analyses{1}.session.timestamp;
 formatOut = 'mmddyy';
 dateString = datestr(sessionDate(1),formatOut);
 
-pupilFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilFileName);
-timebaseFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilTimebaseName);
-controlFile = fullfile(p.Results.pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', controlFileName);
+pupilFile = fullfile(pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilFileName);
+timebaseFile = fullfile(pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', pupilTimebaseName);
+controlFile = fullfile(pupilProcessingDir, sessionName, subjectID, dateString, 'EyeTracking', controlFileName);
 
-copyfile(pupilFile, fullfile(p.Results.pupilDir, targetPupilFileName));
-copyfile(controlFile, fullfile(p.Results.pupilDir, targetControlFileName));
-copyfile(timebaseFile, fullfile(p.Results.pupilDir, targetTimebaseName));
+copyfile(pupilFile, fullfile(pupilDir, targetPupilFileName));
+copyfile(controlFile, fullfile(pupilDir, targetControlFileName));
+copyfile(timebaseFile, fullfile(pupilDir, targetTimebaseName));
 
 
 
 end
 %% Get structural stuff first
 if (downloadStructural)
-destinationOfStructuralScan = fullfile(p.Results.anatDir, 'T1w_acpc_dc_restore.nii.gz');
-destinationOfRegistrationInfo = fullfile(p.Results.anatDir, 'standard2acpc_dc.nii.gz');
+destinationOfStructuralScan = fullfileanatDir, 'T1w_acpc_dc_restore.nii.gz');
+destinationOfRegistrationInfo = fullfile(anatDir, 'standard2acpc_dc.nii.gz');
 
 if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
     fprintf('Downloading structural scans.\n');
     
     
-    if (~exist(p.Results.anatDir,'dir'))
-        mkdir(p.Results.anatDir);
+    if (~exist(anatDir,'dir'))
+        mkdir(anatDir);
     end
     searchStruct = struct(...
         'returnType', 'file', ...
@@ -262,7 +267,6 @@ if ~exist(destinationOfStructuralScan) || ~exist(destinationOfRegistrationInfo)
     file_name = analyses{1}.file.name;
     analysis_id = analyses{1}.analysis.id;
     session_id = analyses{1}.session.id;
-    dataDownloadDir = p.Results.dataDownloadDir;
     output_name = fullfile(dataDownloadDir, file_name);
     
     % flywheel gets angry when we search for something with spaces
@@ -295,14 +299,14 @@ end
 
 %% Get functional data
 if (downloadFunctional)
-destinationOfFunctionalScan = fullfile(p.Results.functionalDir, [runName, '_mni.nii.gz']);
-destinationOfMovementRegressors = fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt']);
+destinationOfFunctionalScan = fullfile(functionalDir, [runName, '_mni.nii.gz']);
+destinationOfMovementRegressors = fullfile(functionalDir, [runName, '_Movement_Regressors.txt']);
 
 if ~exist(destinationOfFunctionalScan) || ~exist(destinationOfMovementRegressors)
     
     
-    if (~exist(p.Results.functionalDir,'dir'))
-        mkdir(p.Results.functionalDir);
+    if (~exist(functionalDir,'dir'))
+        mkdir(functionalDir);
     end
     searchStruct = struct(...
         'returnType', 'file', ...
@@ -326,7 +330,6 @@ if ~exist(destinationOfFunctionalScan) || ~exist(destinationOfMovementRegressors
     file_name = analyses{1}.file.name;
     analysis_id = analyses{1}.analysis.id;
     session_id = analyses{1}.session.id;
-    dataDownloadDir = p.Results.dataDownloadDir;
     output_name = fullfile(dataDownloadDir, file_name);
     
     fw.downloadOutputFromAnalysis(analysis_id, file_name, fullfile(dataDownloadDir, file_name));
@@ -355,9 +358,9 @@ end
 end
 %% Get the Benson gear output
 if (downloadBenson)
-if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~exist(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_eccen.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_angle.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.nii.gz'])) || ~exist(fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']))
-    if (~exist(p.Results.anatDir,'dir'))
-        mkdir(p.Results.anatDir);
+if ~exist(fullfile(anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~exist(fullfile(anatDir, [subjectID, '_rh.ribbon.nii.gz'])) || ~exist(fullfile(anatDir, [subjectID, '_native.template_eccen.nii.gz'])) || ~exist(fullfile(anatDir, [subjectID, '_native.template_angle.nii.gz'])) || ~exist(fullfile(anatDir, [subjectID, '_native.template_areas.nii.gz'])) || ~exist(fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']))
+    if (~exist(anatDir,'dir'))
+        mkdir(anatDir);
     end
     searchStruct = struct(...
         'returnType', 'file', ...
@@ -401,7 +404,6 @@ if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~ex
         file_name = analyses{ii}.file.name;
         analysis_id = analyses{ii}.analysis.id;
         session_id = analyses{ii}.session.id;
-        dataDownloadDir = p.Results.dataDownloadDir;
         output_name = fullfile(dataDownloadDir, file_name);
         
         % flywheel gets angry when we search for something with spaces
@@ -409,7 +411,7 @@ if ~exist(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz'])) ||  ~ex
         fw.downloadOutputFromAnalysis(analysis_id, file_name, fullfile(dataDownloadDir, file_name));
         
         
-        copyfile(fullfile(dataDownloadDir, file_name), fullfile(p.Results.anatDir, file_name));
+        copyfile(fullfile(dataDownloadDir, file_name), fullfile(anatDir, file_name));
         
         
         

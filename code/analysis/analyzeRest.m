@@ -2,14 +2,16 @@ function analyzeRest(subjectID, runName, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
-p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
-p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('pupilDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
-p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-
-
 p.parse(varargin{:});
+
+%% Define paths
+[ paths ] = definePaths(subjectID);
+
+freeSurferDir = paths.freeSurferDir;
+anatDir = paths.anatDir;
+pupilDir = paths.pupilDir;
+functionalDir = paths.functionalDir;
+outputDir = paths.outputDir;
 
 %% Get the data and organize it
 
@@ -22,17 +24,17 @@ getSubjectData(subjectID, runName);
 %% Make our masks
 % and resample them to the EPI resolution
 
-angles = MRIread(fullfile(p.Results.anatDir, [subjectID, '_native.template_angle.nii.gz']));
+angles = MRIread(fullfile(anatDir, [subjectID, '_native.template_angle.nii.gz']));
 
-eccen = MRIread(fullfile(p.Results.anatDir, [subjectID, '_native.template_eccen.nii.gz']));
+eccen = MRIread(fullfile(anatDir, [subjectID, '_native.template_eccen.nii.gz']));
 
-areas = MRIread(fullfile(p.Results.anatDir, [subjectID, '_native.template_areas.nii.gz']));
-rightHemisphere = MRIread(fullfile(p.Results.anatDir, [subjectID, '_rh.ribbon.nii.gz']));
-leftHemisphere = MRIread(fullfile(p.Results.anatDir, [subjectID, '_lh.ribbon.nii.gz']));
+areas = MRIread(fullfile(anatDir, [subjectID, '_native.template_areas.nii.gz']));
+rightHemisphere = MRIread(fullfile(anatDir, [subjectID, '_rh.ribbon.nii.gz']));
+leftHemisphere = MRIread(fullfile(anatDir, [subjectID, '_lh.ribbon.nii.gz']));
 
-targetFile = (fullfile(p.Results.functionalDir, [runName, '_native.nii.gz']));
+targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
 
-savePath = p.Results.anatDir;
+savePath = anatDir;
 maskList = {'V1d_lh_mask', 'V1d_rh_mask', 'V1v_lh_mask', 'V1v_rh_mask', 'V2d_lh_mask', 'V2d_rh_mask', 'V2v_lh_mask', 'V2v_rh_mask', 'V3d_lh_mask', 'V3d_rh_mask', 'V3v_lh_mask', 'V3v_rh_mask'};
 areasList = {1, 2, 3};
 anglesList = {[0 90], [90 180]};
@@ -73,7 +75,7 @@ makeMaskFromRetino(eccen, areas, angles, 1, eccenRange, [0 180], savePath, 'save
 [ masks.V1Combined ] = resampleMRI(fullfile(savePath, ['V1Combined.nii.gz']), targetFile, fullfile(savePath, ['V1Combined_downsampled.nii.gz']));
 
 % make white matter and ventricular masks
-aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
+aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
 [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
 
 %% extract the time series from the mask
@@ -122,9 +124,9 @@ save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
 
 %% Clean time series from physio regressors
 
-physioRegressors = load(fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
+physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
 physioRegressors = physioRegressors.output;
-motionTable = readtable((fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt'])));
+motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
 motionRegressors = table2array(motionTable(:,7:12));
 regressors = [physioRegressors.all, motionRegressors];
 
@@ -203,10 +205,10 @@ save(fullfile(savePath, runName), 'combinedCorrelationMatrix', 'acrossHemisphere
 %% Remove eye signals from BOLD data
 % make pupil regressors
 
-pupilResponse = load(fullfile(p.Results.pupilDir, [runName, '_pupil.mat']));
+pupilResponse = load(fullfile(pupilDir, [runName, '_pupil.mat']));
 pupilArea = pupilResponse.pupilData.initial.ellipses.values(:,3);
 pupilRegressors = [pupilArea];
-pupilTimebase = load(fullfile(p.Results.pupilDir, [runName, '_timebase.mat']));
+pupilTimebase = load(fullfile(pupilDir, [runName, '_timebase.mat']));
 pupilTimebase = pupilTimebase.timebase.values';
 
 for area = 1:length(areasList)

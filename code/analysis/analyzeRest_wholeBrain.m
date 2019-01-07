@@ -2,14 +2,16 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('visualizeAlignment',false, @islogical);
-p.addParameter('freeSurferDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer'),  @isstring);
-p.addParameter('anatDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('pupilDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-p.addParameter('functionalDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID),  @isstring);
-p.addParameter('outputDir',fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID), @isstring);
-
-
 p.parse(varargin{:});
+
+%% Define paths
+[ paths ] = definePaths(subjectID);
+
+freeSurferDir = paths.freeSurferDir;
+anatDir = paths.anatDir;
+pupilDir = paths.pupilDir;
+functionalDir = paths.functionalDir;
+outputDir = paths.outputDir;
 
 %% Get the data and organize it
 
@@ -21,9 +23,9 @@ p.parse(varargin{:});
 
 %% Get white matter and ventricular signal
 % make white matter and ventricular masks
-targetFile = (fullfile(p.Results.functionalDir, [runName, '_native.nii.gz']));
+targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
 
-aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
+aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
 [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
 
 
@@ -34,8 +36,8 @@ aparcAsegFile = fullfile(p.Results.anatDir, [subjectID, '_aparc+aseg.nii.gz']);
 
 %% Get gray matter mask
 makeGrayMatterMask(subjectID);
-structuralGrayMatterMaskFile = fullfile(p.Results.anatDir, [subjectID '_GM.nii.gz']);
-grayMatterMaskFile = fullfile(p.Results.anatDir, [subjectID '_GM_resampled.nii.gz']);
+structuralGrayMatterMaskFile = fullfile(anatDir, [subjectID '_GM.nii.gz']);
+grayMatterMaskFile = fullfile(anatDir, [subjectID '_GM_resampled.nii.gz']);
 [ grayMatterMask ] = resampleMRI(structuralGrayMatterMaskFile, targetFile, grayMatterMaskFile);
 
 %% Extract time series of each voxel from gray matter mask
@@ -43,9 +45,9 @@ grayMatterMaskFile = fullfile(p.Results.anatDir, [subjectID '_GM_resampled.nii.g
 
 %% Clean time series from physio regressors
 
-physioRegressors = load(fullfile(p.Results.functionalDir, [runName, '_puls.mat']));
+physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
 physioRegressors = physioRegressors.output;
-motionTable = readtable((fullfile(p.Results.functionalDir, [runName, '_Movement_Regressors.txt'])));
+motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
 motionRegressors = table2array(motionTable(:,7:12));
 regressors = [physioRegressors.all, motionRegressors];
 
