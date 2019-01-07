@@ -87,6 +87,7 @@ covariates.eyeDisplacementConvolved = eyeDisplacementConvolved;
 covariates.firstDerivativeEyeDisplacementConvolved = firstDerivativeEyeDisplacementConvolved;
 covariates.blinksConvolved = blinksConvolved;
 covariates.firstDerivativeBlinksConvolved = firstDerivativeBlinksConvolved;
+covariates.pupilTimebase = pupilTimebase;
 
 
 end
