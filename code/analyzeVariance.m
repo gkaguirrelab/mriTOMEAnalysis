@@ -172,15 +172,36 @@ for rr = 1:length(runListPooled)
     firstDerivativeBlinksConvolved = diff(blinksConvolved);
     firstDerivativeBlinksConvolved = [NaN, firstDerivativeBlinksConvolved];
     
+    pupilChange = diff(pupilDiameter);
+    pupilChange = [NaN; pupilChange];
+    constrictions = zeros(1, length(pupilChange));
+    dilations = zeros(1,length(pupilChange));
+    constrictions(find(pupilChange < 0)) = pupilChange(find(pupilChange < 0));
+    dilations(find(pupilChange > 0)) = pupilChange(find(pupilChange > 0));
     
+    [constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
+    [dilationsConvolved ] = convolveRegressorWithHRF(dilations', pupilTimebase);
+    [ pupilChangeConvolved ] = convolveRegressorWithHRF(pupilChange, pupilTimebase);
+    
+    firstDerivativeConstrictionsConvolved = diff(constrictionsConvolved);
+    firstDerivativeConstrictionsConvolved = [NaN, firstDerivativeConstrictionsConvolved];
+    firstDerivativeDilationsConvolved = diff(dilationsConvolved);
+    firstDerivativeDilationsConvolved = [NaN, firstDerivativeDilationsConvolved];
+    firstDerivativePupilChangeConvolved = diff(pupilChangeConvolved);
+    firstDerivativePupilChangeConvolved = [NaN, firstDerivativePupilChangeConvolved];
     
     
 
     
     
-    regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved];    
-    
-    
+    %regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved];    
+    %regressors = [pupilChangeConvolved; firstDerivativePupilChangeConvolved];
+    %regressors = [dilationsConvolved; firstDerivativeDilationsConvolved; constrictionsConvolved; firstDerivativeConstrictionsConvolved];
+    regressors = [constrictionsConvolved; firstDerivativeConstrictionsConvolved];
+    %regressors = [dilationsConvolved; firstDerivativeDilationsConvolved];
+
+    %regressors = [eyeDisplacementConvolved; firstDerivativeEyeDisplacementConvolved; pupilDiameterConvolved; firstDerivativePupilDiameterConvolved; blinksConvolved; firstDerivativeBlinksConvolved; pupilChangeConvolved; firstDerivativePupilChangeConvolved];    
+
     
     [ ~, stats ] = cleanTimeSeries( cleanedTimeSeries, regressors', pupilTimebase);
     rSquaredPooled = [rSquaredPooled, stats.rSquared];
