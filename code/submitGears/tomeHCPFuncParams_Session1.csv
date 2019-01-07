@@ -1,6 +1,7 @@
 projectName,tome,gearName,hcp-func,rootSessionInputLabel,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
 Inputs,GradientCoeff,SpinEchoNegative,SpinEchoPositive,StructZip,fMRIScout,fMRITimeSeries,,,
 DefaultLabel,coeff.grad,SpinEchoFieldMap_AP,SpinEchoFieldMap_PA,hcp-struct/hcpstruct.zip,,,,,
+AcqFileType,,nifti,nifti,,nifti,nifti,,,
 IsSessionFile,1,0,0,1,0,0,,,
 IsAnalysisFile,0,0,0,1,0,0,,,
 ExactStringMatch,0,0,0,0,0,0,,,Notes
@@ -20,10 +21,10 @@ TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/
 TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1/rfMRI_REST_AP_Run3_SBRef,TOME_3003/Session 1/rfMRI_REST_AP_Run3,,,
 TOME_3003,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1,TOME_3003/Session 1/rfMRI_REST_PA_Run4_SBRef,TOME_3003/Session 1/rfMRI_REST_PA_Run4,,,
 ,,,,,,,,,
-TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_AP_Run1_SBRef,TOME_3004/Session 1a/rfMRI_REST_AP_Run1,,,"Struct from Session 1a, Scans 1 and 2 from session 1a, scans 3 and 4 from session 1b"
+TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_AP_Run1_SBRef,TOME_3004/Session 1a/rfMRI_REST_AP_Run1,,,"Struct from Session 1a, Scans 1 and 2 from session 1a, scans 3 and 4 from session 1b; Runs 3 and 4 collected in reversed order"
 TOME_3004,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a,TOME_3004/Session 1a/rfMRI_REST_PA_Run2_SBRef,TOME_3004/Session 1a/rfMRI_REST_PA_Run2,,,
-TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_PA_Run3_SBRef,TOME_3004/Session 1b/rfMRI_REST_PA_Run3,,,
-TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_AP_Run4_SBRef,TOME_3004/Session 1b/rfMRI_REST_AP_Run4,,,
+TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_PA_Run4_SBRef,TOME_3004/Session 1b/rfMRI_REST_PA_Run4,,,
+TOME_3004,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1b,TOME_3004/Session 1a,TOME_3004/Session 1b/rfMRI_REST_AP_Run3_SBRef,TOME_3004/Session 1b/rfMRI_REST_AP_Run3,,,
 ,,,,,,,,,
 TOME_3005,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1/rfMRI_REST_AP_Run1_SBRef,TOME_3005/Session 1/rfMRI_REST_AP_Run1,,,
 TOME_3005,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1,TOME_3005/Session 1/rfMRI_REST_PA_Run2_SBRef,TOME_3005/Session 1/rfMRI_REST_PA_Run2,,,
@@ -69,7 +70,7 @@ TOME_3015,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/
 TOME_3015,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1/rfMRI_REST_AP_Run3_SBRef,TOME_3015/Session 1/rfMRI_REST_AP_Run3,,,
 TOME_3015,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1,TOME_3015/Session 1/rfMRI_REST_PA_Run4_SBRef,TOME_3015/Session 1/rfMRI_REST_PA_Run4,,,
 ,,,,,,,,,
-TOME_3016,TOME_3016/Session 2,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1/rfMRI_REST_AP_Run1_SBRef,TOME_3016/Session 1/rfMRI_REST_AP_Run1,,,"Using coeff.grad file from 3015, session 2"
+TOME_3016,TOME_3016/Session 2,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1/rfMRI_REST_AP_Run1_SBRef,TOME_3016/Session 1/rfMRI_REST_AP_Run1,,,"Using coeff.grad file from 3016, session 2"
 TOME_3016,TOME_3016/Session 2,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1/rfMRI_REST_PA_Run2_SBRef,TOME_3016/Session 1/rfMRI_REST_PA_Run2,,,
 TOME_3016,TOME_3016/Session 2,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1/rfMRI_REST_AP_Run3_SBRef,TOME_3016/Session 1/rfMRI_REST_AP_Run3,,,
 TOME_3016,TOME_3016/Session 2,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1,TOME_3016/Session 1/rfMRI_REST_PA_Run4_SBRef,TOME_3016/Session 1/rfMRI_REST_PA_Run4,,,

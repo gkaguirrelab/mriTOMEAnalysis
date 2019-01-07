@@ -1,14 +1,26 @@
 function submitHCPGears(paramsFileName)
-% Submits jobs to the flywheel instance based upon a table of parameters
+% Submits jobs to a flywheel instance based upon a table of parameters
 %
 % Syntax
 %  result = submitHCPGears(paramsFileName)
 %
 % Description:
+%   This routine implements calls to the Flywheel API to submit analysis
+%   gear jobs. The behavior of the routine is determined by a parameter
+%   file, that itself is a .csv file with a standard format. The first six
+%   rows of the parameter table contain header information. The first row
+%   is treated as a set of key-value pairs which are submitted to the input
+%   parser. The remaining header rows define the type of inputs provided to
+%   the gear. The subsequent rows of the table each define an analysis to
+%   be submitted.
 %
+% Inputs:
+%   paramsFileName        - String. Full path to a csv file that contains
+%                           the analysis specifications
 %
+% Outputs:
+%   none
 %
-
 % Examples:
 %{
     submitHCPGears('tomeHCPStructParams.csv');
@@ -20,7 +32,13 @@ function submitHCPGears(paramsFileName)
     submitHCPGears('tomeHCPFuncParams_Session1.csv');
 %}
 %{
+    submitHCPGears('tomeHCPFuncICAFIX_Session1.csv');
+%}
+%{
     submitHCPGears('tomeHCPFuncParams_Session2.csv');
+%}
+%{
+    submitHCPGears('tomeHCPDiffParams.csv');
 %}
 
 
@@ -34,7 +52,6 @@ p.addParameter('projectName','tome',@ischar);
 p.addParameter('gearName','hcp-func',@ischar);
 p.addParameter('rootSessionInputLabel','fMRITimeSeries',@ischar);
 p.addParameter('verbose','true',@ischar);
-p.addParameter('AcqFileType','nifti',@ischar);
 p.addParameter('includeFreeSurferLicenseFile','true', @ischar);
 p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configKeys','',@(x)(isempty(x) || ischar(x)));
@@ -48,15 +65,16 @@ verbose = eval(p.Results.verbose);
 includeFreeSurferLicenseFile = eval(p.Results.includeFreeSurferLicenseFile);
 
 % Define the paramsTable dimensions
-nParamRows = 6; % This is the number of rows that make up the header
+nParamRows = 7; % This is the number of rows that make up the header
 nParamCols = 1; % This is for the first column that has header info
 
 % Hard-coded identity of the header row information
 InputsRow = 2;
 DefaultLabelRow = 3;
-IsSessionFileRow = 4;
-IsAnalysisFileRow = 5;
-ExactStringMatchRow = 6;
+AcqFileTypeRow = 4;
+IsSessionFileRow = 5;
+IsAnalysisFileRow = 6;
+ExactStringMatchRow = 7;
 
 % Determine the number of inputs to specify for this gear
 nInputCols = sum(cellfun(@(x) ~isempty(x),paramsTable{InputsRow,:}));
@@ -106,7 +124,7 @@ for i = 1:numel(keys)
         configDefault.(keys{i}) = val.default;
     else
         if verbose
-        fprintf('No default value for %s\n. It must be set prior to execution.', keys{i});
+            fprintf('No default value for %s\n. It must be set prior to execution.', keys{i});
         end
     end
 end
@@ -122,7 +140,7 @@ for ii=nParamRows+1:nRows
     
     % Get the subject name
     subjectName = char(paramsTable{ii,1});
-
+    
     %% Assemble Inputs
     % Create an empty inputs struct
     inputs = struct();
@@ -146,8 +164,8 @@ for ii=nParamRows+1:nRows
         allAcqs = fw.getSessionAcquisitions(allSessions{sessionIdx}.id);
         % Check to see if there is a custom file label. If not, use the
         % default label
-        if length(entry)==3
-            targetLabel = entry(3);
+        if length(entry)>=3
+            targetLabel = strjoin(entry(3:end),'/');
         else
             targetLabel = char(paramsTable{DefaultLabelRow,jj});
         end
@@ -160,11 +178,14 @@ for ii=nParamRows+1:nRows
                 allAnalyses=fw.getSessionAnalyses(allSessions{sessionIdx}.id);
                 targetLabelParts = strsplit(targetLabel,'/');
                 analysisIdx = find(strcmp(cellfun(@(x) x.gearInfo.name,allAnalyses,'UniformOutput',false),targetLabelParts{1}));
-                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx}.files));
-                theID = allAnalyses{analysisIdx}.id;
-                theName = allAnalyses{analysisIdx}.files{fileIdx}.name;
+                % Find which of the analyses contains the target file
+                whichAnalysis = find(cellfun(@(y) ~isempty(find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),y.files))),allAnalyses(analysisIdx)));
+                % Get this file
+                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx(whichAnalysis)}.files));
+                theID = allAnalyses{analysisIdx(whichAnalysis)}.id;
+                theName = allAnalyses{analysisIdx(whichAnalysis)}.files{fileIdx}.name;
                 theType = 'analysis';
-            theAcqLabel = 'analysis_file';
+                theAcqLabel = 'analysis_file';
             else
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
@@ -189,7 +210,7 @@ for ii=nParamRows+1:nRows
                 % in the acquisition label. We trim that off here as it can
                 % cause troubles in gear execution.
                 rootSessionTag = strtrim(theName);
-            end            
+            end
         else
             % It is an acqusition file. If a file entry was specified, go
             % find that.
@@ -202,37 +223,37 @@ for ii=nParamRows+1:nRows
                 theAcqLabel = allAcqs{acqIdx}.label;
             else
                 % Try to find an acquisition that matches the input label
-                % and contains a nifti file. Unless told to use exact
-                % matching, trim off leading and trailing whitespace, as
-                % the stored label in flywheel sometimes has a trailing
-                % space. Also, use a case insensitive match.
+                % and contains the specified AcqFileType. Unless told to
+                % use exact matching, trim off leading and trailing
+                % whitespace, as the stored label in flywheel sometimes has
+                % a trailing space. Also, use a case insensitive match.
                 if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
                     labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
                 else
                     labelMatchIdx = cellfun(@(x) strcmpi(strtrim(x.label),strtrim(targetLabel)),allAcqs);
                 end
-                isNiftiIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),x.files)),allAcqs);
-                acqIdx = logical(labelMatchIdx .* isNiftiIdx);
+                isFileTypeMatchIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),x.files)),allAcqs);
+                acqIdx = logical(labelMatchIdx .* isFileTypeMatchIdx);
                 if ~any(acqIdx)
                     error('No matching acquisition for this input entry')
                 end
                 if sum(acqIdx)>1
                     error('More than one matching acquisition for this input entry')
                 end
-                % We have a match. Re-find the nifti file
-                theNiftiIdx = find(cellfun(@(y) strcmp(y.type,p.Results.AcqFileType),allAcqs{acqIdx}.files));
+                % We have a match. Re-find the specified file
+                theFileTypeMatchIdx = find(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),allAcqs{acqIdx}.files));
                 % Check for an error condition
-                if isempty(theNiftiIdx)
-                    error('No nifti file for this acquisition');
+                if isempty(theFileTypeMatchIdx)
+                    error('No matching file type for this acquisition');
                 end
-                if length(theNiftiIdx)>1
-                    warning('More than one nifti file for this acquisition; using the most recent');
-                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theNiftiIdx)));
-                    theNiftiIdx=theNiftiIdx(mostRecentIdx);
+                if length(theFileTypeMatchIdx)>1
+                    warning('More than one matching file type for this acquisition; using the most recent');
+                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theFileTypeMatchIdx)));
+                    theFileTypeMatchIdx=theFileTypeMatchIdx(mostRecentIdx);
                 end
                 % Get the file name, ID, and acquisition label
                 theID = allAcqs{acqIdx}.id;
-                theName = allAcqs{acqIdx}.files{theNiftiIdx}.name;
+                theName = allAcqs{acqIdx}.files{theFileTypeMatchIdx}.name;
                 theAcqLabel = allAcqs{acqIdx}.label;
             end
             theType = 'acquisition';
@@ -268,7 +289,7 @@ for ii=nParamRows+1:nRows
     %% Customize gear configuration
     configKeys = eval(p.Results.configKeys);
     configVals = eval(p.Results.configVals);
-    config = configDefault;    
+    config = configDefault;
     if ~isempty(configKeys)
         for kk=1:length(configKeys)
             config.(configKeys{kk})=configVals{kk};
@@ -324,7 +345,7 @@ for ii=nParamRows+1:nRows
     
     %% Add a notes entry to the analysis object
     note = ['InputLabel  -+-  AcquisitionLabel  -+-  FileName\n' ...
-            '-------------|----------------------|-----------\n'];
+        '-------------|----------------------|-----------\n'];
     inputFieldNames = fieldnames(inputs);
     for nn = 1:numel(inputFieldNames)
         newLine = [inputFieldNames{nn} '  -+-  ' acqNotes.(inputFieldNames{nn}) '  -+-  ' inputs.(inputFieldNames{nn}).name '\n'];

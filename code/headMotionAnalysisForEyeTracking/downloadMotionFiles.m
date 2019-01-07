@@ -1,4 +1,10 @@
-
+% downloadMotionFiles.m
+%
+% This script identifies all the analyses in the tome project that contain
+% the output file '_hcpfunc.zip'. This file is then downloaded to a scratch
+% directory, expanded, and then a set of result files are copied to the
+% result save directory.
+%
 
 
 projectName = 'tome';
