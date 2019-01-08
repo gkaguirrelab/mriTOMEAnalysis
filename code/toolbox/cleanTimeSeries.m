@@ -1,4 +1,40 @@
 function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase, varargin)
+% Model regressors in inputted time series data.
+%
+% Syntax: 
+%  [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase)
+%
+% Description:
+%  This routine loops over all voxels in the inputTimeSeries and
+%  performs a regression of the inputted regressors against that BOLD
+%  time series. The model fits of that regression are subtracted from
+%  the original voxel time series to yield a "cleaned" time series. The
+%  beta, pearson R, and R2 value of each regression are also outputted.
+% 
+% Inputs:
+%  inputTimeSeries: 		- a m x n matrix, where m corresponds to the number of voxels 
+%							  and n corresponds to the number of TRs. The routine loops 
+%							  over rows.
+%  regressors:				- a r x s matrix in which r corresponds to the number 
+%							  regressors and s corresponds to the number of timepoints 
+%							  for each regressor
+%  regressorsTimebase       - the timebase that describes the regressors. It should be of 
+%							  the same length s as the number of columns of the regressors 
+%							  matrix.
+%
+% Optional key-value pairs:
+%  'TR'                     - the length of time between each acquisition of the 
+%							  functional volume that gave the inputTimeSeries.
+%  'totalTime'				- the total time, in ms, of the functional acqusition that 
+%							  gave the inputTimeSeries
+%  'meanCenterRegressors'   - a logical that determines whether to mean center each regressor
+%  'zeroNansInRegressors'   - a logical that determines whether to replace all NaN values 
+%							  with 0 in the regressor, after mean centering has been performed	
+%  'saveName'				- a string that determines where to save any of the results. 
+%						      If empty, the default, nothing is saved.		
+%
+% Outputs:
+%  				  
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('TR',800, @isnumber);
