@@ -1,8 +1,40 @@
 function getSubjectData(subjectID, runName, varargin)
+% Downloads the relevant files for fMRI analysis from FlyWheel
+%
+% Syntax:
+%  getSubjectData(subjectID, runName)
+%
+% Description:
+%  On the basis of the inputted subject and runName, this routine searches
+%  for the relevant files off of FlyWheel and downloads them locally. This
+%  routine broadly downloads structural files, functional files, physio
+%  data, pupil data (which is stored on Dropbox, and not FlyWheel), and
+%  retintopy output from the Benson gear. More specifically, structural
+%  files include the structural T1 anatomical image as well as the
+%  registration information that brings this image from MNI space to ACPC.
+%  Functional files include the functional volume of interest, as well as
+%  its associated motion parameters.
+%
+% Inputs:
+%  subjectID:           - a string that identifies the relevant subject (i.e.
+%                         'TOME_3040'
+%  runName:             - a string that identifies the relevant run (i.e.
+%                         'rfMRI_REST_AP_Run3')
+%
+% Optional key-value pairs:
+%  downloadOnly         - a string that determines which files to download.
+%                         The default is set to all, which instructs the
+%                         code to download all files. Other options include
+%                         'pupil' to just download the pupil data from
+%                         Dropbox. Note that other options will be added in
+%                         the future.
+%
+% Outputs:
+%  None. The downloaded data files, however, are ultimately saved onto
+%  Dropbox.
 
 %% input parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('paramsFileName','analysesLabels.csv', @ischar);
 p.addParameter('downloadOnly', 'all', @ischar);
 p.parse(varargin{:});
 

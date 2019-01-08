@@ -1,10 +1,36 @@
 function [ functionalScan ] = registerFunctionalToAnatomical(subjectID, runName, varargin)
+% Registers the functional scan onto the anatomical scan.
+%
+% Syntax:
+%  registerFunctionalToAnatomical(subjectID, runName)
+%
+% Description:
+%  This routine registers the functional volume onto the structural volume
+%  in subject native space. This code calls a bash script
+%  (HCPbringFunctionalToStructural), which itself performs this
+%  registration using FSL. 
+%
+% Inputs:
+%  subjectID:           - a string that identifies the relevant subject (i.e.
+%                         'TOME_3040'
+%  runName:             - a string that identifies the relevant run (i.e.
+%                         'rfMRI_REST_AP_Run3')
+%
+% Optional key-value pairs:
+%  visualizeAlignment   - a logical that determines whether to visualize
+%                         the alignment between functional volume and
+%                         structural volume after registration has taken
+%                         place.
+%  structuralN
+%
+% Outputs:
+%  functionalScan       - a structure that represents the
+%                         anatomically-aligned functional volume
+
+
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('visualizeAlignment',false, @islogical);
-p.addParameter('structuralName','T1w_acpc_dc_restore', @ischar);
-
-
 
 p.parse(varargin{:});
 
@@ -34,7 +60,7 @@ if ~exist(fullfile(functionalDir, [runName, '_native.nii.gz']))
     MRIwrite(functionalScan_firstAq, fullfile(functionalDir, [runName, '_native_firstAq.nii.gz']));
     
     if (p.Results.visualizeAlignment)
-        system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fsleyes ' '"', anatDir, '/', structuralName, '.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
+        system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fsleyes ' '"', anatDir, '/T1w_acpc_dc_restore.nii.gz" "', functionalDir, '/', runName, '_native_firstAq.nii.gz "']);
     end
 else
     stillTrying = true; tryAttempt = 0;

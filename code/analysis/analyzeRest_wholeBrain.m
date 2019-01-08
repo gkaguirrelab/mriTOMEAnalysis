@@ -1,8 +1,29 @@
 function analyzeRest_wholeBrain(subjectID, runName, varargin)
-
-p = inputParser; p.KeepUnmatched = true;
-p.addParameter('visualizeAlignment',false, @islogical);
-p.parse(varargin{:});
+% Complete analysis pipeline for analyzing resting state data, ultimately
+% producing maps
+%
+% Syntax:
+%  analyzeRest_wholeBrain(subjectID, runName)
+%
+% Description:
+%  This routine performs the analysis pipeline for functional BOLD data
+%  from resting state runs. Basic analysis steps include to 1) download the
+%  necessary data off of flywheel, 2) register the functional volume to the
+%  structural volume in subject native space, 3) extract white matter and
+%  ventricular signals to be used as nuisance regressors, 4) extract time
+%  series from each gray matter voxel in the functional volume, 5) regress
+%  out signals from physio, motion, white matter, and ventricles to yield
+%  cleaned time series, and 6) regress out a series of eye signals extracted
+%  from pupillometry and create maps out of these statistics.
+%
+% Inputs:
+%  subjectID:           - a string that identifies the relevant subject (i.e.
+%                         'TOME_3040'
+%  runName:             - a string that identifies the relevant run (i.e.
+%                         'rfMRI_REST_AP_Run3')
+%
+% Outputs:
+%  None. Several maps are saved out to Dropbox, however.
 
 %% Define paths
 [ paths ] = definePaths(subjectID);
@@ -15,7 +36,7 @@ outputDir = paths.outputDir;
 
 %% Get the data and organize it
 
-%getSubjectData(subjectID, runName);
+% getSubjectData(subjectID, runName);
 
 %% Register functional scan to anatomical scan
 
