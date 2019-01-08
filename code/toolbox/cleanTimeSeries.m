@@ -12,7 +12,7 @@ function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regres
 %  beta, pearson R, and R2 value of each regression are also outputted.
 % 
 % Inputs:
-%  inputTimeSeries: 		- a m x n matrix, where m corresponds to the number of voxels 
+%  inputTimeSeries: 		- a m x n matrix, where m corresponds to the number of time series 
 %							  and n corresponds to the number of TRs. The routine loops 
 %							  over rows.
 %  regressors:				- a r x s matrix in which r corresponds to the number 
@@ -34,7 +34,14 @@ function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regres
 %						      If empty, the default, nothing is saved.		
 %
 % Outputs:
-%  				  
+%  cleanedTimeSeries        - a m x n matrix, where m corresponds to the number of time series
+%							  and n corresponds to the number of TRs. The routine loops 
+%							  over rows. The values of each voxel represent the residual 
+%							  after the regression was performed.			
+%  stats					- A structure with subfields beta, pearsonR, and rSquared that 
+%							  describe the summary statistics from the regression for each 
+%							  time series.  Each subfield is a vector of with length equal 
+%							  to the number of time series.
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('TR',800, @isnumber);
