@@ -16,6 +16,9 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 %  cleaned time series, and 6) regress out a series of eye signals extracted
 %  from pupillometry and create maps out of these statistics.
 %
+%  This routien also requires several pieces of pre-installed software.
+%  These include FSL and AFNI.
+%
 % Inputs:
 %  subjectID:           - a string that identifies the relevant subject (i.e.
 %                         'TOME_3040'
