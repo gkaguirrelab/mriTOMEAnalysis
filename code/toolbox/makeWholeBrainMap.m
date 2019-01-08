@@ -1,4 +1,26 @@
 function [ statsVolume ] = makeWholeBrainMap(stats, voxelIndices, templateVolume)
+% Make whole-brain map from the inputted stats.
+%
+% Syntax:
+%  [ statsVolume ] = makeWholeBrainMap(stats, voxelIndices, templateVolume)
+%
+% Inputs:
+%  stats: 					- A vector of with length equal 
+%							  to the number of voxels of interest. The value of each vector 
+% 							  will be placed into a voxel on a whole brain map
+%  voxelIndices             - a 1 x m cell array, where m corresponds to the
+%                             number of voxels of interest. The contents of
+%                             each cell is the x, y, and z coordinates of
+%                             where that voxel came from. The value of m
+%                             corresponds to the voxel identity of the row of
+%                             timeSeriesPerVoxel
+%  templateVolume			- a structure that represents the functional volume of interest. 
+%							  It is used as a template for how the voxels are arranged.
+%
+% Outputs:
+%  statsVolume				- a structure, where the .vol subfield contains the inputted 
+%						      stats at the appropriate voxel location
+
 
 %% Set up our output variable
 statsVolume = templateVolume;
