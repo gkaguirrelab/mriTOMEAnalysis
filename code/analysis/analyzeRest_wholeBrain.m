@@ -66,7 +66,11 @@ grayMatterMaskFile = fullfile(anatDir, [subjectID '_GM_resampled.nii.gz']);
 
 %% Extract time series of each voxel from gray matter mask
 [ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
-
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
+if ~exist(savePath,'dir')
+    mkdir(savePath);
+end
+save(fullfile(savePath, 'voxelTimeSeries'), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
 %% Clean time series from physio regressors
 
 physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
@@ -105,10 +109,7 @@ regressors(:,emptyColumns) = [];
 
 [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
-if ~exist(savePath,'dir')
-    mkdir(savePath);
-end
+
 
 
 %% Remove eye signals from BOLD data
