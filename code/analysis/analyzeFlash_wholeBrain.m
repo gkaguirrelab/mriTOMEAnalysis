@@ -81,7 +81,7 @@ regressors(:,emptyColumns) = [];
 
 [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'flash', subjectID);
 if ~exist(savePath,'dir')
     mkdir(savePath);
 end
@@ -118,8 +118,8 @@ end
 
 % mean-center this stimulus profile
 stimulusStruct.values = stimulusStruct.values - 0.5;
-[ flashConvolved ] = convolveRegressorWithHRF(stimulusStruct.values, stimulusStruct.timebase);
-[~, stats_flash] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, flashConvolved, stimulusStruct.timebase, 'meanCenterRegressors', false);
+[ flashConvolved ] = convolveRegressorWithHRF(stimulusStruct.values', stimulusStruct.timebase);
+[~, stats_flash] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, flashConvolved', stimulusStruct.timebase, 'meanCenterRegressors', false);
 [ flash_rSquared ] = makeWholeBrainMap(stats_flash.rSquared', voxelIndices, functionalScan);
 MRIwrite(flash_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'flash', subjectID, [runName,'_flash_rSquared.nii.gz']));
 [ flash_beta ] = makeWholeBrainMap(stats_flash.beta, voxelIndices, functionalScan);
