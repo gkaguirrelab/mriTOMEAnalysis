@@ -1,4 +1,36 @@
 function [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, functionalFile)
+% Make eroded white matter and ventricle masks from FreeSurfer output.
+%
+% Syntax:
+%  [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, functionalFile)
+%
+% Description:
+%  This routine first resamples the aparc_aseg file (which
+%  contains the segmentation/parcellation results form FreeSurfer) to the
+%  resolution of the functional data. It then identifies voxels
+%  corresponding to white matter and gray matter (separately) and binarizes
+%  as mask of these relevant voxels. Finally the routine erodeds these
+%  masks by 1 voxel to avoid any partial volume effects.
+%
+%  This routine requires AFNI, unless we're just loading in the files
+%  already created.
+% 
+% Inputs:
+%  aparcAsegFile:       - a string that gives the full path to the
+%                         aparcAseg file
+%  functionalFile:      - a string that gives the full path to the
+%                         functional volume
+%
+% Outputs:
+%  whiteMatterMask:     - a structure that contains the binary mask in
+%                         which all voxels corresponding to white matter
+%                         are 1 with the rest 0. This is following the
+%                         erosion process.
+%  ventriclesMask:     - a structure that contains the binary mask in
+%                         which all voxels corresponding to the ventricles
+%                         are 1 with the rest 0. This is following the
+%                         erosion process.
+
 
 
 %% Check to see if these files already exist, so we don't have to make them again.

@@ -1,4 +1,55 @@
 function [ meanTimeSeries, timeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, mask, varargin )
+% This function extract the time series from each voxel included in the
+% inputted mask.
+%
+% Syntax:
+%  [ meanTimeSeries, timeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, mask)
+%
+% Description:
+%  This routine loops over every non-zero voxel included in the inputted
+%  gray matter mask. For each voxel, we extract the time series from the
+%  inputted functional volume in that same voxel location. We save these
+%  extracted time series in a matrix. The routine can also meanCenter the
+%  time series of each voxel, if desired. The central tendency of all
+%  voxels is also outputted, and it can be specified whether the central
+%  tendency should be mean, median, or PCA. The routine will also plot the
+%  "mean" time series across all voxels.
+%
+% Inputs:
+%  functionalScan:      - a structure that represents the functional scan
+%                         of interest
+%  mask:                - a structure, in which the .vol subfield specifies
+%                         the voxels of interest. Voxels that are 0 are
+%                         ignored, voxels that are 1 indicate to extract
+%                         the time series from the functional volume from
+%                         the corresponding voxel.
+%
+% Optional key-value pairs:
+%  'meanCenter'         - a logical, which determines whether or not to mean
+%                         center the time series of each voxel.
+%  'whichCentralTendency' - a string which determines how to take the
+%                         central tendency across voxels. Options include
+%                         'mean', 'median', or 'PCA'.
+%  'saveName'           - a string which specifies the full path to which
+%                         to save the relevant output of this code. If
+%                         empty, no results will be saved out.
+%
+% Outputs:
+%  meanTimeSeries:       - a 1 x n vector, where n is the number of TRs in
+%                          the functional volume. The value at each TR is
+%                          the chosen central tendency across all voxels
+%  timeSeriesPerVoxel    - a m x n matrix, where m specifies the number of
+%                          voxels and n specifies the number of TRs. Each
+%                          row is the time series of each voxel, and these
+%                          results may or may not have been mean centered
+%                          depending on the key-value pair 'meanCenter'
+%  voxelIndices          - a 1 x m cell array, where m corresponds to the
+%                          number of voxels of interest. The contents of
+%                          each cell is the x, y, and z coordinates of
+%                          where that voxel came from. The value of m
+%                          corresponds to the voxel identity of the row of
+%                          timeSeriesPerVoxel
+
 %% Input Parser
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('meanCenter', true, @islogical);
