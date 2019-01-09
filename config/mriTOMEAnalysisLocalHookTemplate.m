@@ -47,10 +47,14 @@ switch userID
         materialsBasePath = ['/Users/' userID '/Dropbox-Aguirre-Brainard-Lab/TOME_materials'];
         TOME_dataBasePath = ['/Users/' userID '/Dropbox-Aguirre-Brainard-Lab/TOME_data/'];
         TOME_analysisBasePath = ['/Users/' userID '/Dropbox-Aguirre-Brainard-Lab/MELA_analysis/'];
+        TOME_processingBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_processing/'];
+        
     otherwise
         materialsBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_materials'];
         TOME_dataBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_data/'];
         TOME_analysisBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/'];
+        TOME_processingBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_processing/'];
+
 end
 
 %% Specify where output goes
@@ -61,6 +65,8 @@ if ismac
     setpref(projectName,'projectRootDir',fullfile('/Users/',userID,'/Documents/flywheel',projectName));
     setpref(projectName,'TOMEDataPath', TOME_dataBasePath);
     setpref(projectName, 'TOME_analysisPath', TOME_analysisBasePath);
+        setpref(projectName, 'TOME_processingPath', TOME_processingBasePath);
+
 elseif isunix
     % Code to run on Linux plaform
     setpref(projectName,'analysisScratchDir','/tmp/flywheel');
