@@ -74,7 +74,7 @@ regressorsOriginal = regressors;
 if p.Results.meanCenterRegressors
     for nn = 1:nRegressors
         regressors(:,nn) = regressors(:,nn) - nanmean(regressors(:,nn));
-        regressors(:,nn) = regressors(:,nn) ./ nanstd(regressors(:,nn));
+        regressors(:,nn) = regressors(:,nn) ./ nanmean(regressors(:,nn));
         if (p.Results.zeroNansInRegressors)
             nanIndices = find(isnan(regressors(:,nn)));
             regressors(nanIndices,nn) = 0;

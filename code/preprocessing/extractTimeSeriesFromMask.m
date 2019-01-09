@@ -103,7 +103,7 @@ if p.Results.meanCenter
         
         % convert to percent signal change relative to the mean
         voxelMeanVec = mean(runData,2);
-        PSC = 100*((runData - voxelMeanVec)./voxelMeanVec);
+        PSC = ((runData - voxelMeanVec)./voxelMeanVec);
         timeSeriesPerVoxel(rr,:) = PSC;
     end
     
