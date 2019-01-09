@@ -133,5 +133,23 @@ firstDerivativePupilDiameterBandpassedConvolved = [NaN, firstDerivativePupilDiam
 covariates.pupilDiameterBanpassedConvolved = pupilDiameterBanpassedConvolved;
 covariates.firstDerivativePupilDiameterBandpassedConvolved = firstDerivativePupilDiameterBandpassedConvolved;
 
+pupilChangeBandpassed = diff(pupilDiameterBandpassed);
+pupilChangeBandpassed = [NaN, pupilChangeBandpassed];
+[ pupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(pupilChangeBandpassed', pupilTimebase);
+firstDerivativePupilChangeBandpassedConvolved = diff(pupilChangeBandpassedConvolved);
+firstDerivativePupilChangeBandpassedConvolved =  [NaN, firstDerivativePupilChangeBandpassedConvolved];
+covariates.pupilChangeBandpassedConvolved = pupilChangeBandpassedConvolved;
+covariates.firstDerivativePupilChangeBandpassedConvolved = firstDerivativePupilChangeBandpassedConvolved;
+
+rectifiedPupilChangeBandpassed = abs(diff(pupilDiameterBandpassed));
+rectifiedPupilChangeBandpassed = [NaN, rectifiedPupilChangeBandpassed];
+[ rectifiedPupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(rectifiedPupilChangeBandpassed', pupilTimebase);
+firstDerivativeRectifiedPupilChangeBandpassed = diff(rectifiedPupilChangeBandpassedConvolved);
+firstDerivativeRectifiedPupilChangeBandpassed = [NaN, firstDerivativeRectifiedPupilChangeBandpassed];
+covariates.rectifiedPupilChangeBandpassed = rectifiedPupilChangeBandpassed;
+covariates.firstDerivativeRectifiedPupilChangeBandpassed = firstDerivativeRectifiedPupilChangeBandpassed;
+
+
+
 
 end
