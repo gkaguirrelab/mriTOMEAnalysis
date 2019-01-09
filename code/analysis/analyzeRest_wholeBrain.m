@@ -73,7 +73,7 @@ savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAna
 if ~exist(savePath,'dir')
     mkdir(savePath);
 end
-save(fullfile(savePath, 'voxelTimeSeries'), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
+save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
 %% Clean time series from physio regressors
 
 physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
