@@ -50,5 +50,6 @@ sigma = p.Results.kernelFWHMmm/(2*(2*log(2))^0.5);
 system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fslmaths "' functionalFile, '" -kernel gauss ', num2str(sigma), ' -fmean "', fullfile(savePath, [fileName, '_smoothed.nii.gz']), '"']);
 
 %% Load up the smoothed volume
+smoothedVolume = MRIread(fullfile(savePath, [fileName, '_smoothed.nii.gz']));
 
 end
