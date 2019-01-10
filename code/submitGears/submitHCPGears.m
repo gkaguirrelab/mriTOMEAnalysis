@@ -50,7 +50,7 @@ paramsTable = readtable(paramsFileName,'ReadVariableNames',false,'FileType','tex
 p = inputParser; p.KeepUnmatched = false;
 p.addParameter('projectName','tome',@ischar);
 p.addParameter('gearName','hcp-func',@ischar);
-p.addParameter('rootSessionInputLabel','fMRITimeSeries',@ischar);
+p.addParameter('rootSession','fMRITimeSeries',@ischar);
 p.addParameter('verbose','true',@ischar);
 p.addParameter('includeFreeSurferLicenseFile','true', @ischar);
 p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@(x)(isempty(x) || ischar(x)));
@@ -65,16 +65,17 @@ verbose = eval(p.Results.verbose);
 includeFreeSurferLicenseFile = eval(p.Results.includeFreeSurferLicenseFile);
 
 % Define the paramsTable dimensions
-nParamRows = 7; % This is the number of rows that make up the header
+nParamRows = 8; % This is the number of rows that make up the header
 nParamCols = 1; % This is for the first column that has header info
 
 % Hard-coded identity of the header row information
 InputsRow = 2;
 DefaultLabelRow = 3;
 AcqFileTypeRow = 4;
-IsSessionFileRow = 5;
-IsAnalysisFileRow = 6;
-ExactStringMatchRow = 7;
+IsAcquisitionFileRow = 5;
+IsSessionFileRow = 6;
+IsAnalysisFileRow = 7;
+ExactStringMatchRow = 8;
 
 % Determine the number of inputs to specify for this gear
 nInputCols = sum(cellfun(@(x) ~isempty(x),paramsTable{InputsRow,:}));
@@ -140,7 +141,7 @@ for ii=nParamRows+1:nRows
     
     % Get the subject name
     subjectName = char(paramsTable{ii,1});
-    
+        
     %% Assemble Inputs
     % Create an empty inputs struct
     inputs = struct();
@@ -150,43 +151,41 @@ for ii=nParamRows+1:nRows
         
         % Define the input label
         theInputLabel=char(paramsTable{InputsRow,jj});
-        % Get the entry for this job and input from the params table
-        entry = strsplit(char(paramsTable{ii,jj}),'/');
-        % Try to find the session with this subject and session label
-        sessionIdx = find(cellfun(@(x) all([strcmp(x.subject.code,entry{1}) strcmp(x.label,entry{2})]),allSessions));
-        if isempty(sessionIdx)
-            error('No matching session and subject for this input entry')
+        
+        % Check if the theInputLabel is "rootSessionTag", in which case use
+        % the entry to define the rootSessionTag
+        if strcmp('rootSessionTag',theInputLabel)
+            rootSessionTag = char(paramsTable{ii,jj});
         end
-        if length(sessionIdx)>1
-            error('More than one matching session and subject for this input entry')
-        end
-        % Obtain the set of acquisitions for the matching session
-        allAcqs = fw.getSessionAcquisitions(allSessions{sessionIdx}.id);
-        % Check to see if there is a custom file label. If not, use the
-        % default label
-        if length(entry)>=3
-            targetLabel = strjoin(entry(3:end),'/');
-        else
-            targetLabel = char(paramsTable{DefaultLabelRow,jj});
-        end
-        % Check if this is a session file, or an acquisition file
-        if logical(str2double(char(paramsTable{IsSessionFileRow,jj})))
-            % It is a session file (such as a coeff.grad file, or an
-            % analysis result). Get the container ID of the session.
-            if logical(str2double(char(paramsTable{IsAnalysisFileRow,jj})))
-                % It is an analysis output
-                allAnalyses=fw.getSessionAnalyses(allSessions{sessionIdx}.id);
-                targetLabelParts = strsplit(targetLabel,'/');
-                analysisIdx = find(strcmp(cellfun(@(x) x.gearInfo.name,allAnalyses,'UniformOutput',false),targetLabelParts{1}));
-                % Find which of the analyses contains the target file
-                whichAnalysis = find(cellfun(@(y) ~isempty(find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),y.files))),allAnalyses(analysisIdx)));
-                % Get this file
-                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx(whichAnalysis)}.files));
-                theID = allAnalyses{analysisIdx(whichAnalysis)}.id;
-                theName = allAnalyses{analysisIdx(whichAnalysis)}.files{fileIdx}.name;
-                theType = 'analysis';
-                theAcqLabel = 'analysis_file';
+
+        % Are we dealing with a file (session, analysis, or acquisition)?
+        if logical(str2double(char(paramsTable{IsSessionFileRow,jj}))) || ...
+                logical(str2double(char(paramsTable{IsAnalysisFileRow,jj}))) || ...
+                logical(str2double(char(paramsTable{IsAcquisitionFileRow,jj})))
+            
+            % Get the entry for this job and input from the params table
+            entry = strsplit(char(paramsTable{ii,jj}),'/');
+            % Try to find the session with this subject and session label
+            sessionIdx = find(cellfun(@(x) all([strcmp(x.subject.code,entry{1}) strcmp(x.label,entry{2})]),allSessions));
+            if isempty(sessionIdx)
+                error('No matching session and subject for this input entry')
+            end
+            if length(sessionIdx)>1
+                error('More than one matching session and subject for this input entry')
+            end
+            % Obtain the set of acquisitions for the matching session
+            allAcqs = fw.getSessionAcquisitions(allSessions{sessionIdx}.id);
+            % Check to see if there is a custom file label. If not, use the
+            % default label
+            if length(entry)>=3
+                targetLabel = strjoin(entry(3:end),'/');
             else
+                targetLabel = char(paramsTable{DefaultLabelRow,jj});
+            end
+            
+            % Is tihs a session file?
+            if logical(str2double(char(paramsTable{IsSessionFileRow,jj})))
+                % Get the container ID of the session.
                 % It is a session file (like a coeff.grad)
                 theID = allSessions{sessionIdx}.id;
                 if isempty(allSessions{sessionIdx}.files)
@@ -200,8 +199,73 @@ for ii=nParamRows+1:nRows
                 theType = 'session';
                 theAcqLabel = 'session_file';
             end
-            % Check if theInputLabel is the rootSessionInputLabel
-            if strcmp(p.Results.rootSessionInputLabel,theInputLabel)
+            
+            % Is it is an analysis output?
+            if logical(str2double(char(paramsTable{IsAnalysisFileRow,jj})))
+                allAnalyses=fw.getSessionAnalyses(allSessions{sessionIdx}.id);
+                targetLabelParts = strsplit(targetLabel,'/');
+                analysisIdx = find(strcmp(cellfun(@(x) x.gearInfo.name,allAnalyses,'UniformOutput',false),targetLabelParts{1}));
+                % Find which of the analyses contains the target file
+                whichAnalysis = find(cellfun(@(y) ~isempty(find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),y.files))),allAnalyses(analysisIdx)));
+                % Get this file
+                fileIdx = find(cellfun(@(x) (endsWith(x.name,targetLabelParts{2})),allAnalyses{analysisIdx(whichAnalysis)}.files));
+                theID = allAnalyses{analysisIdx(whichAnalysis)}.id;
+                theName = allAnalyses{analysisIdx(whichAnalysis)}.files{fileIdx}.name;
+                theType = 'analysis';
+                theAcqLabel = 'analysis_file';
+            end
+            
+            % Is it an acqusition file?
+            if logical(str2double(char(paramsTable{IsAcquisitionFileRow,jj})))
+                % If a file entry was specified, go
+                % find that.
+                if length(entry)==4
+                    % We are given the name of the file
+                    theName = entry{4};
+                    % Find the acquisition ID
+                    acqIdx = find(cellfun(@(x) sum(cellfun(@(y) strcmp(y.name,theName),x.files)),allAcqs));
+                    theID = allAcqs{acqIdx}.id;
+                    theAcqLabel = allAcqs{acqIdx}.label;
+                else
+                    % Try to find an acquisition that matches the input label
+                    % and contains the specified AcqFileType. Unless told to
+                    % use exact matching, trim off leading and trailing
+                    % whitespace, as the stored label in flywheel sometimes has
+                    % a trailing space. Also, use a case insensitive match.
+                    if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
+                        labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
+                    else
+                        labelMatchIdx = cellfun(@(x) strcmpi(strtrim(x.label),strtrim(targetLabel)),allAcqs);
+                    end
+                    isFileTypeMatchIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),x.files)),allAcqs);
+                    acqIdx = logical(labelMatchIdx .* isFileTypeMatchIdx);
+                    if ~any(acqIdx)
+                        error('No matching acquisition for this input entry')
+                    end
+                    if sum(acqIdx)>1
+                        error('More than one matching acquisition for this input entry')
+                    end
+                    % We have a match. Re-find the specified file
+                    theFileTypeMatchIdx = find(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),allAcqs{acqIdx}.files));
+                    % Check for an error condition
+                    if isempty(theFileTypeMatchIdx)
+                        error('No matching file type for this acquisition');
+                    end
+                    if length(theFileTypeMatchIdx)>1
+                        warning('More than one matching file type for this acquisition; using the most recent');
+                        [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theFileTypeMatchIdx)));
+                        theFileTypeMatchIdx=theFileTypeMatchIdx(mostRecentIdx);
+                    end
+                    % Get the file name, ID, and acquisition label
+                    theID = allAcqs{acqIdx}.id;
+                    theName = allAcqs{acqIdx}.files{theFileTypeMatchIdx}.name;
+                    theAcqLabel = allAcqs{acqIdx}.label;
+                end
+                theType = 'acquisition';
+            end
+            
+            % Check if theInputLabel is the rootSession
+            if strcmp(p.Results.rootSession,theInputLabel)
                 % Get the root session information. This is the session to
                 % which the analysis product will be assigned
                 rootSessionID = allSessions{sessionIdx}.id;
@@ -211,70 +275,15 @@ for ii=nParamRows+1:nRows
                 % cause troubles in gear execution.
                 rootSessionTag = strtrim(theName);
             end
-        else
-            % It is an acqusition file. If a file entry was specified, go
-            % find that.
-            if length(entry)==4
-                % We are given the name of the file
-                theName = entry{4};
-                % Find the acquisition ID
-                acqIdx = find(cellfun(@(x) sum(cellfun(@(y) strcmp(y.name,theName),x.files)),allAcqs));
-                theID = allAcqs{acqIdx}.id;
-                theAcqLabel = allAcqs{acqIdx}.label;
-            else
-                % Try to find an acquisition that matches the input label
-                % and contains the specified AcqFileType. Unless told to
-                % use exact matching, trim off leading and trailing
-                % whitespace, as the stored label in flywheel sometimes has
-                % a trailing space. Also, use a case insensitive match.
-                if logical(str2double(char(paramsTable{ExactStringMatchRow,jj})))
-                    labelMatchIdx = cellfun(@(x) strcmp(x.label,targetLabel),allAcqs);
-                else
-                    labelMatchIdx = cellfun(@(x) strcmpi(strtrim(x.label),strtrim(targetLabel)),allAcqs);
-                end
-                isFileTypeMatchIdx = cellfun(@(x) any(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),x.files)),allAcqs);
-                acqIdx = logical(labelMatchIdx .* isFileTypeMatchIdx);
-                if ~any(acqIdx)
-                    error('No matching acquisition for this input entry')
-                end
-                if sum(acqIdx)>1
-                    error('More than one matching acquisition for this input entry')
-                end
-                % We have a match. Re-find the specified file
-                theFileTypeMatchIdx = find(cellfun(@(y) strcmp(y.type,paramsTable{AcqFileTypeRow,jj}),allAcqs{acqIdx}.files));
-                % Check for an error condition
-                if isempty(theFileTypeMatchIdx)
-                    error('No matching file type for this acquisition');
-                end
-                if length(theFileTypeMatchIdx)>1
-                    warning('More than one matching file type for this acquisition; using the most recent');
-                    [~,mostRecentIdx]=max(cellfun(@(x) datetime(x.created),allAcqs{acqIdx}.files(theFileTypeMatchIdx)));
-                    theFileTypeMatchIdx=theFileTypeMatchIdx(mostRecentIdx);
-                end
-                % Get the file name, ID, and acquisition label
-                theID = allAcqs{acqIdx}.id;
-                theName = allAcqs{acqIdx}.files{theFileTypeMatchIdx}.name;
-                theAcqLabel = allAcqs{acqIdx}.label;
-            end
-            theType = 'acquisition';
-            % Check if theInputLabel is the rootSessionInputLabel
-            if strcmp(p.Results.rootSessionInputLabel,theInputLabel)
-                % Get the root session information. This is the session to
-                % which the analysis product will be assigned
-                rootSessionID = allSessions{sessionIdx}.id;
-                % The root session tag is used to label the outputs of the
-                % gear. Sometimes there is leading or trailing white space
-                % in the acquisition label. We trim that off here as it can
-                % cause troubles in gear execution.
-                rootSessionTag = strtrim(allAcqs{acqIdx}.label);
-            end
+            
+            % Add this input information to the structure
+            inputStem = struct('type', theType,...
+                'id', theID, ...
+                'name', theName);
+            inputs.(theInputLabel) = inputStem;
+            acqNotes.(theInputLabel) = theAcqLabel;
         end
-        % Add this input information to the structure
-        inputStem = struct('type', theType,...
-            'id', theID, ...
-            'name', theName);
-        inputs.(theInputLabel) = inputStem;
-        acqNotes.(theInputLabel) = theAcqLabel;
+        
     end
     
     % Add the freesurfer license file
