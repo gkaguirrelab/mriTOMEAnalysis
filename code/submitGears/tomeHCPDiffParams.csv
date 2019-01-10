@@ -1,8 +1,9 @@
-projectName,tome,gearName,hcp-diff,rootSessionInputLabel,DWINegativeBval,ConfigKeys,"{'Subject','AnatomyRegDOF','DWIName'}",ConfigVals,"{subjectName,6,rootSessionTag}"
+projectName,tome,gearName,hcp-diff,rootSession,DWINegativeBval,ConfigKeys,"{'Subject','AnatomyRegDOF','DWIName'}",ConfigVals,"{subjectName,6,rootSessionTag}"
 Inputs,GradientCoeff,DWINegativeBval,DWINegativeBvec,DWINegativeData,DWIPositiveBval,DWIPositiveBvec,DWIPositiveData,StructZip,
 DefaultLabel,coeff.grad,dMRI_dir98_AP,dMRI_dir98_AP,dMRI_dir98_AP,dMRI_dir98_PA,dMRI_dir98_PA,dMRI_dir98_PA,hcp-struct/hcpstruct.zip,
 AcqFileType,,bval,bvec,nifti,bval,bvec,nifti,,
-IsSessionFile,1,0,0,0,0,0,0,1,
+IsAcquisitionFile,0,1,1,1,1,1,1,0,
+IsSessionFile,1,0,0,0,0,0,0,0,
 IsAnalysisFile,0,0,0,0,0,0,0,1,
 ExactStringMatch,0,0,0,0,0,0,0,0,Notes
 ,,,,,,,,,
