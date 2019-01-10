@@ -127,10 +127,10 @@ end
 
 %% Make covariates that have been bandpass filtered
 pupilDiameterBandpassed = filtData.values;
-[ pupilDiameterBanpassedConvolved ] = convolveRegressorWithHRF(pupilDiameterBandpassed', pupilTimebase);
-firstDerivativePupilDiameterBandpassedConvolved = diff(pupilDiameterBanpassedConvolved);
+[ pupilDiameterBandpassedConvolved ] = convolveRegressorWithHRF(pupilDiameterBandpassed', pupilTimebase);
+firstDerivativePupilDiameterBandpassedConvolved = diff(pupilDiameterBandpassedConvolved);
 firstDerivativePupilDiameterBandpassedConvolved = [NaN, firstDerivativePupilDiameterBandpassedConvolved];
-covariates.pupilDiameterBanpassedConvolved = pupilDiameterBanpassedConvolved;
+covariates.pupilDiameterBandpassedConvolved = pupilDiameterBandpassedConvolved;
 covariates.firstDerivativePupilDiameterBandpassedConvolved = firstDerivativePupilDiameterBandpassedConvolved;
 
 pupilChangeBandpassed = diff(pupilDiameterBandpassed);
