@@ -1,5 +1,5 @@
 projectName,tome,gearName,hcp-icafix,rootSession,FuncZip,includeFreeSurferLicenseFile,false,ConfigKeys,"{'Subject','RegName','FIXClassifier','HighPassFilter'}",ConfigVals,"{subjectName,'FS','HCP_hp2000',2000}"
-Inputs,StructZip,FuncZip,FuncZip2,FuncZip3,FuncZip4,rootSessionTag,,,,,
+Inputs,StructZip,FuncZip,FuncZip2,FuncZip3,FuncZip4,analysisLabel,,,,,
 DefaultLabel,hcp-struct/hcpstruct.zip,,,,,,,,,,
 AcqFileType,,,,,,,,,,,
 IsAcquisitionFile,0,0,0,0,0,0,,,,,

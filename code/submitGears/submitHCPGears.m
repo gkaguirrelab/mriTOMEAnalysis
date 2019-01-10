@@ -38,6 +38,9 @@ function submitHCPGears(paramsFileName)
     submitHCPGears('tomeHCPFuncParams_Session2.csv');
 %}
 %{
+    submitHCPGears('tomeHCPFuncICAFIX_Session2_FLASH.csv');
+%}
+%{
     submitHCPGears('tomeHCPDiffParams.csv');
 %}
 
@@ -154,8 +157,8 @@ for ii=nParamRows+1:nRows
         
         % Check if the theInputLabel is "rootSessionTag", in which case use
         % the entry to define the rootSessionTag
-        if strcmp('rootSessionTag',theInputLabel)
-            rootSessionTag = char(paramsTable{ii,jj});
+        if strcmp('analysisLabel',theInputLabel)
+            analysisLabel = char(paramsTable{ii,jj});
         end
 
         % Are we dealing with a file (session, analysis, or acquisition)?
@@ -183,7 +186,7 @@ for ii=nParamRows+1:nRows
                 targetLabel = char(paramsTable{DefaultLabelRow,jj});
             end
             
-            % Is tihs a session file?
+            % Is this a session file?
             if logical(str2double(char(paramsTable{IsSessionFileRow,jj})))
                 % Get the container ID of the session.
                 % It is a session file (like a coeff.grad)
@@ -273,7 +276,7 @@ for ii=nParamRows+1:nRows
                 % gear. Sometimes there is leading or trailing white space
                 % in the acquisition label. We trim that off here as it can
                 % cause troubles in gear execution.
-                rootSessionTag = strtrim(theName);
+                analysisLabel = strtrim(theName);
             end
             
             % Add this input information to the structure
@@ -313,7 +316,7 @@ for ii=nParamRows+1:nRows
     
     
     %% Assemble analysis label
-    analysisLabel = [theGearName ' v' theGearVersion ' [' rootSessionTag '] - ' char(datetime('now','TimeZone','local','Format','yyyy-MM-dd HH:mm'))];
+    jobLabel = [theGearName ' v' theGearVersion ' [' analysisLabel '] - ' char(datetime('now','TimeZone','local','Format','yyyy-MM-dd HH:mm'))];
     
     
     %% Check if the analysis has already been performed
@@ -328,7 +331,7 @@ for ii=nParamRows+1:nRows
             for mm=1:length(allAnalyses)
                 analysisLabelParts = strsplit(allAnalyses{mm}.label,{'[',']'});
                 if length(analysisLabelParts)>1
-                    if strcmp(strtrim(analysisLabelParts{2}),strtrim(rootSessionTag))
+                    if strcmp(strtrim(analysisLabelParts{2}),strtrim(jobLabel))
                         skipFlag = true;
                         priorAnalysisID = allAnalyses{mm}.id;
                     end
@@ -338,7 +341,7 @@ for ii=nParamRows+1:nRows
     end
     if skipFlag
         if verbose
-            fprintf(['The analysis ' theGearName ' is already present for ' subjectName ', ' rootSessionTag '; skipping.\n']);
+            fprintf(['The analysis ' theGearName ' is already present for ' subjectName ', ' jobLabel '; skipping.\n']);
             % This command may be used to delete the prior analysis
             %{
                 fw.deleteSessionAnalysis(allSessions{sessionIdx}.id,priorAnalysisID);
@@ -348,7 +351,7 @@ for ii=nParamRows+1:nRows
     end
     
     %% Run
-    body = struct('label', analysisLabel, 'job', thisJob);
+    body = struct('label', jobLabel, 'job', thisJob);
     [newAnalysisID, ~] = fw.addSessionAnalysis(rootSessionID, body);
     
     
@@ -364,7 +367,7 @@ for ii=nParamRows+1:nRows
     
     %% Report the event
     if verbose
-        fprintf(['Submitted ' subjectName ' [' newAnalysisID '] - ' analysisLabel '\n']);
+        fprintf(['Submitted ' subjectName ' [' newAnalysisID '] - ' jobLabel '\n']);
     end
 end
 

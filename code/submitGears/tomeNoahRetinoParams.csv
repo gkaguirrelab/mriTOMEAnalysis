@@ -1,4 +1,4 @@
-projectName,tome,gearName,retinotopy-templates,rootSession,anatomical,includeFreeSurferLicenseFile,FALSE,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
+projectName,tome,gearName,retinotopy-templates,rootSession,anatomical,includeFreeSurferLicenseFile,false,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
 Inputs,anatomical,,,,,,,,,,
 DefaultLabel,T1w_acpc_dc_restore.nii.gz,,,,,,,,,,
 AcqFileType,nifti,,,,,,,,,,
