@@ -86,8 +86,9 @@ regressors = [physioRegressors.all, motionRegressors];
 % mean center these motion and physio regressors
 for rr = 1:size(regressors,2)
     regressor = regressors(:,rr);
-    regressor = regressor - nanmean(regressor);
-    regressor = regressor ./ nanmean(regressor);
+    regressorMean = nanmean(regressor);
+    regressor = regressor - regressorMean;
+    regressor = regressor ./ regressorMean;
     nanIndices = find(isnan(regressor));
     regressor(nanIndices) = 0;
     regressors(:,rr) = regressor;
