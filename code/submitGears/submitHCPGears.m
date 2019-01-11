@@ -38,7 +38,7 @@ function submitHCPGears(paramsFileName)
     submitHCPGears('tomeHCPFuncParams_Session2.csv');
 %}
 %{
-    submitHCPGears('tomeHCPFuncICAFIX_Session2_FLASH.csv');
+    submitHCPGears('tomeHCPFuncICAFIX_Session2.csv');
 %}
 %{
     submitHCPGears('tomeHCPDiffParams.csv');
