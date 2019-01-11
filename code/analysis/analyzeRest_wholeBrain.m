@@ -203,5 +203,7 @@ MRIwrite(rectifiedPupilChangeBandpassed_beta, fullfile(getpref('mriTOMEAnalysis'
 MRIwrite(rectifiedPupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChangeBandpassed_pearsonR.nii.gz']));
 clear stats_rectifiedPupilChangeBandpassed rectifiedPupilChangeBandpassed_rSquared rectifiedPupilChangeBandpassed_beta rectifiedPupilChangeBandpassed_pearsonR
 
+clear functionalScan
+clear cleanedTimeSeriesPerVoxel
 
 end
