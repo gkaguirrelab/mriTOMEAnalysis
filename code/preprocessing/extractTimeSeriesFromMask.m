@@ -27,6 +27,8 @@ function [ meanTimeSeries, timeSeriesPerVoxel, voxelIndices ] = extractTimeSerie
 % Optional key-value pairs:
 %  'meanCenter'         - a logical, which determines whether or not to mean
 %                         center the time series of each voxel.
+%  'makePlots'          - a logical, which determines whether to plot mean
+%                         time series
 %  'whichCentralTendency' - a string which determines how to take the
 %                         central tendency across voxels. Options include
 %                         'mean', 'median', or 'PCA'.
@@ -53,6 +55,7 @@ function [ meanTimeSeries, timeSeriesPerVoxel, voxelIndices ] = extractTimeSerie
 %% Input Parser
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('meanCenter', true, @islogical);
+p.addParameter('makePlots', false, @islogical);
 p.addParameter('whichCentralTendency', 'mean', @ischar);
 p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
@@ -127,25 +130,27 @@ end
 
 tr = functionalScan.tr/1000;
 timebase = 0:tr:(length(meanTimeSeries)*tr-tr);
-plot(timebase, meanTimeSeries)
-set(gcf, 'un', 'n', 'pos', [0.05 .05 1 0.4])
-xlabel('Time (s)')
-ylabel('BOLD Signal')
-
-if ~isempty(p.Results.saveName)
+if p.Results.makePlots
+    plot(timebase, meanTimeSeries)
+    set(gcf, 'un', 'n', 'pos', [0.05 .05 1 0.4])
+    xlabel('Time (s)')
+    ylabel('BOLD Signal')
     
-    
-    saveName = p.Results.saveName;
-    [savePath, fileName ] = fileparts(saveName);
-    
-    if ~exist(savePath, 'dir')
-        mkdir(savePath);
+    if ~isempty(p.Results.saveName)
+        
+        
+        saveName = p.Results.saveName;
+        [savePath, fileName ] = fileparts(saveName);
+        
+        if ~exist(savePath, 'dir')
+            mkdir(savePath);
+        end
+        
+        saveas(plotFig, [saveName, '.png'], 'png')
+        
+        save(saveName, 'meanTimeSeries', 'timeSeriesPerVoxel', 'voxelIndices', '-v7.3');
+        
     end
-    
-    saveas(plotFig, [saveName, '.png'], 'png')
-
-    save(saveName, 'meanTimeSeries', 'timeSeriesPerVoxel', 'voxelIndices', '-v7.3');
-    
 end
 
 
