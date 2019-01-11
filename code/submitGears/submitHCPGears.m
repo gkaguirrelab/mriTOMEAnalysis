@@ -55,7 +55,7 @@ p.addParameter('projectName','tome',@ischar);
 p.addParameter('gearName','hcp-func',@ischar);
 p.addParameter('rootSession','fMRITimeSeries',@ischar);
 p.addParameter('verbose','true',@ischar);
-p.addParameter('includeFreeSurferLicenseFile','true', @ischar);
+p.addParameter('includeFreeSurferLicenseFile','true',@(x)(islogical(x) || ischar(x)));
 p.addParameter('freesurferLicenseFileName','freesurfer_license.txt',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configKeys','',@(x)(isempty(x) || ischar(x)));
 p.addParameter('configVals','',@(x)(isempty(x) || ischar(x)));
@@ -65,7 +65,7 @@ p.parse(tableVarargin{:});
 % The parameters arrive as char variables from the csv file. Eval some of
 % them here.
 verbose = eval(p.Results.verbose);
-includeFreeSurferLicenseFile = eval(p.Results.includeFreeSurferLicenseFile);
+includeFreeSurferLicenseFile = eval(lower(p.Results.includeFreeSurferLicenseFile));
 
 % Define the paramsTable dimensions
 nParamRows = 8; % This is the number of rows that make up the header
