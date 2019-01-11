@@ -153,7 +153,7 @@ for ii=nParamRows+1:nRows
     for jj=nParamCols+1:nInputCols
         
         % If the entry is empty, skip this input
-        if isempty(paramsTable{ii,jj})
+        if isempty(char(paramsTable{ii,jj}))
             continue
         end
         
