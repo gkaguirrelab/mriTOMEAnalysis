@@ -152,9 +152,14 @@ for ii=nParamRows+1:nRows
     % Loop through the inputs specified in the paramsTable
     for jj=nParamCols+1:nInputCols
         
+        % If the entry is empty, skip this input
+        if isempty(paramsTable{ii,jj})
+            continue
+        end
+        
         % Define the input label
         theInputLabel=char(paramsTable{InputsRow,jj});
-        
+                
         % Check if the theInputLabel is "rootSessionTag", in which case use
         % the entry to define the rootSessionTag
         if strcmp('analysisLabel',theInputLabel)
@@ -326,14 +331,16 @@ for ii=nParamRows+1:nRows
         % Check if this gear has been run
         priorAnalysesMatchIdx = cellfun(@(x) strcmp(x.gearInfo.name,theGearName),allAnalyses);
         if any(priorAnalysesMatchIdx)
+            priorAnalysesMatchIdx = find(priorAnalysesMatchIdx);
             % See if the data tag in any of the prior analyses is a match
             % Ignore white space in the label parts
-            for mm=1:length(allAnalyses)
-                analysisLabelParts = strsplit(allAnalyses{mm}.label,{'[',']'});
+            jobLabelParts = strsplit(jobLabel,{'[',']'});
+            for mm=1:length(priorAnalysesMatchIdx)
+                analysisLabelParts = strsplit(allAnalyses{priorAnalysesMatchIdx(mm)}.label,{'[',']'});
                 if length(analysisLabelParts)>1
-                    if strcmp(strtrim(analysisLabelParts{2}),strtrim(jobLabel))
+                    if strcmp(strtrim(analysisLabelParts{2}),strtrim(jobLabelParts{2}))
                         skipFlag = true;
-                        priorAnalysisID = allAnalyses{mm}.id;
+                        priorAnalysisID = allAnalyses{priorAnalysesMatchIdx(mm)}.id;
                     end
                 end
             end
