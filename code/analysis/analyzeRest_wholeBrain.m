@@ -114,7 +114,7 @@ end
 regressors(:,emptyColumns) = [];
 
 [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
-clear stats_physioMotionWMV rawTimeSeriesPerVoxel
+clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
 
 
 
@@ -130,7 +130,7 @@ MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analy
 MRIwrite(pupilDiameter_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_beta.nii.gz']));
 [ pupilDiameter_pearsonR ] = makeWholeBrainMap(stats_pupilDiameter.pearsonR', voxelIndices, functionalScan);
 MRIwrite(pupilDiameter_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_pearsonR.nii.gz']));
-clear stats_pupilDiameter pupilDiameter_rSquared pupilDiameter_beta pupilDiameter_pearsonR
+clear stats_pupilDiameter pupilDiameter_rSquared pupilDiameter_beta pupilDiameter_pearsonR regressors
 
 % pupil change
 regressors = [covariates.pupilChangeConvolved; covariates.firstDerivativePupilChangeConvolved];
@@ -141,7 +141,7 @@ MRIwrite(pupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysi
 MRIwrite(pupilChange_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_beta.nii.gz']));
 [ pupilChange_pearsonR ] = makeWholeBrainMap(stats_pupilChange.pearsonR', voxelIndices, functionalScan);
 MRIwrite(pupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_pearsonR.nii.gz']));
-clear stats_pupilChange pupilChange_rSquared pupilChange_beta pupilChange_pearsonR
+clear stats_pupilChange pupilChange_rSquared pupilChange_beta pupilChange_pearsonR regressors
 
 
 % rectified pupil change
@@ -153,7 +153,7 @@ MRIwrite(rectifiedPupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOM
 MRIwrite(rectifiedPupilChange_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChange_beta.nii.gz']));
 [ rectifiedPupilChange_pearsonR ] = makeWholeBrainMap(stats_rectifiedPupilChange.pearsonR', voxelIndices, functionalScan);
 MRIwrite(rectifiedPupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChange_pearsonR.nii.gz']));
-clear stats_rectifiedPupilChange rectifiedPupilChange_rSquared rectifiedPupilChange_beta rectifiedPupilChange_pearsonR
+clear stats_rectifiedPupilChange rectifiedPupilChange_rSquared rectifiedPupilChange_beta rectifiedPupilChange_pearsonR regressors
 
 
 % "saccades"
@@ -165,7 +165,7 @@ MRIwrite(eyeDisplacement_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_ana
 MRIwrite(eyeDisplacement_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_beta.nii.gz']));
 [ eyeDisplacement_pearsonR ] = makeWholeBrainMap(stats_eyeDisplacement.pearsonR', voxelIndices, functionalScan);
 MRIwrite(eyeDisplacement_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_pearsonR.nii.gz']));
-clear stats_eyeDisplacement eyeDisplacement_rSquared eyeDisplacement_beta eyeDisplacement_pearsonR
+clear stats_eyeDisplacement eyeDisplacement_rSquared eyeDisplacement_beta eyeDisplacement_pearsonR regressors
 
 
 % bandpassed (between 0.01 and 0.1 Hz) pupil diameter
@@ -177,7 +177,7 @@ MRIwrite(pupilDiameterBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', '
 MRIwrite(pupilDiameterBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameterBandpassed_beta.nii.gz']));
 [ pupilDiameterBandpassed_pearsonR ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.pearsonR', voxelIndices, functionalScan);
 MRIwrite(pupilDiameterBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameterBandpassed_pearsonR.nii.gz']));
-clear stats_pupilDiameterBandpassed pupilDiameterBandpassed_rSquared pupilDiameterBandpassed_beta pupilDiameterBandpassed_pearsonR
+clear stats_pupilDiameterBandpassed pupilDiameterBandpassed_rSquared pupilDiameterBandpassed_beta pupilDiameterBandpassed_pearsonR regressors
 
 
 % bandpassed (between 0.01 and 0.1 Hz) pupil change
@@ -189,7 +189,7 @@ MRIwrite(pupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TO
 MRIwrite(pupilChangeBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChangeBandpassed_beta.nii.gz']));
 [ pupilChangeBandpassed_pearsonR ] = makeWholeBrainMap(stats_pupilChangeBandpassed.pearsonR', voxelIndices, functionalScan);
 MRIwrite(pupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChangeBandpassed_pearsonR.nii.gz']));
-clear stats_pupilChangeBandpassed pupilChangeBandpassed_rSquared pupilChangeBandpassed_beta pupilChangeBandpassed_pearsonR
+clear stats_pupilChangeBandpassed pupilChangeBandpassed_rSquared pupilChangeBandpassed_beta pupilChangeBandpassed_pearsonR regressors
 
 
 % bandpassed (between 0.01 and 0.1 Hz) rectified pupil change
@@ -201,9 +201,10 @@ MRIwrite(rectifiedPupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnaly
 MRIwrite(rectifiedPupilChangeBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChangeBandpassed_beta.nii.gz']));
 [ rectifiedPupilChangeBandpassed_pearsonR ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.pearsonR', voxelIndices, functionalScan);
 MRIwrite(rectifiedPupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChangeBandpassed_pearsonR.nii.gz']));
-clear stats_rectifiedPupilChangeBandpassed rectifiedPupilChangeBandpassed_rSquared rectifiedPupilChangeBandpassed_beta rectifiedPupilChangeBandpassed_pearsonR
+clear stats_rectifiedPupilChangeBandpassed rectifiedPupilChangeBandpassed_rSquared rectifiedPupilChangeBandpassed_beta rectifiedPupilChangeBandpassed_pearsonR regressors
 
 clear functionalScan
 clear cleanedTimeSeriesPerVoxel
+clear covariates
 
 end
