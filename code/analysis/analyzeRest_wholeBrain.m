@@ -25,9 +25,23 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 %  runName:             - a string that identifies the relevant run (i.e.
 %                         'rfMRI_REST_AP_Run3')
 %
+% Optional key-value pairs:
+%  skipPhysioMotionWMVRegression  - a logical, with false set as the
+%                         default. If true, regressors will be created out
+%                         of motion parameters, physiology parameters, and
+%                         mean white matter and ventricular signals. One
+%                         reason to is when using output from ICAFix, which
+%                         we believe will have already dealed with these
+%                         nuisance signals.
 % Outputs:
 %  None. Several maps are saved out to Dropbox, however.
 
+%% Input parser
+p = inputParser; p.KeepUnmatched = true;
+
+p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
+
+p.parse(varargin{:});
 %% Define paths
 [ paths ] = definePaths(subjectID);
 
@@ -53,14 +67,17 @@ functionalFile = fullfile(functionalDir, [runName, '_native.nii.gz']);
 targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
 
 aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
-[whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
 
-
-% extract time series from white matter and ventricles to be used as
-% nuisance regressors
-[ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
-[ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
-clear whiteMatterMask ventriclesMask
+if ~(p.Results.skipPhysioMotionWMVRegression)
+    [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
+    
+    
+    % extract time series from white matter and ventricles to be used as
+    % nuisance regressors
+    [ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
+    [ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
+    clear whiteMatterMask ventriclesMask
+end
 %% Get gray matter mask
 makeGrayMatterMask(subjectID);
 structuralGrayMatterMaskFile = fullfile(anatDir, [subjectID '_GM.nii.gz']);
@@ -76,6 +93,7 @@ if ~exist(savePath,'dir')
 end
 save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
 %% Clean time series from physio regressors
+if ~(p.Results.skipPhysioMotionWMVRegression)
 
 physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
 physioRegressors = physioRegressors.output;
@@ -115,7 +133,10 @@ regressors(:,emptyColumns) = [];
 
 [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
 clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
-
+else
+    cleanedTimeSeriesPerVoxel = rawTimeSeriesPerVoxel;
+    clear rawTimeSeriesPerVoxel
+end
 
 
 %% Remove eye signals from BOLD data
