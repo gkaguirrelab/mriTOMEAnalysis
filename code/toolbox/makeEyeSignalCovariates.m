@@ -11,6 +11,10 @@ function [ covariates ] = makeEyeSignalCovariates(subjectID, runName)
 %% Setup
 % find the data, load it up
 pupilDir = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID);
+if contains(runName, 'hp2000_clean')
+    splitRunName = strsplit(runName, '_hp2000_clean');
+    runName = splitRunName{1};
+end
 pupilResponse = load(fullfile(pupilDir, [runName, '_pupil.mat']));
 
 % create timebase which applies to all covariates
