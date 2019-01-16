@@ -1,4 +1,4 @@
-function [averageMap] = makeAverageMapWithinSubject(subjectID, eyeRegressor, mapType, varargin)
+function [averageMap] = makeAverageMapWithinSubject(subjectID, eyeRegressor, mapType, runNames, varargin)
 % Average across maps for all runs for a single subject
 %
 % Syntax:
@@ -17,6 +17,8 @@ function [averageMap] = makeAverageMapWithinSubject(subjectID, eyeRegressor, map
 %  mapType                  - a string that describes which map type we
 %                             want to combine. Options include 'beta',
 %                             'pearsonR', and 'rSquared'
+%  runNames                 - a cell array, where the contents of each cell
+%                             is a string that defines the runNames to be averaged
 %
 % Optional key-value pairs:
 %  'saveName'              - a string which specifies the full path to which
@@ -35,13 +37,14 @@ p.parse(varargin{:});
 paths = definePaths(subjectID);
 mapsDir = paths.restWholeBrainAnalysis;
 
+
 potentialMaps = dir(fullfile(mapsDir, ['*', eyeRegressor, '_', mapType, '.nii.gz']));
 
 %% Loop over the maps, pooling as we go
-firstMap = MRIread(fullfile(mapsDir, potentialMaps(1).name));
+firstMap = MRIread(fullfile(mapsDir, [runNames{1}, '_', eyeRegressor, '_', mapType, '.nii.gz']));
 template = zeros(size(firstMap.vol));
-for mm = 1:length(potentialMaps)
-    map = MRIread(fullfile(mapsDir, potentialMaps(mm).name));
+for mm = 1:length(runNames)
+    map = MRIread(fullfile(mapsDir, [runNames{mm}, '_', eyeRegressor, '_', mapType, '.nii.gz']));
     template = map.vol + template;
     clear map
 end
