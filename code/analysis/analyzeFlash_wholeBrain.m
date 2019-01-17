@@ -1,7 +1,10 @@
 function analyzeRest_wholeBrain(subjectID, runName, varargin)
 
+%% Input parser
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('visualizeAlignment',false, @islogical);
+
+p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
+
 p.parse(varargin{:});
 
 %% Define paths
@@ -30,14 +33,17 @@ functionalFile = fullfile(functionalDir, [runName, '_native.nii.gz']);
 targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
 
 aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
-[whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
-
-
-% extract time series from white matter and ventricles to be used as
-% nuisance regressors
-[ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
-[ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
-
+if ~(p.Results.skipPhysioMotionWMVRegression)
+    
+    [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
+    
+    
+    % extract time series from white matter and ventricles to be used as
+    % nuisance regressors
+    [ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
+    [ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
+    clear whiteMatterMask ventriclesMask
+end
 %% Get gray matter mask
 makeGrayMatterMask(subjectID);
 structuralGrayMatterMaskFile = fullfile(anatDir, [subjectID '_GM.nii.gz']);
@@ -48,46 +54,51 @@ grayMatterMaskFile = fullfile(anatDir, [subjectID '_GM_resampled.nii.gz']);
 [ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
 
 %% Clean time series from physio regressors
-
-physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
-physioRegressors = physioRegressors.output;
-motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
-motionRegressors = table2array(motionTable(:,7:12));
-regressors = [physioRegressors.all, motionRegressors];
-
-% mean center these motion and physio regressors
-for rr = 1:size(regressors,2)
-    regressor = regressors(:,rr);
-    regressor = regressor - nanmean(regressor);
-    regressor = regressor ./ nanstd(regressor);
-    nanIndices = find(isnan(regressor));
-    regressor(nanIndices) = 0;
-    regressors(:,rr) = regressor;
-end
-
-% also add the white matter and ventricular time series
-regressors(:,end+1) = meanTimeSeries.whiteMatter;
-regressors(:,end+1) = meanTimeSeries.ventricles;
+if ~(p.Results.skipPhysioMotionWMVRegression)
+    physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
+    physioRegressors = physioRegressors.output;
+    motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
+    motionRegressors = table2array(motionTable(:,7:12));
+    regressors = [physioRegressors.all, motionRegressors];
     
-TR = functionalScan.tr; % in ms
-nFrames = functionalScan.nframes;
-
-regressorsTimebase = 0:TR:nFrames*TR-TR;
-
-% remove all regressors that are all 0
-emptyColumns = [];
-for column = 1:size(regressors,2)
-    if ~any(regressors(:,column))
-        emptyColumns = [emptyColumns, column];
+    % mean center these motion and physio regressors
+    for rr = 1:size(regressors,2)
+        regressor = regressors(:,rr);
+        regressor = regressor - nanmean(regressor);
+        regressor = regressor ./ nanstd(regressor);
+        nanIndices = find(isnan(regressor));
+        regressor(nanIndices) = 0;
+        regressors(:,rr) = regressor;
     end
-end
-regressors(:,emptyColumns) = [];
-
-[ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
-
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'flash', subjectID);
-if ~exist(savePath,'dir')
-    mkdir(savePath);
+    
+    % also add the white matter and ventricular time series
+    regressors(:,end+1) = meanTimeSeries.whiteMatter;
+    regressors(:,end+1) = meanTimeSeries.ventricles;
+    
+    TR = functionalScan.tr; % in ms
+    nFrames = functionalScan.nframes;
+    
+    regressorsTimebase = 0:TR:nFrames*TR-TR;
+    
+    % remove all regressors that are all 0
+    emptyColumns = [];
+    for column = 1:size(regressors,2)
+        if ~any(regressors(:,column))
+            emptyColumns = [emptyColumns, column];
+        end
+    end
+    regressors(:,emptyColumns) = [];
+    
+    [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
+    clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
+    
+    savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'flash', subjectID);
+    if ~exist(savePath,'dir')
+        mkdir(savePath);
+    end
+else
+    cleanedTimeSeriesPerVoxel = rawTimeSeriesPerVoxel;
+    clear rawTimeSeriesPerVoxel
 end
 
 
