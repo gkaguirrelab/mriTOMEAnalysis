@@ -47,9 +47,25 @@ end
 sigma = p.Results.kernelFWHMmm/(2*(2*log(2))^0.5);
 
 %% Perform the smoothing
-system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fslmaths "' functionalFile, '" -kernel gauss ', num2str(sigma), ' -fmean "', fullfile(savePath, [fileName, '_smoothed.nii.gz']), '"']);
-
-%% Load up the smoothed volume
-smoothedVolume = MRIread(fullfile(savePath, [fileName, '_smoothed.nii.gz']));
+if ~exist(fullfile(savePath, [fileName, '_smoothed.nii.gz']))
+    system(['FSLDIR=/usr/local/fsl; PATH=${FSLDIR}/bin:${PATH}; export FSLDIR PATH; . ${FSLDIR}/etc/fslconf/fsl.sh; fslmaths "' functionalFile, '" -kernel gauss ', num2str(sigma), ' -fmean "', fullfile(savePath, [fileName, '_smoothed.nii.gz']), '"']);
+    
+    %% Load up the smoothed volume
+    smoothedVolume = MRIread(fullfile(savePath, [fileName, '_smoothed.nii.gz']));
+else
+    
+    stillTrying = true; tryAttempt = 0;
+    while stillTrying
+        try
+            system(['touch -a "', fullfile(savePath, [fileName, '_smoothed.nii.gz']), '"']);
+            pause(tryAttempt*60);
+            smoothedVolume = MRIread(fullfile(savePath, [fileName, '_smoothed.nii.gz']));
+            stillTrying = false;
+        catch
+            tryAttempt = tryAttempt + 1;
+            stillTrying = tryAttempt < 6;
+        end
+    end
+end
 
 end
