@@ -94,45 +94,45 @@ end
 save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
 %% Clean time series from physio regressors
 if ~(p.Results.skipPhysioMotionWMVRegression)
-
-physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
-physioRegressors = physioRegressors.output;
-motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
-motionRegressors = table2array(motionTable(:,7:12));
-regressors = [physioRegressors.all, motionRegressors];
-
-% mean center these motion and physio regressors
-for rr = 1:size(regressors,2)
-    regressor = regressors(:,rr);
-    regressorMean = nanmean(regressor);
-    regressor = regressor - regressorMean;
-    regressor = regressor ./ regressorMean;
-    nanIndices = find(isnan(regressor));
-    regressor(nanIndices) = 0;
-    regressors(:,rr) = regressor;
-end
-
-% also add the white matter and ventricular time series
-regressors(:,end+1) = meanTimeSeries.whiteMatter;
-regressors(:,end+1) = meanTimeSeries.ventricles;
     
-TR = functionalScan.tr; % in ms
-nFrames = functionalScan.nframes;
-
-
-regressorsTimebase = 0:TR:nFrames*TR-TR;
-
-% remove all regressors that are all 0
-emptyColumns = [];
-for column = 1:size(regressors,2)
-    if ~any(regressors(:,column))
-        emptyColumns = [emptyColumns, column];
+    physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
+    physioRegressors = physioRegressors.output;
+    motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
+    motionRegressors = table2array(motionTable(:,7:12));
+    regressors = [physioRegressors.all, motionRegressors];
+    
+    % mean center these motion and physio regressors
+    for rr = 1:size(regressors,2)
+        regressor = regressors(:,rr);
+        regressorMean = nanmean(regressor);
+        regressor = regressor - regressorMean;
+        regressor = regressor ./ regressorMean;
+        nanIndices = find(isnan(regressor));
+        regressor(nanIndices) = 0;
+        regressors(:,rr) = regressor;
     end
-end
-regressors(:,emptyColumns) = [];
-
-[ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
-clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
+    
+    % also add the white matter and ventricular time series
+    regressors(:,end+1) = meanTimeSeries.whiteMatter;
+    regressors(:,end+1) = meanTimeSeries.ventricles;
+    
+    TR = functionalScan.tr; % in ms
+    nFrames = functionalScan.nframes;
+    
+    
+    regressorsTimebase = 0:TR:nFrames*TR-TR;
+    
+    % remove all regressors that are all 0
+    emptyColumns = [];
+    for column = 1:size(regressors,2)
+        if ~any(regressors(:,column))
+            emptyColumns = [emptyColumns, column];
+        end
+    end
+    regressors(:,emptyColumns) = [];
+    
+    [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
+    clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
 else
     cleanedTimeSeriesPerVoxel = rawTimeSeriesPerVoxel;
     clear rawTimeSeriesPerVoxel
@@ -143,7 +143,7 @@ end
 [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
 
 % pupil diameter
-regressors = [covariates.pupilDiameterConvolved; covariates.firstDerivativePupilDiameterConvolved];    
+regressors = [covariates.pupilDiameterConvolved; covariates.firstDerivativePupilDiameterConvolved];
 [ ~, stats_pupilDiameter ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_pupilDiameter.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameter_rSquared.nii.gz']));
