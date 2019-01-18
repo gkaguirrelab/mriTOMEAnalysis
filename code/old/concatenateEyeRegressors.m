@@ -1,57 +1,75 @@
-function [ concatenatedEyeRegressors ] = concatenateEyeRegressors(subjectID, scanType)
+function [ concatenatedEyeRegressors ] = concatenateEyeRegressors(subjectID, runNamesInOrder)
+
+% Example:
+%{
+    subjectID = 'TOME_3003';
+    runNames{1} = 'rfMRI_REST_AP_Run1'; runNames{2} = 'rfMRI_REST_PA_Run2'; runNames{3} = 'rfMRI_REST_AP_Run3'; runNames{4} = 'rfMRI_REST_PA_Run4';
+    [ concatenatedEyeRegressors ] = concatenateEyeRegressors(subjectID, runNames)
+%}
 
 paths = definePaths(subjectID);
-%load('/Users/harrisonmcadams/Dropbox (Aguirre-Brainard Lab)/MELA_analysis/mriTOMEAnalysis/flywheelOutput/TOME_3003/tfMRI_FLASH_PA_run2_timebase.mat')
 %% Find the relevant data files
+% get the eye signal covariates from the first run to use as a template
+[ ~, singleRunUnconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runNamesInOrder{1});
+covariateTypes = fieldnames(singleRunUnconvolvedCovariates);
+for ii = 1:length(covariateTypes)
+    if ~contains(covariateTypes{ii}, 'timebase')
+        concatenatedEyeRegressors.(covariateTypes{ii}) = [];
+    end
+end
 
-potentialRunTimebases = dir(fullfile(paths.pupilDir, ['*', scanType, '*_timebase.mat']));
-%plotFig = figure;
-%hold on
+%% Concatenate each covariate together
+% after removing the timepoints before or after the functional scan itself
 newTimebase = [];
-newPupilRadius = [];
-for rr = 1:length(potentialRunTimebases)
+for rr = 1:length(runNamesInOrder)
     % figure out which number run this is
-    splitFileName = strsplit(potentialRunTimebases(rr).name, 'Run');
+    splitFileName = strsplit(runNamesInOrder{rr}, 'Run');
     runNumber = str2num(splitFileName{2}(1));
     temporalOffset = ((runNumber - 1) * 336000);
     
     % load original timebase
-    load(fullfile(paths.pupilDir, potentialRunTimebases(rr).name));
+    [ convolvedCovariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runNamesInOrder{rr});
+    timebase = convolvedCovariates.pupilTimebase;
     
     % adjust timebase
-    shiftedTimebase = timebase.values + temporalOffset;
-    
-    % load pupil time series
-    load(fullfile(paths.pupilDir, [splitFileName{1}, 'run', num2str(runNumber), '_pupil.mat']));
-    pupilRadius = pupilData.radiusSmoothed.eyePoses.values(:,4);
-    
-    
-    
-    % censor pupil values occuring before and after the BOLD run
+    shiftedTimebase = timebase + temporalOffset;
     firstTimepoint = temporalOffset;
     lastTimepoint = temporalOffset + 335200;
     earlyIndices = find(shiftedTimebase < firstTimepoint);
     lateIndices = find(shiftedTimebase > lastTimepoint);
-    shiftedTimebase([earlyIndices; lateIndices]) = [];
-    pupilRadius([earlyIndices; lateIndices]) = [];
+    shiftedTimebase([earlyIndices, lateIndices]) = [];
+    newTimebase = [newTimebase, shiftedTimebase];
     
-    newTimebase = [newTimebase; shiftedTimebase];
-    newPupilRadius = [newPupilRadius; pupilRadius];
-    
-    %plot(shiftedTimebase, pupilRadius)
-    
+    for ii = 1:length(covariateTypes)
+        response = unconvolvedCovariates.(covariateTypes{ii});
+        
+        
+        
+        % censor pupil values occuring before and after the BOLD run
+        
+        response([earlyIndices, lateIndices]) = [];
+        
+        
+        concatenatedEyeRegressors.(covariateTypes{ii}) = [concatenatedEyeRegressors.(covariateTypes{ii}), response];
+    end
 end
 
-temporalFit = tfeIAMP('verbosity','none');
-originalStruct.values = newPupilRadius';
-originalStruct.timebase = newTimebase';
-desiredTimebase = 0:800:1680*800-800;
-[resampledStruct] = temporalFit.resampleTimebase(originalStruct, desiredTimebase);
-
-meanPupilRadius = nanmean(resampledStruct.values);
-pupilDiameterPercentageChange = (resampledStruct.values - meanPupilRadius)./meanPupilRadius;
-NaNIndices = find(isnan(pupilDiameterPercentageChange));
-pupilDiameterPercentageChange(NaNIndices) = 0;
-csvwrite(fullfile(paths.pupilDir, 'eyeRegressors.csv'), pupilDiameterPercentageChange');
+%% resample the covariates at the temporal resolution of the functional scan
+for ii = 1:length(covariateTypes)
+    temporalFit = tfeIAMP('verbosity','none');
+    
+    
+    originalStruct.values =  concatenatedEyeRegressors.(covariateTypes{ii});
+    originalStruct.timebase = newTimebase;
+    desiredTimebase = 0:800:1680*800-800;
+    [resampledStruct] = temporalFit.resampleTimebase(originalStruct, desiredTimebase, 'resampleMethod', 'resample');
+    
+    meanValue = nanmean(resampledStruct.values);
+    concatenatedEyeRegressors.(covariateTypes{ii}) = (resampledStruct.values - meanValue)./meanValue;
+    NaNIndices = find(isnan(concatenatedEyeRegressors.(covariateTypes{ii})));
+    concatenatedEyeRegressors.(covariateTypes{ii})(NaNIndices) = 0;
+    [convolvedCovariate] = convolveRegressorWithHRF(concatenatedEyeRegressors.(covariateTypes{ii})', resampledStruct.timebase);
+    concatenatedEyeRegressors.([covariateTypes{ii}, 'Convolved']) = convolvedCovariate;
+end
 
 end
