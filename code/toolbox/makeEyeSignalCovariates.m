@@ -1,4 +1,4 @@
-function [ covariates ] = makeEyeSignalCovariates(subjectID, runName)
+function [ covariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runName)
 %
 %
 % Examples:
@@ -153,7 +153,14 @@ firstDerivativeRectifiedPupilChangeBandpassedConvolved = [NaN, firstDerivativeRe
 covariates.rectifiedPupilChangeBandpassedConvolved = rectifiedPupilChangeBandpassed;
 covariates.firstDerivativeRectifiedPupilChangeBandpassedConvolved = firstDerivativeRectifiedPupilChangeBandpassedConvolved;
 
-
-
+%% Package up the unconvolved covariates
+unconvolvedCovariates.pupilDiameter = pupilDiameter';
+unconvolvedCovariates.pupilChange = pupilChange';
+unconvolvedCovariates.rectifiedPupilChange = rectifiedPupilChange';
+unconvolvedCovariates.eyeDisplacement = eyeDisplacement';
+unconvolvedCovariates.pupilDiameterBandpassed = pupilDiameterBandpassed;
+unconvolvedCovariates.pupilChangeBandpassed = pupilChangeBandpassed;
+unconvolvedCovariates.rectifiedPupilChangeBandpassed = rectifiedPupilChangeBandpassed;
+unconvolvedCovariates.blinks = blinks;
 
 end
