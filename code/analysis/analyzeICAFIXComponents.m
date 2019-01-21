@@ -1,9 +1,9 @@
-function analyzeICAFIXComponents(subjectID, runNamesInOrder, varargin)
+function [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents(subjectID, runNamesInOrder, varargin)
 % A routine to understand how outputs of the ICAFIX gear relate to our eye
 % signals
 %
 % Syntax:
-%  analyzeICAFIXComponents(subjectID, runNamesInOrder)
+%  [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents(subjectID, runNamesInOrder)
 %
 % Description:
 %  ICAFIX outputs numerous different components, some of which are labeled
@@ -103,6 +103,11 @@ for cc = 1:(size(ICAComponents, 1))
     end
     
 end
+
+%% Compute the average correlation across all eye signals for each ICA component
+averageCorrelation = mean(correlationMatrix, 2);
+correlationMatrix = [correlationMatrix, averageCorrelation];
+convolvedEyeRegressorLabel{end+1} = 'Average Correlation';
 
 %% Plot the correlation matrix
 plotFig = figure;
