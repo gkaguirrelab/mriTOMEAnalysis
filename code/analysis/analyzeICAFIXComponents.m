@@ -124,7 +124,7 @@ for cc = 1:(size(ICAComponents, 1))
                 pearsonCorrelation = pearsonCorrelation(1,2);
                 correlationMatrix(cc,eyeRegressorCounter) = abs(pearsonCorrelation);
                 eyeRegressorCounter = eyeRegressorCounter + 1;
-                convolvedEyeRegressorLabel{end+1} = eyeRegressorLabels{rr};            
+                convolvedEyeRegressorLabel{end+1} = p.Results.covariatesOfInterest{rr};            
         end
     end
     
