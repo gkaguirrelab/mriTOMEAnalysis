@@ -1,6 +1,44 @@
 function analyzeICAFIXComponents(subjectID, runNamesInOrder, varargin)
-
-
+% A routine to understand how outputs of the ICAFIX gear relate to our eye
+% signals
+%
+% Syntax:
+%  analyzeICAFIXComponents(subjectID, runNamesInOrder)
+%
+% Description:
+%  ICAFIX outputs numerous different components, some of which are labeled
+%  as signal with the rest labeled as noise. We have noticed that
+%  preprocessing which produces just the signal components shows less of a
+%  correlation with our eye signal components than our standard
+%  preprocessing alone. To understand why this is, we're looking to see if
+%  any of our components labeled as 'noise' are correlated with our eye
+%  signals, and then determine if we agree if these components are in fact
+%  'noise'.
+%  This routine first extracts the time series of each component from the
+%  CIFTI files generated from the ICAFIX routine. The commmand to extract
+%  the time series of each component is done using one of the standard
+%  workbench commands, but note that the code to extract component labels
+%  is a total hack-job. Once the time series have been extracted, we
+%  correlate each with each eye signal, and ultimatley produce a
+%  correlation matrix.
+%
+%
+% Inputs:
+%  subjectID                - a string that that describes the example
+%                             subject to be investigated (e.g.
+%                             'TOME_3003').
+%  runNamesInOrder          - a cell array, where the contents of each cell
+%                             is a string that defines the name of the fMRI
+%                             run. Note that these must be in order so that
+%                             the concatenated eye signals match the order
+%                             of the concatenated fMRI runs.
+%
+% Optional key-value pairs:
+%  runType                  - a string that describes the prefix to the
+%                             ICAFIX output. The default is 'REST'.
+%  workbenchPath            - a string that defines the full path to where
+%                             workbench commands can be found.
+%
 % Example:
 %{
     subjectID = 'TOME_3003';
