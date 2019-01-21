@@ -17,6 +17,11 @@ sessionLabelPrefix = {'Session 1','Session 1a','Session 1b','T1 and T2 images'};
 sessionLabelReplacement = {'session1_restAndStructure','session1_restAndStructure','session1_restAndStructure','session1_restAndStructure'};
 devNull = ' >/dev/null';
 
+% If the scratch dir does not exist, make it
+if ~exist(scratchSaveDir,'dir')
+    mkdir(scratchSaveDir)
+end
+
 %% Instantiate the flywheel object
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
 
@@ -31,7 +36,7 @@ searchStruct = struct(...
 analyses = fw.search(searchStruct, 'size', '1000');
 
 %% Loop through the analyses and download
-for ii = 1:numel(analyses)
+for ii = 537:numel(analyses)
         
     % Get the analysis object
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
