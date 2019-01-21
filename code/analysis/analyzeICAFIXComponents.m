@@ -38,6 +38,9 @@ function [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents
 %                             ICAFIX output. The default is 'REST'.
 %  workbenchPath            - a string that defines the full path to where
 %                             workbench commands can be found.
+%  covariatesOfInterest     - a cell array, where the contents of each cell
+%                             is a string that defines an eye signal
+%                             covariate to be used in this analysis
 %
 % Outputs:
 %  componentNumberRankedByAverageCorrelation  - a 1 x n vector, where n
@@ -53,7 +56,7 @@ function [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents
 %{
     subjectID = 'TOME_3003';
     runNames{1} = 'rfMRI_REST_AP_Run1'; runNames{2} = 'rfMRI_REST_PA_Run2'; runNames{3} = 'rfMRI_REST_AP_Run3'; runNames{4} = 'rfMRI_REST_PA_Run4';
-    analyzeICAFIXComponents(subjectID, runNames)
+    [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents(subjectID, runNames)
 %}
 
 %% Input parser
@@ -61,6 +64,7 @@ p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('runType', 'REST', @ischar);
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
+p.addParameter('covariatesOfInterest', [], @iscell);
 
 p.parse(varargin{:});
 
@@ -102,13 +106,25 @@ eyeRegressorLabels = fieldnames(eyeRegressors);
 for cc = 1:(size(ICAComponents, 1))
     eyeRegressorCounter = 1;
     convolvedEyeRegressorLabel = [];
-    for rr = 1:length(eyeRegressorLabels)
-        if contains(eyeRegressorLabels{rr}, 'Convolved')
-            pearsonCorrelation = corrcoef(eyeRegressors.(eyeRegressorLabels{rr}), ICAComponents(cc,:));
-            pearsonCorrelation = pearsonCorrelation(1,2);
-            correlationMatrix(cc,eyeRegressorCounter) = abs(pearsonCorrelation);
-            eyeRegressorCounter = eyeRegressorCounter + 1;
-            convolvedEyeRegressorLabel{end+1} = eyeRegressorLabels{rr};
+    if isempty(p.Results.covariatesOfInterest)
+        
+        for rr = 1:length(eyeRegressorLabels)
+            if contains(eyeRegressorLabels{rr}, 'Convolved')
+                pearsonCorrelation = corrcoef(eyeRegressors.(eyeRegressorLabels{rr}), ICAComponents(cc,:));
+                pearsonCorrelation = pearsonCorrelation(1,2);
+                correlationMatrix(cc,eyeRegressorCounter) = abs(pearsonCorrelation);
+                eyeRegressorCounter = eyeRegressorCounter + 1;
+                convolvedEyeRegressorLabel{end+1} = eyeRegressorLabels{rr};
+            end
+            
+        end
+    else
+        for rr = 1:length(p.Results.covariatesOfInterest)
+                pearsonCorrelation = corrcoef(eyeRegressors.(p.Results.covariatesOfInterest{rr}), ICAComponents(cc,:));
+                pearsonCorrelation = pearsonCorrelation(1,2);
+                correlationMatrix(cc,eyeRegressorCounter) = abs(pearsonCorrelation);
+                eyeRegressorCounter = eyeRegressorCounter + 1;
+                convolvedEyeRegressorLabel{end+1} = eyeRegressorLabels{rr};            
         end
     end
     
