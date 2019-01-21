@@ -39,6 +39,16 @@ function [ componentNumberRankedByAverageCorrelation ] = analyzeICAFIXComponents
 %  workbenchPath            - a string that defines the full path to where
 %                             workbench commands can be found.
 %
+% Outputs:
+%  componentNumberRankedByAverageCorrelation  - a 1 x n vector, where n
+%                             corresponds to the the number of ICA
+%                             components. The value of each element in the
+%                             vector corresponds to the ID of an ICA
+%                             component. These are ranked in the order of
+%                             greatest average correlation across all eye
+%                             signal covariates to smallest average
+%                             correlation.
+%
 % Example:
 %{
     subjectID = 'TOME_3003';
@@ -108,6 +118,9 @@ end
 averageCorrelation = mean(correlationMatrix, 2);
 correlationMatrix = [correlationMatrix, averageCorrelation];
 convolvedEyeRegressorLabel{end+1} = 'Average Correlation';
+
+% and rank the average correlation
+[sortedCorrelations, componentNumberRankedByAverageCorrelation] = sort(averageCorrelation, 'descend');
 
 %% Plot the correlation matrix
 plotFig = figure;
