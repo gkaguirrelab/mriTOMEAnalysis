@@ -1,5 +1,15 @@
 function analyzeCorrelationBetweenEyeSignals(subjectID, runNamesInOrder)
-
+% A routine to look at correlations between eye signals
+% 
+% Syntax:
+%  analyzeCorrelationBetweenEyeSignals(subjectID, runNamesInOrder)
+% 
+% Description:
+%  This routine will examine how correlated each eye signal is with each
+%  other. We will loop over each convolved eye signal. For each
+%  eye signal, we will examine its correlation with all other eye signals.
+%  This routine will then display the resulting correlation matrix.
+%
 % Inputs:
 %  subjectID                - a string that that describes the example
 %                             subject to be investigated (e.g.
