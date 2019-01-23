@@ -33,6 +33,12 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 %                         reason to is when using output from ICAFix, which
 %                         we believe will have already dealed with these
 %                         nuisance signals.
+%  fileType             - a string that controls which type of functional
+%                         file is to be processed. Options include 'volume'
+%                         and 'CIFTI'. Note that for now, 'volume' is
+%                         intended to be analyzed in subject-native space,
+%                         and 'CIFTI' in MNI volume, freeSurfer cortical
+%                         surface space.
 % Outputs:
 %  None. Several maps are saved out to Dropbox, however.
 
@@ -40,6 +46,7 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
+p.addParameter('fileType', 'volume', @ischar);
 
 p.parse(varargin{:});
 %% Define paths
@@ -57,85 +64,93 @@ outputDir = paths.outputDir;
 
 %% Register functional scan to anatomical scan
 
-[ ~ ] = registerFunctionalToAnatomical(subjectID, runName);
-
-%% Smooth functional scan
-functionalFile = fullfile(functionalDir, [runName, '_native.nii.gz']);
-[ functionalScan ] = smoothVolume(functionalFile);
-%% Get white matter and ventricular signal
-% make white matter and ventricular masks
-targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
-
-aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
-
-if ~(p.Results.skipPhysioMotionWMVRegression)
-    [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
+if strcmp(p.Results.fileType, 'volume')
+    [ ~ ] = registerFunctionalToAnatomical(subjectID, runName);
     
+    %% Smooth functional scan
+    functionalFile = fullfile(functionalDir, [runName, '_native.nii.gz']);
+    [ functionalScan ] = smoothVolume(functionalFile);
+    %% Get white matter and ventricular signal
+    % make white matter and ventricular masks
+    targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
     
-    % extract time series from white matter and ventricles to be used as
-    % nuisance regressors
-    [ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
-    [ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
-    clear whiteMatterMask ventriclesMask
-end
-%% Get gray matter mask
-makeGrayMatterMask(subjectID);
-structuralGrayMatterMaskFile = fullfile(anatDir, [subjectID '_GM.nii.gz']);
-grayMatterMaskFile = fullfile(anatDir, [subjectID '_GM_resampled.nii.gz']);
-[ grayMatterMask ] = resampleMRI(structuralGrayMatterMaskFile, targetFile, grayMatterMaskFile);
-
-%% Extract time series of each voxel from gray matter mask
-[ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
-clear grayMatterMask
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
-if ~exist(savePath,'dir')
-    mkdir(savePath);
-end
-save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
-%% Clean time series from physio regressors
-if ~(p.Results.skipPhysioMotionWMVRegression)
+    aparcAsegFile = fullfile(anatDir, [subjectID, '_aparc+aseg.nii.gz']);
     
-    physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
-    physioRegressors = physioRegressors.output;
-    motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
-    motionRegressors = table2array(motionTable(:,7:12));
-    regressors = [physioRegressors.all, motionRegressors];
-    
-    % mean center these motion and physio regressors
-    for rr = 1:size(regressors,2)
-        regressor = regressors(:,rr);
-        regressorMean = nanmean(regressor);
-        regressor = regressor - regressorMean;
-        regressor = regressor ./ regressorMean;
-        nanIndices = find(isnan(regressor));
-        regressor(nanIndices) = 0;
-        regressors(:,rr) = regressor;
+    if ~(p.Results.skipPhysioMotionWMVRegression)
+        [whiteMatterMask, ventriclesMask] = makeMaskOfWhiteMatterAndVentricles(aparcAsegFile, targetFile);
+        
+        
+        % extract time series from white matter and ventricles to be used as
+        % nuisance regressors
+        [ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
+        [ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
+        clear whiteMatterMask ventriclesMask
     end
+    %% Get gray matter mask
+    makeGrayMatterMask(subjectID);
+    structuralGrayMatterMaskFile = fullfile(anatDir, [subjectID '_GM.nii.gz']);
+    grayMatterMaskFile = fullfile(anatDir, [subjectID '_GM_resampled.nii.gz']);
+    [ grayMatterMask ] = resampleMRI(structuralGrayMatterMaskFile, targetFile, grayMatterMaskFile);
     
-    % also add the white matter and ventricular time series
-    regressors(:,end+1) = meanTimeSeries.whiteMatter;
-    regressors(:,end+1) = meanTimeSeries.ventricles;
-    
-    TR = functionalScan.tr; % in ms
-    nFrames = functionalScan.nframes;
-    
-    
-    regressorsTimebase = 0:TR:nFrames*TR-TR;
-    
-    % remove all regressors that are all 0
-    emptyColumns = [];
-    for column = 1:size(regressors,2)
-        if ~any(regressors(:,column))
-            emptyColumns = [emptyColumns, column];
+    %% Extract time series of each voxel from gray matter mask
+    [ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
+    clear grayMatterMask
+    savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
+    if ~exist(savePath,'dir')
+        mkdir(savePath);
+    end
+    save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
+    %% Clean time series from physio regressors
+    if ~(p.Results.skipPhysioMotionWMVRegression)
+        
+        physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
+        physioRegressors = physioRegressors.output;
+        motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
+        motionRegressors = table2array(motionTable(:,7:12));
+        regressors = [physioRegressors.all, motionRegressors];
+        
+        % mean center these motion and physio regressors
+        for rr = 1:size(regressors,2)
+            regressor = regressors(:,rr);
+            regressorMean = nanmean(regressor);
+            regressor = regressor - regressorMean;
+            regressor = regressor ./ regressorMean;
+            nanIndices = find(isnan(regressor));
+            regressor(nanIndices) = 0;
+            regressors(:,rr) = regressor;
         end
+        
+        % also add the white matter and ventricular time series
+        regressors(:,end+1) = meanTimeSeries.whiteMatter;
+        regressors(:,end+1) = meanTimeSeries.ventricles;
+        
+        TR = functionalScan.tr; % in ms
+        nFrames = functionalScan.nframes;
+        
+        
+        regressorsTimebase = 0:TR:nFrames*TR-TR;
+        
+        % remove all regressors that are all 0
+        emptyColumns = [];
+        for column = 1:size(regressors,2)
+            if ~any(regressors(:,column))
+                emptyColumns = [emptyColumns, column];
+            end
+        end
+        regressors(:,emptyColumns) = [];
+        
+        [ cleanedTimeSeriesMatrix, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
+        clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
+    else
+        cleanedTimeSeriesMatrix = rawTimeSeriesPerVoxel;
+        clear rawTimeSeriesPerVoxel
     end
-    regressors(:,emptyColumns) = [];
-    
-    [ cleanedTimeSeriesPerVoxel, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
-    clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
-else
-    cleanedTimeSeriesPerVoxel = rawTimeSeriesPerVoxel;
-    clear rawTimeSeriesPerVoxel
+end
+
+if strcmp(p.Results.fileType, 'CIFTI')
+   %% Smooth the functional file
+    functionalFile = fullfile(functionalDir, [runName, '_Atlas_hp2000_clean.dtseries.nii']);
+    [ cleanedTimeSeriesMatrix] = smoothCIFTI(functionalFile);
 end
 
 
@@ -144,7 +159,7 @@ end
 
 % pupil diameter
 regressors = [covariates.pupilDiameterConvolved; covariates.firstDerivativePupilDiameterConvolved];
-[ ~, stats_pupilDiameter ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_pupilDiameter ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_pupilDiameter.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameter_rSquared.nii.gz']));
 [ pupilDiameter_beta ] = makeWholeBrainMap(stats_pupilDiameter.beta, voxelIndices, functionalScan);
@@ -155,7 +170,7 @@ clear stats_pupilDiameter pupilDiameter_rSquared pupilDiameter_beta pupilDiamete
 
 % pupil change
 regressors = [covariates.pupilChangeConvolved; covariates.firstDerivativePupilChangeConvolved];
-[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ pupilChange_rSquared ] = makeWholeBrainMap(stats_pupilChange.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChange_rSquared.nii.gz']));
 [ pupilChange_beta ] = makeWholeBrainMap(stats_pupilChange.beta, voxelIndices, functionalScan);
@@ -167,7 +182,7 @@ clear stats_pupilChange pupilChange_rSquared pupilChange_beta pupilChange_pearso
 
 % rectified pupil change
 regressors = [covariates.rectifiedPupilChangeConvolved; covariates.firstDerivativeRectifiedPupilChangeConvolved];
-[ ~, stats_rectifiedPupilChange ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_rectifiedPupilChange ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ rectifiedPupilChange_rSquared ] = makeWholeBrainMap(stats_rectifiedPupilChange.rSquared', voxelIndices, functionalScan);
 MRIwrite(rectifiedPupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_rectifiedPupilChange_rSquared.nii.gz']));
 [ rectifiedPupilChange_beta ] = makeWholeBrainMap(stats_rectifiedPupilChange.beta, voxelIndices, functionalScan);
@@ -179,7 +194,7 @@ clear stats_rectifiedPupilChange rectifiedPupilChange_rSquared rectifiedPupilCha
 
 % "saccades"
 regressors = [covariates.eyeDisplacementConvolved; covariates.firstDerivativeEyeDisplacementConvolved];
-[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ eyeDisplacement_rSquared ] = makeWholeBrainMap(stats_eyeDisplacement.rSquared', voxelIndices, functionalScan);
 MRIwrite(eyeDisplacement_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_eyeDisplacement_rSquared.nii.gz']));
 [ eyeDisplacement_beta ] = makeWholeBrainMap(stats_eyeDisplacement.beta, voxelIndices, functionalScan);
@@ -191,7 +206,7 @@ clear stats_eyeDisplacement eyeDisplacement_rSquared eyeDisplacement_beta eyeDis
 
 % bandpassed (between 0.01 and 0.1 Hz) pupil diameter
 regressors = [covariates.pupilDiameterBandpassedConvolved; covariates.firstDerivativePupilDiameterBandpassedConvolved];
-[ ~, stats_pupilDiameterBandpassed ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_pupilDiameterBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ pupilDiameterBandpassed_rSquared ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilDiameterBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameterBandpassed_rSquared.nii.gz']));
 [ pupilDiameterBandpassed_beta ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.beta, voxelIndices, functionalScan);
@@ -203,7 +218,7 @@ clear stats_pupilDiameterBandpassed pupilDiameterBandpassed_rSquared pupilDiamet
 
 % bandpassed (between 0.01 and 0.1 Hz) pupil change
 regressors = [covariates.pupilChangeBandpassedConvolved; covariates.firstDerivativePupilChangeBandpassedConvolved];
-[ ~, stats_pupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_pupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ pupilChangeBandpassed_rSquared ] = makeWholeBrainMap(stats_pupilChangeBandpassed.rSquared', voxelIndices, functionalScan);
 MRIwrite(pupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChangeBandpassed_rSquared.nii.gz']));
 [ pupilChangeBandpassed_beta ] = makeWholeBrainMap(stats_pupilChangeBandpassed.beta, voxelIndices, functionalScan);
@@ -215,7 +230,7 @@ clear stats_pupilChangeBandpassed pupilChangeBandpassed_rSquared pupilChangeBand
 
 % bandpassed (between 0.01 and 0.1 Hz) rectified pupil change
 regressors = [covariates.rectifiedPupilChangeBandpassedConvolved; covariates.firstDerivativeRectifiedPupilChangeBandpassedConvolved];
-[ ~, stats_rectifiedPupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesPerVoxel, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+[ ~, stats_rectifiedPupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
 [ rectifiedPupilChangeBandpassed_rSquared ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.rSquared', voxelIndices, functionalScan);
 MRIwrite(rectifiedPupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_rectifiedPupilChangeBandpassed_rSquared.nii.gz']));
 [ rectifiedPupilChangeBandpassed_beta ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.beta, voxelIndices, functionalScan);
@@ -225,7 +240,7 @@ MRIwrite(rectifiedPupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnaly
 clear stats_rectifiedPupilChangeBandpassed rectifiedPupilChangeBandpassed_rSquared rectifiedPupilChangeBandpassed_beta rectifiedPupilChangeBandpassed_pearsonR regressors
 
 clear functionalScan
-clear cleanedTimeSeriesPerVoxel
+clear cleanedTimeSeriesMatrix
 clear covariates
 
 end
