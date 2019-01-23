@@ -99,7 +99,6 @@ if strcmp(p.Results.fileType, 'volume')
     if ~exist(savePath,'dir')
         mkdir(savePath);
     end
-    save(fullfile(savePath, [runName, '_voxelTimeSeries']), 'rawTimeSeriesPerVoxel', 'voxelIndices', '-v7.3');
     %% Clean time series from physio regressors
     if ~(p.Results.skipPhysioMotionWMVRegression)
         
@@ -156,6 +155,7 @@ if strcmp(p.Results.fileType, 'CIFTI')
     [ cleanedTimeSeriesMatrix ] = meanCenterTimeSeries(smoothedGrayordinates);
     clear smoothedGrayordinates
 end
+save(fullfile(savePath, [runName, '_cleanedTimeSeries']), 'cleanedTimeSeriesMatrix', 'voxelIndices', '-v7.3');
 
 
 %% Remove eye signals from BOLD data
