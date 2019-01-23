@@ -95,10 +95,7 @@ if strcmp(p.Results.fileType, 'volume')
     %% Extract time series of each voxel from gray matter mask
     [ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
     clear grayMatterMask
-    savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
-    if ~exist(savePath,'dir')
-        mkdir(savePath);
-    end
+  
     %% Clean time series from physio regressors
     if ~(p.Results.skipPhysioMotionWMVRegression)
         
@@ -154,6 +151,12 @@ if strcmp(p.Results.fileType, 'CIFTI')
     % mean center the time series of each grayordinate
     [ cleanedTimeSeriesMatrix ] = meanCenterTimeSeries(smoothedGrayordinates);
     clear smoothedGrayordinates
+end
+
+% save out cleaned time series
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
+if ~exist(savePath,'dir')
+    mkdir(savePath);
 end
 save(fullfile(savePath, [runName, '_cleanedTimeSeries']), 'cleanedTimeSeriesMatrix', 'voxelIndices', '-v7.3');
 
