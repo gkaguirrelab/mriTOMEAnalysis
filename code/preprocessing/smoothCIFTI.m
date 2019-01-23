@@ -5,9 +5,10 @@ function [grayordinates] = smoothCIFTI(functionalFile, varargin)
 %  smoothVolume(functionalFile)
 %
 % Description:
-%  This routine uses HCP's workbench to perform spatial smoothing on the inputted fMRI
-%  CIFTI file. Right now this is very simple smoothing in which we apply a
-%  Gaussian kernel over both the cortical surface and subcortical volume.
+%  This routine uses HCP's workbench to perform spatial smoothing on the
+%  inputted fMRI CIFTI file. Right now this is very simple smoothing in
+%  which we apply a Gaussian kernel over both the cortical surface and
+%  subcortical volume.
 %
 % Inputs:
 %  functionalFile        - a string that specifies the full path to the
