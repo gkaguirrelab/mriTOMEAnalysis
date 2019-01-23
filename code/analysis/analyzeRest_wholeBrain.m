@@ -61,7 +61,7 @@ outputDir = paths.outputDir;
 
 %% Smooth functional scan
 functionalFile = fullfile(functionalDir, [runName, '_native.nii.gz']);
-[ functionalScan ] = smoothMRI(functionalFile);
+[ functionalScan ] = smoothVolume(functionalFile);
 %% Get white matter and ventricular signal
 % make white matter and ventricular masks
 targetFile = (fullfile(functionalDir, [runName, '_native.nii.gz']));
