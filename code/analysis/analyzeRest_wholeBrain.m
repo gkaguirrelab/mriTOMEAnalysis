@@ -150,7 +150,11 @@ end
 if strcmp(p.Results.fileType, 'CIFTI')
    %% Smooth the functional file
     functionalFile = fullfile(functionalDir, [runName, '_Atlas_hp2000_clean.dtseries.nii']);
-    [ cleanedTimeSeriesMatrix] = smoothCIFTI(functionalFile);
+    [ smoothedGrayordinates ] = smoothCIFTI(functionalFile);
+    
+    % mean center the time series of each grayordinate
+    [ cleanedTimeSeriesMatrix ] = meanCenterTimeSeries(smoothedGrayordinates);
+    clear smoothedGrayordinates
 end
 
 
