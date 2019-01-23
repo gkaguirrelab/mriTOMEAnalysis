@@ -90,7 +90,7 @@ covariates.eyeDisplacementConvolved = eyeDisplacementConvolved;
 covariates.firstDerivativeEyeDisplacementConvolved = firstDerivativeEyeDisplacementConvolved;
 covariates.blinksConvolved = blinksConvolved;
 covariates.firstDerivativeBlinksConvolved = firstDerivativeBlinksConvolved;
-covariates.pupilTimebase = pupilTimebase;
+covariates.timebase = pupilTimebase;
 
 %% Try bandpass filtering the raw pupil diameter in an attempt to replicate prior work from Schnieder and Yellin
 % interpolate NaN values
