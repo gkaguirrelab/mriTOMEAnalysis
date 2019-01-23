@@ -39,6 +39,11 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 %                         intended to be analyzed in subject-native space,
 %                         and 'CIFTI' in MNI volume, freeSurfer cortical
 %                         surface space.
+%  covariatesToAnalyze  - a cell array, the contents of which are a string,
+%                         that specify which covariates to analyze. Options
+%                         include the default (a subset of our eye signals)
+%                         or 'flash', which makes the basic box car for
+%                         flash runs
 % Outputs:
 %  None. Several maps are saved out to Dropbox, however.
 
@@ -46,6 +51,7 @@ function analyzeRest_wholeBrain(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
+p.addParameter('covariatesToAnalyze', {'pupilDiameter', 'pupilChange', 'eyeDisplacement'}, @iscell);
 p.addParameter('fileType', 'volume', @ischar);
 
 p.parse(varargin{:});
@@ -136,10 +142,10 @@ if strcmp(p.Results.fileType, 'volume')
         regressors(:,emptyColumns) = [];
         
         [ cleanedTimeSeriesMatrix, stats_physioMotionWMV ] = cleanTimeSeries( rawTimeSeriesPerVoxel, regressors, regressorsTimebase, 'meanCenterRegressors', false);
-        clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors
+        clear stats_physioMotionWMV rawTimeSeriesPerVoxel meanTimeSeries regressors functionalScan
     else
         cleanedTimeSeriesMatrix = rawTimeSeriesPerVoxel;
-        clear rawTimeSeriesPerVoxel
+        clear rawTimeSeriesPerVoxel functionalScan
     end
 end
 
@@ -150,6 +156,12 @@ if strcmp(p.Results.fileType, 'CIFTI')
     
     % mean center the time series of each grayordinate
     [ cleanedTimeSeriesMatrix ] = meanCenterTimeSeries(smoothedGrayordinates);
+    
+    % make dumnmy voxel indices. this doesn't really apply for grayordinate
+    % based analysis, but the code is expecting the variable to at least
+    % exist
+    voxelIndices = [];
+    
     clear smoothedGrayordinates
 end
 
@@ -161,93 +173,68 @@ end
 save(fullfile(savePath, [runName, '_cleanedTimeSeries']), 'cleanedTimeSeriesMatrix', 'voxelIndices', '-v7.3');
 
 
-%% Remove eye signals from BOLD data
-[ covariates ] = makeEyeSignalCovariates(subjectID, runName);
+%% Remove eye signals from BOLD data'
+if ~strcmp(p.Results.covariatesToAnalyze, 'flash')
+    [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
+    
+    covariatesToAnalyze = p.Results.covariatesToAnalyze;
+elseif strcmp(p.Results.covariatesToAnalyze, 'flash')
+    covariatesToAnalyze = {'flash'};
+    
+    TR = 0.8*1000;
+    % make stimulus struct
+    % use same deltaT as the TR, so all of our regressors are on the same
+    % timebase
+    deltaT = 0.8*1000;
+    totalTime = 336*1000;
+    stimulusStruct.timebase = 0:deltaT:totalTime-TR;
+    
+    % light-on or light-off segments last 12 seconds
+    segmentLength = 12*1000;
+    numberOfBlocks = totalTime/segmentLength;
+    stimulusStruct.values = zeros(1,length(stimulusStruct.timebase));
+    
+    % actually make the stimulus profile. we find the boundaries of the 12-s
+    % chunks, then make the values in between 1 if it's an even-numbered chunk
+    % otherwise they're left as 0.
+    for bb = 1:numberOfBlocks
+        firstIndex = find(stimulusStruct.timebase == (bb - 1) * segmentLength);
+        secondIndex = find(stimulusStruct.timebase == (bb) * segmentLength) - 1;
+        if isempty(secondIndex)
+            secondIndex = length(stimulusStruct.timebase);
+        end
+        if round(bb/2) == bb/2
+            stimulusStruct.values(firstIndex:secondIndex) = 1;
+        end
+        
+    end
+    
+    [ flashConvolved ] = convolveRegressorWithHRF(stimulusStruct.values', stimulusStruct.timebase);
+    
+    
+    covariates.FlashConvolved = flashConvolved;
+    covariates.firstDerivativeFlashConvolved = diff(covariates.FlashConvolved);
+    covariates.firstDerivativeFlashConvolved = [NaN, covariates.firstDerivativeFlashConvolved];
+end
 
-% pupil diameter
-regressors = [covariates.pupilDiameterConvolved; covariates.firstDerivativePupilDiameterConvolved];
-[ ~, stats_pupilDiameter ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ pupilDiameter_rSquared ] = makeWholeBrainMap(stats_pupilDiameter.rSquared', voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameter_rSquared.nii.gz']));
-[ pupilDiameter_beta ] = makeWholeBrainMap(stats_pupilDiameter.beta, voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_beta.nii.gz']));
-[ pupilDiameter_pearsonR ] = makeWholeBrainMap(stats_pupilDiameter.pearsonR', voxelIndices, functionalScan);
-MRIwrite(pupilDiameter_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameter_pearsonR.nii.gz']));
-clear stats_pupilDiameter pupilDiameter_rSquared pupilDiameter_beta pupilDiameter_pearsonR regressors
+templateFile = functionalFile;
 
-% pupil change
-regressors = [covariates.pupilChangeConvolved; covariates.firstDerivativePupilChangeConvolved];
-[ ~, stats_pupilChange ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ pupilChange_rSquared ] = makeWholeBrainMap(stats_pupilChange.rSquared', voxelIndices, functionalScan);
-MRIwrite(pupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChange_rSquared.nii.gz']));
-[ pupilChange_beta ] = makeWholeBrainMap(stats_pupilChange.beta, voxelIndices, functionalScan);
-MRIwrite(pupilChange_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_beta.nii.gz']));
-[ pupilChange_pearsonR ] = makeWholeBrainMap(stats_pupilChange.pearsonR', voxelIndices, functionalScan);
-MRIwrite(pupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChange_pearsonR.nii.gz']));
-clear stats_pupilChange pupilChange_rSquared pupilChange_beta pupilChange_pearsonR regressors
-
-
-% rectified pupil change
-regressors = [covariates.rectifiedPupilChangeConvolved; covariates.firstDerivativeRectifiedPupilChangeConvolved];
-[ ~, stats_rectifiedPupilChange ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ rectifiedPupilChange_rSquared ] = makeWholeBrainMap(stats_rectifiedPupilChange.rSquared', voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChange_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_rectifiedPupilChange_rSquared.nii.gz']));
-[ rectifiedPupilChange_beta ] = makeWholeBrainMap(stats_rectifiedPupilChange.beta, voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChange_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChange_beta.nii.gz']));
-[ rectifiedPupilChange_pearsonR ] = makeWholeBrainMap(stats_rectifiedPupilChange.pearsonR', voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChange_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChange_pearsonR.nii.gz']));
-clear stats_rectifiedPupilChange rectifiedPupilChange_rSquared rectifiedPupilChange_beta rectifiedPupilChange_pearsonR regressors
-
-
-% "saccades"
-regressors = [covariates.eyeDisplacementConvolved; covariates.firstDerivativeEyeDisplacementConvolved];
-[ ~, stats_eyeDisplacement ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ eyeDisplacement_rSquared ] = makeWholeBrainMap(stats_eyeDisplacement.rSquared', voxelIndices, functionalScan);
-MRIwrite(eyeDisplacement_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_eyeDisplacement_rSquared.nii.gz']));
-[ eyeDisplacement_beta ] = makeWholeBrainMap(stats_eyeDisplacement.beta, voxelIndices, functionalScan);
-MRIwrite(eyeDisplacement_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_beta.nii.gz']));
-[ eyeDisplacement_pearsonR ] = makeWholeBrainMap(stats_eyeDisplacement.pearsonR', voxelIndices, functionalScan);
-MRIwrite(eyeDisplacement_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_eyeDisplacement_pearsonR.nii.gz']));
-clear stats_eyeDisplacement eyeDisplacement_rSquared eyeDisplacement_beta eyeDisplacement_pearsonR regressors
-
-
-% bandpassed (between 0.01 and 0.1 Hz) pupil diameter
-regressors = [covariates.pupilDiameterBandpassedConvolved; covariates.firstDerivativePupilDiameterBandpassedConvolved];
-[ ~, stats_pupilDiameterBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ pupilDiameterBandpassed_rSquared ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.rSquared', voxelIndices, functionalScan);
-MRIwrite(pupilDiameterBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilDiameterBandpassed_rSquared.nii.gz']));
-[ pupilDiameterBandpassed_beta ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.beta, voxelIndices, functionalScan);
-MRIwrite(pupilDiameterBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameterBandpassed_beta.nii.gz']));
-[ pupilDiameterBandpassed_pearsonR ] = makeWholeBrainMap(stats_pupilDiameterBandpassed.pearsonR', voxelIndices, functionalScan);
-MRIwrite(pupilDiameterBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilDiameterBandpassed_pearsonR.nii.gz']));
-clear stats_pupilDiameterBandpassed pupilDiameterBandpassed_rSquared pupilDiameterBandpassed_beta pupilDiameterBandpassed_pearsonR regressors
-
-
-% bandpassed (between 0.01 and 0.1 Hz) pupil change
-regressors = [covariates.pupilChangeBandpassedConvolved; covariates.firstDerivativePupilChangeBandpassedConvolved];
-[ ~, stats_pupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ pupilChangeBandpassed_rSquared ] = makeWholeBrainMap(stats_pupilChangeBandpassed.rSquared', voxelIndices, functionalScan);
-MRIwrite(pupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_pupilChangeBandpassed_rSquared.nii.gz']));
-[ pupilChangeBandpassed_beta ] = makeWholeBrainMap(stats_pupilChangeBandpassed.beta, voxelIndices, functionalScan);
-MRIwrite(pupilChangeBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChangeBandpassed_beta.nii.gz']));
-[ pupilChangeBandpassed_pearsonR ] = makeWholeBrainMap(stats_pupilChangeBandpassed.pearsonR', voxelIndices, functionalScan);
-MRIwrite(pupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_pupilChangeBandpassed_pearsonR.nii.gz']));
-clear stats_pupilChangeBandpassed pupilChangeBandpassed_rSquared pupilChangeBandpassed_beta pupilChangeBandpassed_pearsonR regressors
+for cc = 1:length(covariatesToAnalyze)
+    regressors = [covariates.([covariatesToAnalyze{ii}, 'Convolved']); covariates.(['firstDerivative', upper(covariatesToAnalyze{ii}(1)), covariatesToAnalyze{ii}(2:end), 'Convolved'])];
+    [ ~, stats.(covariatesToAnalyze{ii}) ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+    if strcmp(p.Results.fileType, 'volume')
+        suffix = '.nii.gz';
+    elseif strcmp(p.Results.fileType, 'CIFTI')
+        suffix = '.dscalar.nii';
+    end
+    statsOfInterest = {'rSquared', 'beta'};
+    for ss = 1:length(statsOfInterest)
+        saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', statsOfInterest{ii}, suffix]);
+        makeWholeBrainMap(stats.(covariatesToAnalyze{ii}).(statsOfInterest{ii})', voxelIndices, templateFile, saveName);
+    end
+end
 
 
-% bandpassed (between 0.01 and 0.1 Hz) rectified pupil change
-regressors = [covariates.rectifiedPupilChangeBandpassedConvolved; covariates.firstDerivativeRectifiedPupilChangeBandpassedConvolved];
-[ ~, stats_rectifiedPupilChangeBandpassed ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
-[ rectifiedPupilChangeBandpassed_rSquared ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.rSquared', voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChangeBandpassed_rSquared, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_rectifiedPupilChangeBandpassed_rSquared.nii.gz']));
-[ rectifiedPupilChangeBandpassed_beta ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.beta, voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChangeBandpassed_beta, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChangeBandpassed_beta.nii.gz']));
-[ rectifiedPupilChangeBandpassed_pearsonR ] = makeWholeBrainMap(stats_rectifiedPupilChangeBandpassed.pearsonR', voxelIndices, functionalScan);
-MRIwrite(rectifiedPupilChangeBandpassed_pearsonR, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName, '_rectifiedPupilChangeBandpassed_pearsonR.nii.gz']));
-clear stats_rectifiedPupilChangeBandpassed rectifiedPupilChangeBandpassed_rSquared rectifiedPupilChangeBandpassed_beta rectifiedPupilChangeBandpassed_pearsonR regressors
-
-clear functionalScan
-clear cleanedTimeSeriesMatrix
-clear covariates
+clear all
 
 end
