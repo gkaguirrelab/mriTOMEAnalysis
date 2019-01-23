@@ -58,6 +58,7 @@ if strcmp(fileType, 'volume')
         statsVolume.vol(xx,yy,zz,:) = stats(vv, :);
         
     end
+    MRIwrite(statsVolume, saveName);
 end
 
 if strcmp(fileType, 'CIFTI')
