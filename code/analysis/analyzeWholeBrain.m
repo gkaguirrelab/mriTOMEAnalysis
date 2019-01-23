@@ -166,7 +166,7 @@ if strcmp(p.Results.fileType, 'CIFTI')
 end
 
 % save out cleaned time series
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID);
+savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID);
 if ~exist(savePath,'dir')
     mkdir(savePath);
 end
@@ -212,16 +212,21 @@ elseif strcmp(p.Results.covariatesToAnalyze, 'flash')
     [ flashConvolved ] = convolveRegressorWithHRF(stimulusStruct.values', stimulusStruct.timebase);
     
     
-    covariates.FlashConvolved = flashConvolved;
-    covariates.firstDerivativeFlashConvolved = diff(covariates.FlashConvolved);
+    covariates.flashConvolved = flashConvolved;
+    covariates.firstDerivativeFlashConvolved = diff(covariates.flashConvolved);
     covariates.firstDerivativeFlashConvolved = [NaN, covariates.firstDerivativeFlashConvolved];
+    covariates.timebase = stimulusStruct.timebase;
 end
 
-templateFile = functionalFile;
+if strcmp(p.Results.fileType, 'volume')
+    templateFile = functionalFile;
+elseif strcmp(p.Results.fileType, 'CIFTI')
+    templateFile = fullfile(anatDir, 'template.dscalar.nii');
+end
 
-for cc = 1:length(covariatesToAnalyze)
+for ii = 1:length(covariatesToAnalyze)
     regressors = [covariates.([covariatesToAnalyze{ii}, 'Convolved']); covariates.(['firstDerivative', upper(covariatesToAnalyze{ii}(1)), covariatesToAnalyze{ii}(2:end), 'Convolved'])];
-    [ ~, stats.(covariatesToAnalyze{ii}) ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.pupilTimebase, 'meanCenterRegressors', true);
+    [ ~, stats.(covariatesToAnalyze{ii}) ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.timebase, 'meanCenterRegressors', true);
     if strcmp(p.Results.fileType, 'volume')
         suffix = '.nii.gz';
     elseif strcmp(p.Results.fileType, 'CIFTI')
@@ -229,8 +234,8 @@ for cc = 1:length(covariatesToAnalyze)
     end
     statsOfInterest = {'rSquared', 'beta'};
     for ss = 1:length(statsOfInterest)
-        saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'resting', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', statsOfInterest{ii}, suffix]);
-        makeWholeBrainMap(stats.(covariatesToAnalyze{ii}).(statsOfInterest{ii})', voxelIndices, templateFile, saveName);
+        saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', statsOfInterest{ss}, suffix]);
+        makeWholeBrainMap(stats.(covariatesToAnalyze{ii}).(statsOfInterest{ss})(1,:), voxelIndices, templateFile, saveName);
     end
 end
 
