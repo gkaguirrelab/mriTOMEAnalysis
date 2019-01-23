@@ -121,7 +121,7 @@ for tt = 1:nTimeSeries
     
 end
 
-stats.beta = beta;
+stats.beta = beta';
 stats.rSquared = rSquared;
 stats.pearsonR = pearsonR;
 
