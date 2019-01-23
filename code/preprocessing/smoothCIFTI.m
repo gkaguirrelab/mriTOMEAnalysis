@@ -48,9 +48,16 @@ end
 
 smoothedFile = fullfile(savePath, [fileName(1:end-9), '_smoothed.dtseries.nii']);
 
+%% Convert the FWHM of the Guassian kernel to its sigma
+% workbench takes in the sigma value in its function, so we convert the FWHM into
+% sigma
+sigmaSurface = p.Results.surfaceKernelFWHMmm/(2*(2*log(2))^0.5);
+sigmaVolume = p.Results.volumeKernelFWHMmm/(2*(2*log(2))^0.5);
+
+
 %% Perform the smoothing
 if ~exist(fullfile(savePath, [fileName(1:end-9), '_smoothed.dtseries.nii']))
-    system([p.Results.workbenchPath, 'wb_command -cifti-smoothing "' functionalFile, '" 5 5 COLUMN "' smoothedFile, '" -left-surface "', fullfile(savePath, 'L.midthickness.32k_fs_LR.surf.gii'), '" -right-surface "', fullfile(savePath, 'R.midthickness.32k_fs_LR.surf.gii'), '"']);
+    system([p.Results.workbenchPath, 'wb_command -cifti-smoothing "' functionalFile, '" ', num2str(sigmaSurface), ' ', num2str(sigmaVolume), ' COLUMN "' smoothedFile, '" -left-surface "', fullfile(savePath, 'L.midthickness.32k_fs_LR.surf.gii'), '" -right-surface "', fullfile(savePath, 'R.midthickness.32k_fs_LR.surf.gii'), '"']);
     
     % load in smoothed gray-ordinate time series
     % So we can load it into MATLAB
