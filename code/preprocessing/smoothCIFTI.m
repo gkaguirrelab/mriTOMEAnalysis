@@ -25,7 +25,7 @@ function [grayordinates] = smoothCIFTI(functionalFile, varargin)
 %                          functional volume
 %
 % Outputs:
-%  grayordinates         - an m x n vector, where m is the number of
+%  grayordinates         - an m x n matrix, where m is the number of
 %                          grayordinates and n is the number of time points
 %                          in the acquisition
 
