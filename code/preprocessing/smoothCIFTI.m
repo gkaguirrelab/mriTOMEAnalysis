@@ -56,32 +56,13 @@ sigmaVolume = p.Results.volumeKernelFWHMmm/(2*(2*log(2))^0.5);
 
 
 %% Perform the smoothing
-if ~exist(fullfile(savePath, [fileName(1:end-9), '_smoothed.dtseries.nii']))
-    system([p.Results.workbenchPath, 'wb_command -cifti-smoothing "' functionalFile, '" ', num2str(sigmaSurface), ' ', num2str(sigmaVolume), ' COLUMN "' smoothedFile, '" -left-surface "', fullfile(savePath, 'L.midthickness.32k_fs_LR.surf.gii'), '" -right-surface "', fullfile(savePath, 'R.midthickness.32k_fs_LR.surf.gii'), '"']);
-    
-    % load in smoothed gray-ordinate time series
-    % So we can load it into MATLAB
-    system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -to-text ', smoothedFile, ' ', fullfile(savePath, [fileName(1:end-9), '_smoothed.txt'])]);
-    
-    grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']));
-    grayordinates = table2array(grayordinates);
-else
-    
-    stillTrying = true; tryAttempt = 0;
-    while stillTrying
-        try
-            % load in smoothed gray-ordinate time series
-            % So we can load it into MATLAB
-            system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -to-text ', smoothedFile, ' ', fullfile(savePath, [fileName(1:end-9), '_smoothed.txt'])]);
-            
-            grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']), 'ReadVariableNames', false);
-            grayordinates = table2array(grayordinates);
-            stillTrying = false;
-        catch
-            tryAttempt = tryAttempt + 1;
-            stillTrying = tryAttempt < 6;
-        end
-    end
-end
+system([p.Results.workbenchPath, 'wb_command -cifti-smoothing "' functionalFile, '" ', num2str(sigmaSurface), ' ', num2str(sigmaVolume), ' COLUMN "' smoothedFile, '" -left-surface "', fullfile(savePath, 'L.midthickness.32k_fs_LR.surf.gii'), '" -right-surface "', fullfile(savePath, 'R.midthickness.32k_fs_LR.surf.gii'), '"']);
+
+% load in smoothed gray-ordinate time series
+% So we can load it into MATLAB
+system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -to-text ', smoothedFile, ' ', fullfile(savePath, [fileName(1:end-9), '_smoothed.txt'])]);
+
+grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']));
+grayordinates = table2array(grayordinates);
 
 end
