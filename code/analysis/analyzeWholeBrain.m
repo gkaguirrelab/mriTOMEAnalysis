@@ -51,7 +51,7 @@ function analyzeWholeBrain(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
-p.addParameter('covariatesToAnalyze', {'pupilDiameter', 'pupilChange', 'eyeDisplacement'}, @iscell);
+p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange', 'eyeDisplacement'}, @iscell);
 p.addParameter('fileType', 'volume', @ischar);
 
 p.parse(varargin{:});
@@ -101,7 +101,7 @@ if strcmp(p.Results.fileType, 'volume')
     %% Extract time series of each voxel from gray matter mask
     [ ~, rawTimeSeriesPerVoxel, voxelIndices ] = extractTimeSeriesFromMask( functionalScan, grayMatterMask);
     clear grayMatterMask
-  
+    
     %% Clean time series from physio regressors
     if ~(p.Results.skipPhysioMotionWMVRegression)
         
@@ -150,7 +150,7 @@ if strcmp(p.Results.fileType, 'volume')
 end
 
 if strcmp(p.Results.fileType, 'CIFTI')
-   %% Smooth the functional file
+    %% Smooth the functional file
     functionalFile = fullfile(functionalDir, [runName, '_Atlas_hp2000_clean.dtseries.nii']);
     [ smoothedGrayordinates ] = smoothCIFTI(functionalFile);
     
@@ -225,17 +225,40 @@ elseif strcmp(p.Results.fileType, 'CIFTI')
 end
 
 for ii = 1:length(covariatesToAnalyze)
-    regressors = [covariates.([covariatesToAnalyze{ii}, 'Convolved']); covariates.(['firstDerivative', upper(covariatesToAnalyze{ii}(1)), covariatesToAnalyze{ii}(2:end), 'Convolved'])];
-    [ ~, stats.(covariatesToAnalyze{ii}) ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.timebase, 'meanCenterRegressors', true);
+    
+    % assemble regressors
+    regressors = [];
+    
+    % if we're dealing with more than one eye signal, loop over each
+    multipleRegressorLabels = strsplit(covariatesToAnalyze{ii}, '+');
+    for rr = 1:length(multipleRegressorLabels)
+        regressors = [regressors;  covariates.([multipleRegressorLabels{rr}, 'Convolved']); covariates.(['firstDerivative', upper(multipleRegressorLabels{rr}(1)), multipleRegressorLabels{rr}(2:end), 'Convolved'])];
+    end
+    
+    % perform the regression
+    [ ~, stats ] = cleanTimeSeries( cleanedTimeSeriesMatrix, regressors', covariates.timebase, 'meanCenterRegressors', true);
+    
+    % determine output type
     if strcmp(p.Results.fileType, 'volume')
         suffix = '.nii.gz';
     elseif strcmp(p.Results.fileType, 'CIFTI')
         suffix = '.dscalar.nii';
     end
+    
+    % which stats we want to compile
     statsOfInterest = {'rSquared', 'beta'};
     for ss = 1:length(statsOfInterest)
-        saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', statsOfInterest{ss}, suffix]);
-        makeWholeBrainMap(stats.(covariatesToAnalyze{ii}).(statsOfInterest{ss})(1,:), voxelIndices, templateFile, saveName);
+        if ~strcmp(statsOfInterest{ss}, 'beta')
+            saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', statsOfInterest{ss}, suffix]);
+            makeWholeBrainMap(stats.(statsOfInterest{ss})(1,:), voxelIndices, templateFile, saveName);
+        else
+           for  rr = 1:length(multipleRegressorLabels)
+               
+                saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', multipleRegressorLabels{rr}, '_', statsOfInterest{ss}, suffix]);
+                makeWholeBrainMap(stats.(statsOfInterest{ss})(rr*2-1,:), voxelIndices, templateFile, saveName);
+
+           end
+        end
     end
 end
 
