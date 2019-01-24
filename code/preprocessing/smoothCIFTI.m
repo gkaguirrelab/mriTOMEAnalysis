@@ -34,7 +34,7 @@ function [grayordinates] = smoothCIFTI(functionalFile, varargin)
 %% Input parser
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('surfaceKernelFWHMmm',5, @isnum);
-p.addParameter('volumeKernelFWHMmm',5, @isnum);
+p.addParameter('volumeKernelFWHMmm',2.5, @isnum);
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
 p.addParameter('savePath',[], @isstring);
 p.parse(varargin{:});
@@ -74,7 +74,7 @@ else
             % So we can load it into MATLAB
             system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -to-text ', smoothedFile, ' ', fullfile(savePath, [fileName(1:end-9), '_smoothed.txt'])]);
             
-            grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']));
+            grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']), 'ReadVariableNames', false);
             grayordinates = table2array(grayordinates);
             stillTrying = false;
         catch
