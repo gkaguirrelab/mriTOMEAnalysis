@@ -62,8 +62,8 @@ meanGrayordinates = mean(grayordinatesCombinedMatrix,3);
 fileNameSplit = strsplit(fileName, '_');
 runType = [fileNameSplit{1}, '_', fileNameSplit{2}];
 covariateType = fileNameSplit{5};
-statsType = fileNameSplit{6};
-% first to text file
+statsType = strsplit(fileName, covariateType);
+statsType = statsType{2}(2:end);% first to text file
 dlmwrite(fullfile(savePath, ['average_', runType, '_stats.txt']), meanGrayordinates, 'delimiter','\t')  
 % now to CIFTI
 system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -from-text "', fullfile(savePath, ['average_', runType, '_stats.txt']), '" "', fileNamesCellArray{1}, '" "', fullfile(savePath, ['average_', runType, '_', covariateType, '_', statsType, '.dscalar.nii']), '"']);
