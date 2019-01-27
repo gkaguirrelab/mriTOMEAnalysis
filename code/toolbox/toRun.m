@@ -12,3 +12,14 @@ analyzeWholeBrain('TOME_3003', 'rfMRI_REST_AP_Run1', 'fileType', 'CIFTI');
 analyzeWholeBrain('TOME_3003', 'rfMRI_REST_PA_Run2', 'fileType', 'CIFTI');
 analyzeWholeBrain('TOME_3003', 'rfMRI_REST_AP_Run3', 'fileType', 'CIFTI');
 analyzeWholeBrain('TOME_3003', 'rfMRI_REST_PA_Run4', 'fileType', 'CIFTI');
+
+analyzeWholeBrain('TOME_3005', 'rfMRI_REST_AP_Run1', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3005', 'rfMRI_REST_PA_Run2', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3005', 'rfMRI_REST_AP_Run3', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3005', 'rfMRI_REST_PA_Run4', 'fileType', 'CIFTI');
+
+
+analyzeWholeBrain('TOME_3002', 'rfMRI_REST_AP_Run1', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3002', 'rfMRI_REST_PA_Run2', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3002', 'rfMRI_REST_AP_Run3', 'fileType', 'CIFTI');
+analyzeWholeBrain('TOME_3002', 'rfMRI_REST_PA_Run4', 'fileType', 'CIFTI');
