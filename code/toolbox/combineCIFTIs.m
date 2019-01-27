@@ -3,7 +3,7 @@ function combineCIFTIs(fileNamesCellArray, varargin)
  % assemble fileNamesCellArray
 
  subjectList = {'TOME_3003'};
- stats = {'beta'};
+ stats = {'rSquared', 'beta'};
  covariateTypes = {'pupilDiameter+pupilChange', 'pupilDiameter', 'constrictions', 'dilations', 'eyeDisplacement', 'PUI100', 'PUI1000', 'PUI5000', 'PUI10000', 'pupilChange', 'rectifiedPupilChange'};
 
  masterFileNamesCellArray = [];
@@ -16,25 +16,46 @@ function combineCIFTIs(fileNamesCellArray, varargin)
 
         covariateType = covariateTypes{cc};
 
+         
+
             for stat = 1:length(stats)
+                
+                if strcmp(stats{stat}, 'beta')
+                    for covariateSubType = 1:length(strsplit(covariateType,'+'))
 
-                statsType = stats{stat};
+                        betas = strsplit(covariateType, '+')
+                        statsType = [betas{covariateSubType}, '_beta'];
 
-                fileNamesCellArray{1} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run1_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{2} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run2_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{3} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run3_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{4} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run4_', covariateType, '_', statsType, '.dscalar.nii']);
+                        fileNamesCellArray{1} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run1_', covariateType, '_', statsType, '.dscalar.nii']);
+                        fileNamesCellArray{2} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run2_', covariateType, '_', statsType, '.dscalar.nii']);
+                        fileNamesCellArray{3} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run3_', covariateType, '_', statsType, '.dscalar.nii']);
+                        fileNamesCellArray{4} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run4_', covariateType, '_', statsType, '.dscalar.nii']);
+  
+                    
+                    end
+
+                else
+                    statsType = stats{stat};
+
+                    fileNamesCellArray{1} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run1_', covariateType, '_', statsType, '.dscalar.nii']);
+                    fileNamesCellArray{2} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run2_', covariateType, '_', statsType, '.dscalar.nii']);
+                    fileNamesCellArray{3} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run3_', covariateType, '_', statsType, '.dscalar.nii']);
+                    fileNamesCellArray{4} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run4_', covariateType, '_', statsType, '.dscalar.nii']);
+                end
 
                 masterFileNamesCellArray = [ masterFileNamesCellArray; fileNamesCellArray];
+                combineCIFTIs(masterFileNamesCellArray)
+
             end
+        
     end
  end
- combineCIFTIs(fileNamesCellArray)
 
 %}
 %% Input parser
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
+p.addParameter('savePath', [], @ischar);
 p.parse(varargin{:});
 
 
@@ -51,6 +72,9 @@ for ii = 1:length(fileNamesCellArray)
     % read text file into matlab
     grayordinates = readtable(fullfile(savePath, [fileName, '.txt']), 'ReadVariableNames', false);
     
+    % delete text file intermediate
+    system(['rm "', fullfile(savePath, [fileName, '.txt']), '"']);
+    
     % stash the results
     grayordinatesCombinedMatrix(:,:,ii) = table2array(grayordinates);
 end
@@ -62,10 +86,21 @@ meanGrayordinates = mean(grayordinatesCombinedMatrix,3);
 fileNameSplit = strsplit(fileName, '_');
 runType = [fileNameSplit{1}, '_', fileNameSplit{2}];
 covariateType = fileNameSplit{5};
-statsType = strsplit(fileName, covariateType);
-statsType = statsType{2}(2:end);% first to text file
+
+if strcmp(fileNameSplit{end}, 'beta')
+    statsType = [fileNameSplit{end-1}, '_', fileNameSplit{end}];
+else
+    statsType = fileNameSplit{end};
+end
+
+if ~isempty(p.Results.savePath)
+    savePath = p.Results.savePath;
+end
+% first to text file
 dlmwrite(fullfile(savePath, ['average_', runType, '_stats.txt']), meanGrayordinates, 'delimiter','\t')  
 % now to CIFTI
 system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -from-text "', fullfile(savePath, ['average_', runType, '_stats.txt']), '" "', fileNamesCellArray{1}, '" "', fullfile(savePath, ['average_', runType, '_', covariateType, '_', statsType, '.dscalar.nii']), '"']);
 
+% delete text file intermediate
+system(['rm "', fullfile(savePath, ['average_', runType, '_stats.txt']), '"']);
 end
