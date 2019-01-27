@@ -51,7 +51,7 @@ function analyzeWholeBrain(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
-p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange', 'eyeDisplacement'}, @iscell);
+p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange', 'eyeDisplacement', 'dilations', 'constrictions', 'PUI1000', 'PUI100', 'rectifiedPupilChange'}, @iscell);
 p.addParameter('fileType', 'volume', @ischar);
 
 p.parse(varargin{:});
@@ -254,7 +254,7 @@ for ii = 1:length(covariatesToAnalyze)
         else
            for  rr = 1:length(multipleRegressorLabels)
                
-                saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', multipleRegressorLabels{rr}, '_', statsOfInterest{ss}, suffix]);
+                saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', multipleRegressorLabels{rr}, '_', statsOfInterest{ss}, suffix]);
                 makeWholeBrainMap(stats.(statsOfInterest{ss})(rr*2-1,:), voxelIndices, templateFile, saveName);
 
            end

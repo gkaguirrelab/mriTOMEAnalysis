@@ -58,12 +58,35 @@ blinks = zeros(1,length(pupilTimebase));
 blinks(blinkFrames) = 1;
 fclose(controlFile);
 
+% PUI
+PUI1000 = movstd(pupilDiameter, 1000, 'omitnan');
+PUI10000 = movstd(pupilDiameter, 10000, 'omitnan');
+PUI100 = movstd(pupilDiameter, 100, 'omitnan');
+PUI5000 = movstd(pupilDiameter, 5000, 'omitnan');
+
+%dilations
+dilations = zeros(1,length(pupilChange));
+dilations(find(pupilChange > 0)) = pupilChange(find(pupilChange > 0));
+
+% constrictions
+constrictions = zeros(1, length(pupilChange));
+constrictions(find(pupilChange < 0)) = pupilChange(find(pupilChange < 0));
+
+
+
 %% Convolve with HRF
 [pupilDiameterConvolved] = convolveRegressorWithHRF(pupilDiameter, pupilTimebase);
 [pupilChangeConvolved] = convolveRegressorWithHRF(pupilChange, pupilTimebase);
 [rectifiedPupilChangeConvolved] = convolveRegressorWithHRF(rectifiedPupilChange, pupilTimebase);
 [eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
 [blinksConvolved] = convolveRegressorWithHRF(blinks', pupilTimebase);
+[PUI1000Convolved] = convolveRegressorWithHRF(PUI1000, pupilTimebase);
+[PUI10000Convolved] = convolveRegressorWithHRF(PUI10000, pupilTimebase);
+[PUI100Convolved] = convolveRegressorWithHRF(PUI100, pupilTimebase);
+[PUI5000Convolved] = convolveRegressorWithHRF(PUI5000, pupilTimebase);
+[dilationsConvolved ] = convolveRegressorWithHRF(dilations', pupilTimebase);
+[constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
+
 
 %% Make first derivative of convolved HRF to account for temporal timing differences
 
@@ -77,7 +100,18 @@ firstDerivativeEyeDisplacementConvolved = diff(eyeDisplacementConvolved);
 firstDerivativeEyeDisplacementConvolved = [NaN, firstDerivativeEyeDisplacementConvolved];
 firstDerivativeBlinksConvolved = diff(blinksConvolved);
 firstDerivativeBlinksConvolved = [NaN, firstDerivativeBlinksConvolved];
-
+firstDerivativePUI1000Convolved = diff(PUI1000Convolved);
+firstDerivativePUI1000Convolved = [NaN, firstDerivativePUI1000Convolved];
+firstDerivativePUI10000Convolved = diff(PUI10000Convolved);
+firstDerivativePUI10000Convolved = [NaN, firstDerivativePUI10000Convolved];
+firstDerivativePUI100Convolved = diff(PUI100Convolved);
+firstDerivativePUI100Convolved = [NaN, firstDerivativePUI100Convolved];
+firstDerivativePUI5000Convolved = diff(PUI5000Convolved);
+firstDerivativePUI5000Convolved = [NaN, firstDerivativePUI5000Convolved];
+firstDerivativeDilationsConvolved = diff(dilationsConvolved);
+firstDerivativeDilationsConvolved = [NaN, firstDerivativeDilationsConvolved];
+firstDerivativeConstrictionsConvolved = diff(constrictionsConvolved);
+firstDerivativeConstrictionsConvolved = [NaN, firstDerivativeConstrictionsConvolved];
 %% Package them up
 covariates = [];
 covariates.pupilDiameterConvolved = pupilDiameterConvolved;
@@ -90,6 +124,18 @@ covariates.eyeDisplacementConvolved = eyeDisplacementConvolved;
 covariates.firstDerivativeEyeDisplacementConvolved = firstDerivativeEyeDisplacementConvolved;
 covariates.blinksConvolved = blinksConvolved;
 covariates.firstDerivativeBlinksConvolved = firstDerivativeBlinksConvolved;
+covariates.PUI1000Convolved = PUI1000Convolved;
+covariates.firstDerivativePUI1000Convolved = firstDerivativePUI1000Convolved;
+covariates.PUI10000Convolved = PUI10000Convolved;
+covariates.firstDerivativePUI10000Convolved = firstDerivativePUI10000Convolved;
+covariates.PUI100Convolved = PUI100Convolved;
+covariates.firstDerivativePUI100Convolved = firstDerivativePUI100Convolved;
+covariates.PUI5000Convolved = PUI5000Convolved;
+covariates.firstDerivativePUI5000Convolved = firstDerivativePUI5000Convolved;
+covariates.dilationsConvolved = dilationsConvolved;
+covariates.firstDerivativeDilationsConvolved = firstDerivativeDilationsConvolved;
+covariates.constrictionsConvolved = constrictionsConvolved;
+covariates.firstDerivativeConstrictionsConvolved = firstDerivativeConstrictionsConvolved;
 covariates.timebase = pupilTimebase;
 
 %% Try bandpass filtering the raw pupil diameter in an attempt to replicate prior work from Schnieder and Yellin
@@ -161,6 +207,8 @@ unconvolvedCovariates.eyeDisplacement = eyeDisplacement';
 unconvolvedCovariates.pupilDiameterBandpassed = pupilDiameterBandpassed;
 unconvolvedCovariates.pupilChangeBandpassed = pupilChangeBandpassed;
 unconvolvedCovariates.rectifiedPupilChangeBandpassed = rectifiedPupilChangeBandpassed;
+unconvolvedCovariates.dilations = dilations;
+unconvolvedCovariates.constrictions = constrictions;
 unconvolvedCovariates.blinks = blinks;
 
 end
