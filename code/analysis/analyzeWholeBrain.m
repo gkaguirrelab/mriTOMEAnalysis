@@ -51,7 +51,7 @@ function analyzeWholeBrain(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('skipPhysioMotionWMVRegression', false, @islogical);
-p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange', 'eyeDisplacement', 'dilations', 'constrictions', 'PUI1000', 'PUI100', 'rectifiedPupilChange'}, @iscell);
+p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange'}, @iscell);
 p.addParameter('fileType', 'volume', @ischar);
 
 p.parse(varargin{:});
@@ -66,7 +66,7 @@ outputDir = paths.outputDir;
 
 %% Get the data and organize it
 
-% getSubjectData(subjectID, runName);
+getSubjectData(subjectID, runName, 'downloadOnly', 'pupil');
 
 %% Register functional scan to anatomical scan
 
