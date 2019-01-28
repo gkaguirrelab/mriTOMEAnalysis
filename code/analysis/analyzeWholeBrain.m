@@ -256,6 +256,9 @@ for ii = 1:length(covariatesToAnalyze)
                
                 saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', multipleRegressorLabels{rr}, '_', statsOfInterest{ss}, suffix]);
                 makeWholeBrainMap(stats.(statsOfInterest{ss})(rr*2-1,:), voxelIndices, templateFile, saveName);
+                
+                saveName = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runName,'_', covariatesToAnalyze{ii}, '_', ['firstDerivative', upper(multipleRegressorLabels{rr}(1)), multipleRegressorLabels{rr}(2:end)], '_', statsOfInterest{ss}, suffix]);
+                makeWholeBrainMap(stats.(statsOfInterest{ss})(rr*2,:), voxelIndices, templateFile, saveName);
 
            end
         end
