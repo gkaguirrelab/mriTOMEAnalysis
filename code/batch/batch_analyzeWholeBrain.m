@@ -8,9 +8,9 @@ system(['echo "', 'SubjectID', ',', 'runName', '" > ', [errorLogPath, errorLogFi
 
 allSubjects = {'TOME_3001', 'TOME_3002','TOME_3003','TOME_3004','TOME_3004','TOME_3005','TOME_3008','TOME_3009','TOME_3011','TOME_3012','TOME_3013','TOME_3014','TOME_3015'};
 [~, userID] = system('whoami');
-if strcmp(userID, 'harrisonmcadams')
-    subjects =  {'TOME_3001', 'TOME_3002','TOME_3003','TOME_3004','TOME_3004','TOME_3005'};
-elseif strcmp(userID, 'coloradmin')
+if contains(userID, 'harrisonmcadams')
+    subjects =  {'TOME_3001', 'TOME_3002','TOME_3004','TOME_3004','TOME_3005'};
+elseif contains(userID, 'coloradmin')
     subjects = {'TOME_3008','TOME_3009','TOME_3011','TOME_3012','TOME_3013','TOME_3014','TOME_3015'};
 end
 
@@ -27,7 +27,8 @@ for ss = 1:length(subjects)
         
         try
             analyzeWholeBrain(subjectID, runName, 'fileType', 'CIFTI');
-            
+            system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
+
             close all
         catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
