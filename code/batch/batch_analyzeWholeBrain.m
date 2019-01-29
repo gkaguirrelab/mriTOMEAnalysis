@@ -1,17 +1,22 @@
 function batch_analyzeWholeBrain
 
 % set up error log
-errorLogPath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/errorLogs');
+errorLogPath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/errorLogs/');
 currentTime = clock;
 errorLogFilename = ['errorLog_WholeBrain_', num2str(currentTime(1)), '-', num2str(currentTime(2)), '-', num2str(currentTime(3)), '_', num2str(currentTime(4)), num2str(currentTime(5))];
 system(['echo "', 'SubjectID', ',', 'runName', '" > ', [errorLogPath, errorLogFilename]]);
 
-allSubjects = {'TOME_3001', 'TOME_3002','TOME_3003','TOME_3004','TOME_3004','TOME_3005','TOME_3008','TOME_3009','TOME_3011','TOME_3012','TOME_3013','TOME_3014','TOME_3015'};
+allSubjects = {'TOME_3001', 'TOME_3003','TOME_3002', 'TOME_3004','TOME_3004','TOME_3005','TOME_3008','TOME_3009','TOME_3011','TOME_3012','TOME_3013','TOME_3014','TOME_3015', 'TOME_3016', 'TOME_3018', 'TOME_3022', 'TOME_3020', 'TOME_3023', 'TOME_3024'};
+completedSubjects = determineCompletedSubjects(fullfile(errorLogPath, 'completedRuns'));
+
 [~, userID] = system('whoami');
 if contains(userID, 'harrisonmcadams')
-    subjects =  {'TOME_3001', 'TOME_3002','TOME_3004','TOME_3004','TOME_3005'};
+    subjects = {allSubjects{1:2:end}};
+    subjects = setdiff(subjects, completedSubjects);
+
 elseif contains(userID, 'coloradmin')
-    subjects = {'TOME_3008','TOME_3009','TOME_3011','TOME_3012','TOME_3013','TOME_3014','TOME_3015'};
+    subjects = {allSubjects{2:2:end}};
+    subjects = setdiff(subjects, completedSubjects);
 end
 
 %% from each session, download the hcp-struct.zip
@@ -28,7 +33,7 @@ for ss = 1:length(subjects)
         try
             analyzeWholeBrain(subjectID, runName, 'fileType', 'CIFTI');
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
-
+            
             close all
         catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
