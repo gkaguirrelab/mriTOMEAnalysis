@@ -10,6 +10,7 @@ allSubjects = {'TOME_3001', 'TOME_3003','TOME_3002', 'TOME_3004','TOME_3004','TO
 completedSubjects = determineCompletedSubjects(fullfile(errorLogPath, 'completedRuns'));
 
 [~, userID] = system('whoami');
+userID = strtrim(userID);
 if contains(userID, 'harrisonmcadams')
     subjects = {allSubjects{1:2:end}};
     subjects = setdiff(subjects, completedSubjects);
@@ -20,7 +21,7 @@ elseif contains(userID, 'coloradmin')
 end
 
 %% from each session, download the hcp-struct.zip
-for ss = 1:length(subjects)
+for ss = 2:length(subjects)
     subjectID = subjects{ss};
     
     [ runNames ] = getRunsPerSubject(subjectID);
