@@ -1,5 +1,6 @@
 function [ paths ] = definePaths(subjectID)
 [~, userID] = system('whoami');
+userID = strtrim(userID);
 
 paths.freeSurferDir = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID, '/freeSurfer');
 paths.anatDir = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/flywheelOutput/', subjectID);
