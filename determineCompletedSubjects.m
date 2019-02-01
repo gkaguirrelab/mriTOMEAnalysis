@@ -25,7 +25,7 @@ for ss = 1:length(subjects)
    [ runNames ] = getRunsPerSubject(subjects{ss});
    counter = 0;
    for rr = 1:length(runNames)
-       if sum(cellfun(@isempty, strfind(text{1}, [subjects{ss},',', runNames{rr}]))) < length(runNames)
+       if sum(cellfun(@isempty, strfind(text{1}, [subjects{ss},',', runNames{rr}]))) < length(text{1})
            counter = counter + 1;
        end
    end
