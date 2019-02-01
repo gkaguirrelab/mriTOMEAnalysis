@@ -1,8 +1,8 @@
 % assemble fileNamesCellArray
 
-subjectList = {'TOME_3003'};
-stats = {'rSquared', 'beta'};
-covariateTypes = {'pupilDiameter+pupilChange', 'pupilDiameter', 'constrictions', 'dilations', 'eyeDisplacement', 'PUI100', 'PUI1000', 'pupilChange', 'rectifiedPupilChange'};
+subjectList = determineCompletedSubjects(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/errorLogs/completedRuns'));
+stats = {'beta', 'rSquared'};
+covariateTypes = {'pupilDiameter+pupilChange', 'pupilDiameter', 'pupilChange'};
 
 masterFileNamesCellArray = [];
 
@@ -18,40 +18,50 @@ for cc = 1:length(covariateTypes)
         if strcmp(stats{stat}, 'beta')
             for covariateSubType = 1:length(strsplit(covariateType,'+'))
                 betas = strsplit(covariateType, '+');
+                
+                for derivative = 1:2
+                    masterFileNamesCellArray = [];
 
-                statsType = [betas{covariateSubType}, '_beta'];
-                masterFileNamesCellArray = [];
-                for ss = 1:length(subjectList)
-                    
-                    subjectID = subjectList{ss};
-                    
-                    
-                    
-                    fileNamesCellArray{1} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run1_', covariateType, '_', statsType, '.dscalar.nii']);
-                    fileNamesCellArray{2} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run2_', covariateType, '_', statsType, '.dscalar.nii']);
-                    fileNamesCellArray{3} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run3_', covariateType, '_', statsType, '.dscalar.nii']);
-                    fileNamesCellArray{4} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run4_', covariateType, '_', statsType, '.dscalar.nii']);
-                    
+                    if derivative == 1
+                        statsType= [betas{covariateSubType}, '_beta'];
+                    else
+                        statsType = ['firstDerivative', upper(betas{covariateSubType}(1)), betas{covariateSubType}(2:end), '_beta'];
+
+                    end
+                    for ss = 1:length(subjectList)
+                        
+                        subjectID = subjectList{ss};
+                        
+                        runNames = getRunsPerSubject(subjectID);
+                        for rr = 1:length(runNames)
+                            fileName = {fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runNames{rr} '_', covariateType, '_', statsType, '.dscalar.nii'])};
+                            masterFileNamesCellArray = [ masterFileNamesCellArray, fileName];
+                            
+                        end
+                        
+                    end
+                    savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'average');
+                    combineCIFTIs(masterFileNamesCellArray, 'savePath', savePath)
                 end
-                masterFileNamesCellArray = [ masterFileNamesCellArray, fileNamesCellArray];
-            combineCIFTIs(masterFileNamesCellArray)
             end
             
             
         else
             masterFileNamesCellArray = [];
+            statsType = 'rSquared';
             for ss = 1:length(subjectList)
                 
                 subjectID = subjectList{ss};
-                statsType = stats{stat};
-                
-                fileNamesCellArray{1} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run1_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{2} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run2_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{3} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_AP_Run3_', covariateType, '_', statsType, '.dscalar.nii']);
-                fileNamesCellArray{4} = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, ['rfMRI_REST_PA_Run4_', covariateType, '_', statsType, '.dscalar.nii']);
+                runNames = getRunsPerSubject(subjectID);
+                for rr = 1:length(runNames)
+                    fileName = {fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', subjectID, [runNames{rr} '_', covariateType, '_', statsType, '.dscalar.nii'])};
+                    masterFileNamesCellArray = [ masterFileNamesCellArray, fileName];
+                    
+                end
             end
-            masterFileNamesCellArray = [ masterFileNamesCellArray, fileNamesCellArray];
-            combineCIFTIs(masterFileNamesCellArray)
+                                savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'wholeBrain', 'average');
+
+            combineCIFTIs(masterFileNamesCellArray, 'savePath', savePath)
         end
         
         
