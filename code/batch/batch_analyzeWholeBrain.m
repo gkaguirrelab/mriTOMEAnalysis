@@ -14,6 +14,7 @@ userID = strtrim(userID);
 if contains(userID, 'harrisonmcadams')
     subjects = {allSubjects{1:2:end}};
     subjects = setdiff(subjects, completedSubjects);
+    subjects = {'TOME_3029', 'TOME_3032', 'TOME_3036'};
 
 elseif contains(userID, 'coloradmin')
     subjects = {allSubjects{2:2:end}};
@@ -21,7 +22,7 @@ elseif contains(userID, 'coloradmin')
 end
 
 %% from each session, download the hcp-struct.zip
-for ss = 2:length(subjects)
+for ss = 1:length(subjects)
     subjectID = subjects{ss};
     
     [ runNames ] = getRunsPerSubject(subjectID);
