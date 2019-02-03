@@ -1,9 +1,9 @@
 % Download TOME hcp-struct analysis result to local directory
 
 projectName = 'tome';
-gearName = 'hcp-struct';
-rootSaveDir = '/Users/aguirre/Desktop/test';
-outputFileStem = '.hcpstruct_QC.inflated_MyelinMap_BC.png';
+gearName = 'hcp-diff';
+rootSaveDir = '~/Desktop/dataForRito';
+outputFileStem = '_hcpdiff.zip';
 
 %% Instantiate the flywheel object
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
