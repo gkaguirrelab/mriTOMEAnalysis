@@ -64,7 +64,7 @@ elseif strcmp(p.Results.downloadOnly, 'pupil')
     downloadBenson = false;
 end
 
-fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
+fw = flywheel.Flywheel('upenn.flywheel.io:xRBvFBoJddS12kWEkM');
 
 if (~exist(dataDownloadDir,'dir'))
     mkdir(dataDownloadDir);
