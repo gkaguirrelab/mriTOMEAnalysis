@@ -2,7 +2,7 @@
 
 projectName = 'tome';
 gearName = 'hcp-diff';
-rootSaveDir = '~/Desktop/dataForRito';
+rootSaveDir = '/Users/eyetrackingworker/Desktop/dataForRito';
 outputFileStem = '_hcpdiff.zip';
 
 %% Instantiate the flywheel object
@@ -26,7 +26,7 @@ for ii = 1:numel(analyses)
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
 
     % Find the file with the matching stem
-    fileMatchIdx = cellfun(@(x) contains(x.name,outputFileStem),thisAnalysis.files);
+    fileMatchIdx = cellfun(@(x) endsWith(x.name,outputFileStem),thisAnalysis.files);
 
     % Have some sanity checking here to error if there are none or more
     % than one matching files
