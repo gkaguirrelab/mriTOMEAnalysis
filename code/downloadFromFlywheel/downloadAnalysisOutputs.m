@@ -1,9 +1,9 @@
 % Download TOME hcp-struct analysis result to local directory
 
 projectName = 'tome';
-gearName = 'hcp-struct';
-rootSaveDir = '/Users/aguirre/Desktop/test';
-outputFileStem = '.hcpstruct_QC.inflated_MyelinMap_BC.png';
+gearName = 'hcp-diff';
+rootSaveDir = '/Users/eyetrackingworker/Desktop/dataForRito';
+outputFileStem = '_hcpdiff.zip';
 
 %% Instantiate the flywheel object
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -26,7 +26,7 @@ for ii = 1:numel(analyses)
     thisAnalysis = fw.getAnalysis(analyses{ii}.analysis.id);
 
     % Find the file with the matching stem
-    fileMatchIdx = cellfun(@(x) contains(x.name,outputFileStem),thisAnalysis.files);
+    fileMatchIdx = cellfun(@(x) endsWith(x.name,outputFileStem),thisAnalysis.files);
 
     % Have some sanity checking here to error if there are none or more
     % than one matching files
