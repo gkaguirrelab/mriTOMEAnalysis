@@ -1,4 +1,4 @@
-function [ covariateLag ] = analyzeCovariateLag(subjectID, runName, varargin)
+function [ V1CorrelationValues, IPLCorrelationValues ] = analyzeCovariateLag(subjectID, runName, varargin)
 %{
 
 subjectID = 'TOME_3003';
@@ -13,7 +13,7 @@ runName = 'rfMRI_REST_AP_Run1';
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('covariateType', 'pupilDiameterConvolved', @ischar);
-p.addParameter('lagRange', -10000:100:10000, @isnum);
+p.addParameter('lagRange', -7000:100:7000, @isnum);
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
 p.addParameter('demoLagDirectionality', false, @islogical);
 
