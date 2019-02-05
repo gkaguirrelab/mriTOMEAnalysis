@@ -26,7 +26,6 @@ for ss = 1:length(subjects)
             [V1Correlations(end+1, :), IPLCorrelations(end+1, :)] = analyzeCovariateLag(subjectID, runName);
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
             
-            close all
         catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
         end
