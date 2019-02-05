@@ -15,40 +15,49 @@ paths = definePaths('TOME_3001');
 plotFig = figure;
 hold on
 counter = 1;
+lagRange = -20000:100:20000;
 for ss = 1:length(subjects)
     subjectID = subjects{ss};
     
     [ runNames ] = getRunsPerSubject(subjectID);
+    V1CorrelationsPerSubject = [];
+    IPLCorrelationsPerSubject = [];
     for rr = 1:length(runNames)
         
         runName = runNames{rr};
         
         fprintf('Now analyzing Subject %s, Run %s\n', subjectID, runName);
         
-        try
-            [V1Correlations(end+1, :), IPLCorrelations(end+1, :)] = analyzeCovariateLag(subjectID, runName);
+        %try
+            [V1CorrelationsPerSubject(end+1, :), IPLCorrelationsPerSubject(end+1, :)] = analyzeCovariateLag(subjectID, runName, 'lagRange', lagRange);
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
-            counter = counter + 1;
-        catch
+        %catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
-        end
-        if size(V1Correlations,1) > 1
-            close all
-            plotFig = figure;
-            hold on
-            h1 = shadedErrorBar( -7000:100:7000, mean(IPLCorrelations,1), std(IPLCorrelations,1)./size(IPLCorrelations,1), 'r');
-            h2 = shadedErrorBar( -7000:100:7000, mean(V1Correlations,1), std(V1Correlations,1)./size(V1Correlations,1), 'b');
-
-            xlim([-7000 7000])
-            xlabel('Lag (ms)')
-            ylabel('Average Correlation')
-            legend([h1.mainLine,h2.mainLine],'IPL', 'V1')            
-            orient(plotFig, 'landscape')
-            title(['# runs = ', num2str(counter)]);
-
-            print(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/wholeBrain', 'lagCorrelation.pdf'), '-dpdf', '-fillpage')
-        end
+        %end
         
+        
+    end
+    counter = counter + 1;
+    V1Correlations(end+1,:) = mean(V1CorrelationsPerSubject,1);
+    IPLCorrelations(end+1,:) = mean(IPLCorrelationsPerSubject,1);
+    if size(V1Correlations,1) > 1
+        
+        
+        
+        close all
+        plotFig = figure;
+        hold on
+        h1 = shadedErrorBar( lagRange, mean(IPLCorrelations,1), std(IPLCorrelations,1), 'r');
+        h2 = shadedErrorBar( lagRange, mean(V1Correlations,1), std(V1Correlations,1), 'b');
+        
+        xlim([lagRange(1), lagRange(end)])
+        xlabel('Lag (ms)')
+        ylabel('Average Correlation')
+        legend([h1.mainLine,h2.mainLine],'IPL', 'V1')
+        orient(plotFig, 'landscape')
+        title(['# Subjects = ', num2str(counter)]);
+        
+        print(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/wholeBrain', 'lagCorrelation.pdf'), '-dpdf', '-fillpage')
     end
 end
 
