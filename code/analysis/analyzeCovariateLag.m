@@ -80,7 +80,7 @@ end
 copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.L.BA.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.BA.32k_fs_LR.label.gii']));
 copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.R.BA.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.R.BA.32k_fs_LR.label.gii']));
 copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']));
-copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.R.aparc.a2009s.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']));
+copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.R.aparc.a2009s.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.R.aparc.a2009s.32k_fs_LR.label.gii']));
 
 delete(fullfile(dataDownloadDir, 'classificationScene.zip'));
 rmdir(fullfile(dataDownloadDir, subjectID), 's')
