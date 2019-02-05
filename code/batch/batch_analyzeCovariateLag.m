@@ -33,6 +33,9 @@ for ss = 1:length(subjects)
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
         end
         if size(V1Correlations,1) > 1
+            close all
+            plotFig = figure;
+            hold on
             h1 = shadedErrorBar( -7000:100:7000, mean(IPLCorrelations,1), std(IPLCorrelations,1)./size(IPLCorrelations,1), 'r');
             h2 = shadedErrorBar( -7000:100:7000, mean(V1Correlations,1), std(V1Correlations,1)./size(V1Correlations,1), 'b');
 
@@ -41,7 +44,7 @@ for ss = 1:length(subjects)
             ylabel('Average Correlation')
             legend([h1.mainLine,h2.mainLine],'IPL', 'V1')            
             orient(plotFig, 'landscape')
-            title('# runs = ', counter);
+            title(['# runs = ', num2str(counter)]);
 
             print(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/wholeBrain', 'lagCorrelation.pdf'), '-dpdf', '-fillpage')
         end
