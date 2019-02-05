@@ -16,6 +16,8 @@ p.addParameter('covariateType', 'pupilDiameterConvolved', @ischar);
 p.addParameter('lagRange', -7000:100:7000, @isnum);
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
 p.addParameter('demoLagDirectionality', false, @islogical);
+p.addParameter('makePlots', false, @islogical);
+
 
 
 p.parse(varargin{:});
@@ -164,11 +166,13 @@ for tt = p.Results.lagRange
 end
 
 % plot results
-plotFig = figure;
-plot(p.Results.lagRange, V1CorrelationValues);
-hold on;
-plot(p.Results.lagRange, IPLCorrelationValues);
-legend('V1', 'IPL');
+if p.Results.makePlots
+    plotFig = figure;
+    plot(p.Results.lagRange, V1CorrelationValues);
+    hold on;
+    plot(p.Results.lagRange, IPLCorrelationValues);
+    legend('V1', 'IPL');
+end
 
 %% Demo which direction positive lag goes, if desired
 if p.Results.demoLagDirectionality
