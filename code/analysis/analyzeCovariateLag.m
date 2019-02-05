@@ -88,7 +88,7 @@ rmdir(fullfile(dataDownloadDir, subjectID), 's')
 %% Load up the pupil data
 [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
 
-pupilDiameterConvolved = covariates.pupilDiameterConvolved;
+pupilDiameterConvolved = covariates.(p.Results.covariateType);
 timebase = covariates.timebase;
 
 
