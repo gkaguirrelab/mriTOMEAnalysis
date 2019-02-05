@@ -32,6 +32,12 @@ for ss = 1:length(subjects)
         end
         
     end
+    shadedErrorBar( -7000:100:7000, mean(V1Correlations,1), std(V1Correlations,1)./size(V1Correlations,1), 'b')
+    shadedErrorBar( -7000:100:7000, mean(IPLCorrelations,1), std(IPLCorrelations,1)./size(IPLCorrelations,1), 'r')
+    xlim([-7000 7000])
+    xlabel('Lag (ms)')
+    ylabel('Average Correlation')
+    legend('V1', 'IPL')
 end
 
 end
