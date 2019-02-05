@@ -20,6 +20,69 @@ p.addParameter('demoLagDirectionality', false, @islogical);
 
 p.parse(varargin{:});
 
+%% Get the ROIs from flywheel
+fw = flywheel.Flywheel('upenn.flywheel.io:xRBvFBoJddS12kWEkM');
+
+result = fw.lookup('tome/tome');
+allSessions = fw.getProjectSessions(result.id);
+
+analyses = [];
+for ii = 1:numel(allSessions)
+    if ~strcmp(allSessions{ii}.subject.code, subjectID)
+        allSessions{ii} = [];
+        
+    end
+    
+end
+
+allSessions = allSessions(~cellfun('isempty', allSessions));
+for ii = 1:numel(allSessions)
+    newAnalyses = fw.getSessionAnalyses(allSessions{ii}.id);
+    analyses = [analyses; newAnalyses];
+end
+
+for ii = 1:numel(analyses)
+    
+    if ~contains(analyses{ii}.label, 'hcp-icafix') || ~contains(analyses{ii}.label, 'REST')
+        analyses{ii} = [];
+    end
+end
+
+analyses = analyses(~cellfun('isempty', analyses));
+
+for ff = 1:length(analyses{1}.files)
+    if contains(analyses{1}.files{ff}.name, 'Classification_Scene.zip')
+        sessionID = analyses{1}.parents.session;
+        analysesID = analyses{1}.id;
+        fileName = analyses{1}.files{ff}.name;
+    end
+end
+
+paths = definePaths(subjectID);
+dataDownloadDir = paths.dataDownloadDir;
+if (~exist(dataDownloadDir,'dir'))
+    mkdir(dataDownloadDir);
+end
+fw.downloadOutputFromAcquisitionAnalysis(sessionID, analysesID, fileName, fullfile(dataDownloadDir, 'classificationScene.zip'));
+
+system(['unzip -o "', fullfile(dataDownloadDir, 'classificationScene.zip'), '" -d "', fullfile(dataDownloadDir, subjectID), '"']);
+
+tarName = dir(fullfile(dataDownloadDir, subjectID));
+for nn = 1:length(tarName)
+    if contains(tarName(nn).name, 'REST')
+        tarFileName = tarName(nn).name;
+    end
+end
+
+
+copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.L.BA.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.BA.32k_fs_LR.label.gii']));
+copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.R.BA.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.R.BA.32k_fs_LR.label.gii']));
+copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']));
+copyfile(fullfile(dataDownloadDir, subjectID, tarFileName, subjectID, 'MNINonLinear/fsaverage_LR32k', [subjectID, '.R.aparc.a2009s.32k_fs_LR.label.gii']), fullfile(paths.anatDir, [subjectID, '.L.aparc.a2009s.32k_fs_LR.label.gii']));
+
+delete(fullfile(dataDownloadDir, 'classificationScene.zip'));
+rmdir(fullfile(dataDownloadDir, subjectID), 's')
+
 %% Load up the pupil data
 [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
 
