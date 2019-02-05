@@ -13,7 +13,7 @@ runName = 'rfMRI_REST_AP_Run1';
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('covariateType', 'pupilDiameterConvolved', @ischar);
-p.addParameter('lagRange', -7000:100:7000, @isnum);
+p.addParameter('lagRange', -7000:100:7000, @isnumeric);
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
 p.addParameter('demoLagDirectionality', false, @islogical);
 p.addParameter('makePlots', false, @islogical);
@@ -142,6 +142,7 @@ meanIPLTimeSeries = table2array(meanIPLTimeSeries);
 V1CorrelationValues = [];
 IPLCorrelationValues = [];
 for tt = p.Results.lagRange
+    pupilStruct = [];
     lag = tt;
     % resample the pupil data to the same temporal resolution as the BOLD data
     pupilStruct.timebase = timebase + lag;
