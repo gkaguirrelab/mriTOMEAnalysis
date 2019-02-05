@@ -14,6 +14,7 @@ IPLCorrelations = [];
 paths = definePaths('TOME_3001');
 plotFig = figure;
 hold on
+counter = 1;
 for ss = 1:length(subjects)
     subjectID = subjects{ss};
     
@@ -27,7 +28,7 @@ for ss = 1:length(subjects)
         try
             [V1Correlations(end+1, :), IPLCorrelations(end+1, :)] = analyzeCovariateLag(subjectID, runName);
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
-            
+            counter = counter + 1;
         catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
         end
@@ -40,6 +41,7 @@ for ss = 1:length(subjects)
             ylabel('Average Correlation')
             legend([h1.mainLine,h2.mainLine],'IPL', 'V1')            
             orient(plotFig, 'landscape')
+            title('# runs = ', counter);
 
             print(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/wholeBrain', 'lagCorrelation.pdf'), '-dpdf', '-fillpage')
         end
