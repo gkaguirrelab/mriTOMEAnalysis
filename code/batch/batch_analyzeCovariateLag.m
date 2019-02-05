@@ -29,7 +29,7 @@ for ss = 1:length(subjects)
         fprintf('Now analyzing Subject %s, Run %s\n', subjectID, runName);
         
         %try
-            [V1CorrelationsPerSubject(end+1, :), IPLCorrelationsPerSubject(end+1, :)] = analyzeCovariateLag(subjectID, runName, 'lagRange', lagRange);
+            [V1CorrelationsPerSubject(end+1, :), IPLCorrelationsPerSubject(end+1, :)] = analyzeCovariateLag(subjectID, runName, 'lagRange', lagRange, 'covariateType', 'pupilDiameterBandpassedConvolved');
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns']]);
         %catch
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
