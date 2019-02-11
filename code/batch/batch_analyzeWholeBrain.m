@@ -14,8 +14,6 @@ userID = strtrim(userID);
 if contains(userID, 'harrisonmcadams')
     subjects = {allSubjects{1:2:end}};
     subjects = setdiff(subjects, completedSubjects);
-    subjects = {'TOME_3029', 'TOME_3032', 'TOME_3036'};
-
 elseif contains(userID, 'coloradmin')
     subjects = {allSubjects{2:2:end}};
     subjects = setdiff(subjects, completedSubjects);
