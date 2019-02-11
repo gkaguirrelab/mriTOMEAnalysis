@@ -1,4 +1,4 @@
-projectName,tome,gearName,hcp-func,rootSession,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
+projectLabel,tome,gearName,hcp-func,rootSession,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
 Inputs,GradientCoeff,SpinEchoNegative,SpinEchoPositive,StructZip,fMRIScout,fMRITimeSeries,,,
 DefaultLabel,coeff.grad,SpinEchoFieldMap_AP,SpinEchoFieldMap_PA,hcp-struct/hcpstruct.zip,,,,,
 FileSuffix,gradientCoeff,nifti,nifti,zip,nifti,nifti,,,

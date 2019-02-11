@@ -1,4 +1,4 @@
-projectName,tome,gearName,retinotopy-templates,rootSession,anatomical,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
+projectLabel,tome,gearName,retinotopy-templates,rootSession,anatomical,ConfigKeys,{'subject_id'},ConfigVals,{subjectName}
 Inputs,anatomical,,,,,,,,
 DefaultLabel,T1w_acpc_dc_restore.nii.gz,,,,,,,,
 FileSuffix,nifti,,,,,,,,
