@@ -176,7 +176,7 @@ save(fullfile(savePath, [runName, '_cleanedTimeSeries']), 'cleanedTimeSeriesMatr
 %% Remove eye signals from BOLD data'
 if ~strcmp(p.Results.covariatesToAnalyze, 'flash')
     [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
-    covariates.timebase = covariates.timebase - 1000;
+    covariates.timebase = covariates.timebase + 1000;
     covariatesToAnalyze = p.Results.covariatesToAnalyze;
 elseif strcmp(p.Results.covariatesToAnalyze, 'flash')
     covariatesToAnalyze = {'flash'};
