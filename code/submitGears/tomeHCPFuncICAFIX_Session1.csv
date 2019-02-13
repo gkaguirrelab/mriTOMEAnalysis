@@ -1,4 +1,4 @@
-projectLabel,tome,gearName,hcp-icafix,rootSession,FuncZip,ConfigKeys,"{'Subject','RegName','FIXClassifier','HighPassFilter'}",ConfigVals,"{subjectName,'FS','HCP_hp2000',2000}"
+projectLabel,tome,gearName,hcp-icafix,rootSession,FuncZip,ConfigKeys,"{'Subject','RegName','FIXClassifier','HighPassFilter','PreserveOnError'}",ConfigVals,"{subjectName,'FS','HCP_hp2000',2000,true}"
 Inputs,StructZip,FuncZip,FuncZip2,FuncZip3,FuncZip4,analysisSubmissionTag,,,
 DefaultLabel,hcp-struct/hcpstruct.zip,,,,,,,,
 FileSuffix,zip,zip,zip,zip,zip,,,,
