@@ -1,10 +1,8 @@
-projectName,tome,gearName,hcp-struct,rootSession,T1,ConfigKeys,"{'Subject','RegName','StructuralUnwarpDirection'}",ConfigVals,"{subjectName,'FS','z'}"
+projectLabel,tome,gearName,hcp-struct,rootSession,T1,ConfigKeys,"{'Subject','RegName','StructuralUnwarpDirection'}",ConfigVals,"{subjectName,'FS','z'}"
 Inputs,T1,T2,,,,,,,
 DefaultLabel,T1w_MPR ,T2w_SPC,,,,,,,
-AcqFileType,nifti,nifti,,,,,,,
-IsAcquisitionFile,1,1,,,,,,,
-IsSessionFile,0,0,,,,,,,
-IsAnalysisFile,0,0,,,,,,,
+FileSuffix,nifti,nifti,,,,,,,
+ContainerType,acquisition,acquisition,,,,,,,
 ExactStringMatch,0,0,,notes,,,,,
 ,,,,,,,,,
 TOME_3001,TOME_3001/Session 1,TOME_3001/Session 1,,,,,,,
