@@ -1,7 +1,7 @@
 function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase, varargin)
 % Model regressors in inputted time series data.
 %
-% Syntax: 
+% Syntax:
 %  [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regressors, regressorsTimebase)
 %
 % Description:
@@ -10,37 +10,37 @@ function [ cleanedTimeSeries, stats ] = cleanTimeSeries( inputTimeSeries, regres
 %  time series. The model fits of that regression are subtracted from
 %  the original voxel time series to yield a "cleaned" time series. The
 %  beta, pearson R, and R2 value of each regression are also outputted.
-% 
+%
 % Inputs:
-%  inputTimeSeries: 		- a m x n matrix, where m corresponds to the number of time series 
-%							  and n corresponds to the number of TRs. The routine loops 
+%  inputTimeSeries: 		- a m x n matrix, where m corresponds to the number of time series
+%							  and n corresponds to the number of TRs. The routine loops
 %							  over rows.
-%  regressors:				- a r x s matrix in which r corresponds to the number 
-%							  regressors and s corresponds to the number of timepoints 
+%  regressors:				- a r x s matrix in which r corresponds to the number
+%							  regressors and s corresponds to the number of timepoints
 %							  for each regressor
-%  regressorsTimebase       - the timebase that describes the regressors. It should be of 
-%							  the same length s as the number of columns of the regressors 
+%  regressorsTimebase       - the timebase that describes the regressors. It should be of
+%							  the same length s as the number of columns of the regressors
 %							  matrix.
 %
 % Optional key-value pairs:
-%  'TR'                     - the length of time between each acquisition of the 
+%  'TR'                     - the length of time between each acquisition of the
 %							  functional volume that gave the inputTimeSeries.
-%  'totalTime'				- the total time, in ms, of the functional acqusition that 
+%  'totalTime'				- the total time, in ms, of the functional acqusition that
 %							  gave the inputTimeSeries
 %  'meanCenterRegressors'   - a logical that determines whether to mean center each regressor
-%  'zeroNansInRegressors'   - a logical that determines whether to replace all NaN values 
-%							  with 0 in the regressor, after mean centering has been performed	
-%  'saveName'				- a string that determines where to save any of the results. 
-%						      If empty, the default, nothing is saved.		
+%  'zeroNansInRegressors'   - a logical that determines whether to replace all NaN values
+%							  with 0 in the regressor, after mean centering has been performed
+%  'saveName'				- a string that determines where to save any of the results.
+%						      If empty, the default, nothing is saved.
 %
 % Outputs:
 %  cleanedTimeSeries        - a m x n matrix, where m corresponds to the number of time series
-%							  and n corresponds to the number of TRs. The routine loops 
-%							  over rows. The values of each voxel represent the residual 
-%							  after the regression was performed.			
-%  stats					- A structure with subfields beta, pearsonR, and rSquared that 
-%							  describe the summary statistics from the regression for each 
-%							  time series.  Each subfield is a vector of with length equal 
+%							  and n corresponds to the number of TRs. The routine loops
+%							  over rows. The values of each voxel represent the residual
+%							  after the regression was performed.
+%  stats					- A structure with subfields beta, pearsonR, and rSquared that
+%							  describe the summary statistics from the regression for each
+%							  time series.  Each subfield is a vector of with length equal
 %							  to the number of time series.
 
 p = inputParser; p.KeepUnmatched = true;
@@ -90,7 +90,7 @@ else
     end
 end
 
-% add the regressors to the 
+% add the regressors to the
 for nn = 1:nRegressors
     
     thePacket.stimulus.values(end+1,:) = regressors(:,nn)';
@@ -106,18 +106,26 @@ for tt = 1:nTimeSeries
     
     thePacket.response.values = inputTimeSeries(tt,:);
     
-    % TFE linear regression here
-    [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
-       'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
-%        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
-    
-
-    % remove signal related to regressors to yield clean time series
-    cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
-    beta(tt,:) = paramsFit.paramMainMatrix;
-    correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
-    rSquared(tt) = correlationMatrix(1,2)^2;
-    pearsonR(tt) = correlationMatrix(1,2);
+    if sum(any(thePacket.response.values)) == 0 || sum(isnan(thePacket.response.values)) == length(thePacket.response.values)
+        cleanedTimeSeries(tt,:) = thePacket.response.values;
+        beta(tt,:) = NaN;
+        rSquared(tt) = NaN;
+        pearsonR(tt) = NaN;
+    else
+        % TFE linear regression here
+        [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
+            'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
+        %        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
+        
+        
+        % remove signal related to regressors to yield clean time series
+        cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
+        beta(tt,:) = paramsFit.paramMainMatrix;
+        correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
+        rSquared(tt) = correlationMatrix(1,2)^2;
+        pearsonR(tt) = correlationMatrix(1,2);
+        
+    end
     
 end
 
@@ -135,7 +143,7 @@ if ~isempty(p.Results.saveName)
         mkdir(savePath);
     end
     
-
+    
     save(saveName, 'cleanedTimeSeries', '-v7.3');
     
 end
