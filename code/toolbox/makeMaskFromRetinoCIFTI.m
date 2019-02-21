@@ -1,13 +1,23 @@
 function [ maskMatrix ] = makeMaskFromRetinoCIFTI(areaNum, eccenRange, anglesRange, hemisphere, varargin)
+
+
 %{
 % make a V1 mask for the left hemisphere
 areaNum = 1;
 eccenRange = [0 90];
 anglesRange = [0 180];
-hemisphere = 'combined';
+hemisphere = 'lh';
 savePath = definePaths('benson');
 saveName = fullfile(savePath.anatDir, 'lh.V1.dscalar.nii');
+[ maskMatrix ] = makeMaskFromRetinoCIFTI(areaNum, eccenRange, anglesRange, hemisphere, 'saveName', saveName);
 
+% make a V1 mask for the right hemisphere
+areaNum = 1;
+eccenRange = [0 90];
+anglesRange = [0 180];
+hemisphere = 'rh';
+savePath = definePaths('benson');
+saveName = fullfile(savePath.anatDir, 'rh.V1.dscalar.nii');
 [ maskMatrix ] = makeMaskFromRetinoCIFTI(areaNum, eccenRange, anglesRange, hemisphere, 'saveName', saveName);
 
 %}
