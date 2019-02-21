@@ -21,6 +21,8 @@
 % this mapping and did not convert the templates associated with this
 % paper.
 
+% The templates were obtained from https://github.com/noahbenson/neuropythy/tree/master/neuropythy/lib/data/fsaverage/surf
+
 %%
 % where we keep the templates
 subjectID = 'benson';
