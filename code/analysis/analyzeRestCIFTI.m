@@ -1,9 +1,10 @@
-function analyzeRest(subjectID, runName, varargin)
+function analyzeRestCIFTI(subjectID, runName, varargin)
 
 p = inputParser; p.KeepUnmatched = true;
-p.addParameter('visualizeAlignment',false, @islogical);
-p.parse(varargin{:});
 
+p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange'}, @iscell);
+
+p.parse(varargin{:});
 %% Define paths
 [ paths ] = definePaths(subjectID);
 
@@ -51,14 +52,10 @@ for area = 1:length(areasList)
                 dorsalOrVentral = 'd';
             end
             
-            if strcmp(laterality{side}, 'lh')
-                hemisphere = leftHemisphere;
-            elseif strcmp(laterality{side}, 'rh')
-                hemisphere = rightHemisphere;
-            end
+            
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
-            makeMaskFromRetinoCIFTI(areasList{area}, eccenRange, anglesList{aa}, laterality{side}, 'saveName', fullfile(savePath,[maskName, '.dscalar.nii']));
+            [masks.(maskName)] = makeMaskFromRetinoCIFTI(areasList{area}, eccenRange, anglesList{aa}, laterality{side}, 'saveName', fullfile(savePath,[maskName, '.dscalar.nii']));
             
             
             
@@ -68,7 +65,7 @@ for area = 1:length(areasList)
     
 end
 
-makeMaskFromRetino(1, eccenRange, [0 180], 'saveName', fullfile(savePath,'V1Combined.nii.gz'));
+[masks.V1Combined] = makeMaskFromRetinoCIFTI(1, eccenRange, [0 180], 'combined', 'saveName', fullfile(savePath,'V1Combined.dscalar.nii'));
 
 
 %% extract the time series from the mask
@@ -84,21 +81,15 @@ for area = 1:length(areasList)
                 dorsalOrVentral = 'd';
             end
             
-            if strcmp(laterality{side}, 'lh')
-                hemisphere = leftHemisphere;
-            elseif strcmp(laterality{side}, 'rh')
-                hemisphere = rightHemisphere;
-            end
-            
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMask( functionalScan, masks.(maskName), 'whichCentralTendency', 'median');
+            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMaskCIFTI(masks.(maskName), cleanedTimeSeriesMatrix, 'whichCentralTendency', 'median');
             savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
             if ~exist(savePath, 'dir')
                 mkdir(savePath);
             end
-            save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
+            save(fullfile(savePath, [runName '_timeSeriesCIFTI']), 'meanTimeSeries', '-v7.3');
             
         end
         
@@ -106,103 +97,35 @@ for area = 1:length(areasList)
     
 end
 % extract time series from all of v1
-[ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMask( functionalScan, masks.V1Combined, 'whichCentralTendency', 'median');
-
-% extract time series from white matter and ventricles to be used as
-% nuisance regressors
-[ meanTimeSeries.whiteMatter ] = extractTimeSeriesFromMask( functionalScan, whiteMatterMask, 'whichCentralTendency', 'median');
-[ meanTimeSeries.ventricles ] = extractTimeSeriesFromMask( functionalScan, ventriclesMask, 'whichCentralTendency', 'median');
-save(fullfile(savePath, [runName '_timeSeries']), 'meanTimeSeries', '-v7.3');
+[ meanTimeSeries.V1Combined ] = extractTimeSeriesFromMaskCIFTI(masks.V1Combined, cleanedTimeSeriesMatrix, 'whichCentralTendency', 'median');
 
 
-%% Clean time series from physio regressors
-
-physioRegressors = load(fullfile(functionalDir, [runName, '_puls.mat']));
-physioRegressors = physioRegressors.output;
-motionTable = readtable((fullfile(functionalDir, [runName, '_Movement_Regressors.txt'])));
-motionRegressors = table2array(motionTable(:,7:12));
-regressors = [physioRegressors.all, motionRegressors];
-
-% mean center these motion and physio regressors
-for rr = 1:size(regressors,2)
-    regressor = regressors(:,rr);
-    regressor = regressor - nanmean(regressor);
-    regressor = regressor ./ nanstd(regressor);
-    regressors(:,rr) = regressor;
-end
-
-% also add the white matter and ventricular time series
-regressors(:,end+1) = meanTimeSeries.whiteMatter;
-regressors(:,end+1) = meanTimeSeries.ventricles;
-
-TR = functionalScan.tr; % in ms
-nFrames = functionalScan.nframes;
-
-regressorTimebase = 0:TR:nFrames*TR-TR;
-
-% remove all regressors that are all 0
-emptyColumns = [];
-for column = 1:size(regressors,2)
-    if ~any(regressors(:,column))
-        emptyColumns = [emptyColumns, column];
-    end
-end
-regressors(:,emptyColumns) = [];
-
-for area = 1:length(areasList)
-    
-    for aa = 1:length(anglesList)
-        
-        for side = 1:length(laterality)
-            
-            if isequal(anglesList{aa}, [0 90])
-                dorsalOrVentral = 'v';
-            elseif isequal(anglesList{aa}, [90 180])
-                dorsalOrVentral = 'd';
-            end
-            
-            if strcmp(laterality{side}, 'lh')
-                %hemisphere = leftHemisphere;
-            elseif strcmp(laterality{side}, 'rh')
-                %hemisphere = rightHemisphere;
-            end
-            
-            maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
-            
-            
-            [ cleanedMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, regressorTimebase, 'meanCenterRegressors', false);
-            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionWMVCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
-            
-            
-            
-        end
-        
-    end
-    
-end
-
-[ cleanedMeanTimeSeries.V1Combined ] = cleanTimeSeries( meanTimeSeries.V1Combined, regressors, regressorTimebase);
-save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionWMVCorrected']), 'cleanedMeanTimeSeries', '-v7.3');
 
 
 
 %% Correlate time series from different ROIs
 desiredOrder = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
-[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(cleanedMeanTimeSeries, 'desiredOrder', desiredOrder);
+[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(meanTimeSeries, 'desiredOrder', desiredOrder);
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', subjectID);
 if ~exist(savePath, 'dir')
     mkdir(savePath);
 end
-save(fullfile(savePath, runName), 'combinedCorrelationMatrix', 'acrossHemisphereCorrelationMatrix', '-v7.3');
+save(fullfile(savePath, [runName, '_CIFTI']), 'combinedCorrelationMatrix', 'acrossHemisphereCorrelationMatrix', '-v7.3');
 
 %% Remove eye signals from BOLD data
 % make pupil regressors
 
-pupilResponse = load(fullfile(pupilDir, [runName, '_pupil.mat']));
-pupilArea = pupilResponse.pupilData.initial.ellipses.values(:,3);
-pupilRegressors = [pupilArea];
-pupilTimebase = load(fullfile(pupilDir, [runName, '_timebase.mat']));
-pupilTimebase = pupilTimebase.timebase.values';
+[covariates] = makeEyeSignalCovariates(subjectID, runName);
+covariatesToAnalyze = p.Results.covariatesToAnalyze;
+
+% assemble regressors
+regressors = [];
+
+% if we're dealing with more than one eye signal, loop over each
+multipleRegressorLabels = strsplit(covariatesToAnalyze, '+');
+for rr = 1:length(multipleRegressorLabels)
+    regressors = [regressors;  covariates.([multipleRegressorLabels{rr}, 'Convolved']); covariates.(['firstDerivative', upper(multipleRegressorLabels{rr}(1)), multipleRegressorLabels{rr}(2:end), 'Convolved'])];
+end
 
 for area = 1:length(areasList)
     
@@ -220,8 +143,8 @@ for area = 1:length(areasList)
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( cleanedMeanTimeSeries.(maskName), pupilRegressors, pupilTimebase);
-            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionWMVCorrected_eyeSignalsRemoved']), 'cleanedMeanTimeSeries', '-v7.3');
+            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, covariates.timebase);
+            save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_eyeSignalsRemoved_CIFTI']), 'pupilFreeMeanTimeSeries', '-v7.3');
             
             
             
@@ -232,10 +155,9 @@ for area = 1:length(areasList)
 end
 
 [ pupilFreeMeanTimeSeries.V1Combined ] = cleanTimeSeries( cleanedMeanTimeSeries.V1Combined, pupilRegressors, pupilTimebase);
-save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_physioMotionWMVCorrected_eyeSignalsRemoved']), 'cleanedMeanTimeSeries', '-v7.3');
 
 
 %% Re-examine correlation of time series from different ROIs
 [ combinedCorrelationMatrix_postEye, acrossHemisphereCorrelationMatrix_postEye] = makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder);
-save(fullfile(savePath, [runName, '_postEye']), 'combinedCorrelationMatrix_postEye', 'acrossHemisphereCorrelationMatrix_postEye', '-v7.3');
+save(fullfile(savePath, [runName, '_postEye_CIFTI']), 'combinedCorrelationMatrix_postEye', 'acrossHemisphereCorrelationMatrix_postEye', '-v7.3');
 end
