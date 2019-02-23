@@ -107,11 +107,11 @@ desiredOrder = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', subjectID);
 
 saveName = fullfile(savePath, [subjectID, '_', runName, '_preEye']);
-
-[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(meanTimeSeries, 'desiredOrder', desiredOrder, 'saveName', saveName);
 if ~exist(savePath, 'dir')
     mkdir(savePath);
 end
+[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(meanTimeSeries, 'desiredOrder', desiredOrder, 'saveName', saveName);
+
 save(fullfile(savePath, [runName, '_CIFTI']), 'combinedCorrelationMatrix', 'acrossHemisphereCorrelationMatrix', '-v7.3');
 
 %% Remove eye signals from BOLD data
