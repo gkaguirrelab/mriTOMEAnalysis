@@ -57,19 +57,19 @@ for ss = 1:length(subjects)
         
         fprintf('Now analyzing Subject %s, Run %s\n', subjectID, runName);
         
-        try
+        %try
             analyzeRestCIFTI(subjectID, runName)            
             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, 'completedRuns_ROI']]);
             
             close all
-        catch
-            system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
-        end
-        
+%         catch
+%             system(['echo "', subjectID, ',', runName, '" >> ', [errorLogPath, errorLogFilename]]);
+%         end
+%         
     end
     savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', subjectID);
     saveName = fullfile(savePath, 'average');
-    makeAverageCorrelationMatrix({'TOME_3005'}, 'saveName', saveName)
+    makeAverageCorrelationMatrix({subjectID}, 'saveName', saveName)
     close all
 end
 
