@@ -1,4 +1,4 @@
-function [ timeVaringCorrelation ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength, varargin)
+function [ timeVaryingCorrelation ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength, varargin)
 
 %{
 subjectID = 'TOME_3005';
@@ -10,7 +10,14 @@ timeSeriesOne = meanTimeSeries.V1v_lh_mask;
 timeSeriesTwo = meanTimeSeries.V1v_rh_mask;
 windowLength = 50;
 
-[ timeVaringCorrelation ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength, 'correlationMethod', 'mtd')
+[ timeVaryingCorrelation_slidingWindowPearson ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength)
+[ timeVaryingCorrelation_mtd ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength, 'correlationMethod', 'mtd')
+
+plotFig = figure;
+hold on
+plot(timeVaryingCorrelation_slidingWindowPearson);
+plot(timeVaryingCorrelation_mtd);
+legend('Sliding Window Pearson', 'MTD')
 
 %}
 
@@ -18,17 +25,35 @@ windowLength = 50;
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('correlationMethod', 'slidingWindowPearson', @ischar);
+p.addParameter('normalizeTimeVaryingCorrelation', true, @islogical);
+
 p.parse(varargin{:});
 
 if strcmp(p.Results.correlationMethod, 'slidingWindowPearson')
+    timeVaryingCorrelation = zeros(1,length(timeSeriesOne));
+    timeVaryingCorrelation(1:windowLength) = NaN;
+    timeVaryingCorrelation(end-windowLength+1:end) = NaN;
     
+    for ii = round(windowLength/2)+1:length(timeSeriesOne) - round(windowLength/2)
+        indicesInWindow = (ii - round(windowLength/2)):(ii + round(windowLength/2));
+        
+        correlationMatrix = corrcoef(timeSeriesOne(indicesInWindow), timeSeriesTwo(indicesInWindow));
+        timeVaryingCorrelation(ii) = correlationMatrix(1,2);
+    
+    end
+    
+    timeVaryingCorrelation = (timeVaryingCorrelation - nanmean(timeVaryingCorrelation))./nanmean(timeVaryingCorrelation);
     
 end
 
 if strcmp(p.Results.correlationMethod, 'mtd')
    data = [timeSeriesOne', timeSeriesTwo']; 
-   mtd = coupling(data, windowLength);
+   direction = 0; % middle, not forward
+   trim = 1; % trim 0s
+   mtd = coupling(data, windowLength, direction, trim);
    timeVaryingCorrelation = reshape(mtd(1,2,:), 1, 420);
+   timeVaryingCorrelation = (timeVaryingCorrelation - nanmean(timeVaryingCorrelation))./nanmean(timeVaryingCorrelation);
+
 end
    
     
@@ -119,10 +144,10 @@ function mtd = coupling(data,window,direction,trim)
     %trim ends (0 = no; 1 = yes)?
 
     if trim == 1 && direction == 0
-        mtd(:,:,ts-round(window/2):end) = [];
-        mtd(:,:,1:round(window/2)) = [];
+        mtd(:,:,ts-round(window/2):end) = NaN;
+        mtd(:,:,1:round(window/2)) = NaN;
     elseif trim == 1 && direction == 1
-        mtd(:,:,(ts-window):end) = [];
+        mtd(:,:,(ts-window):end) = NaN;
     end
 
 end
