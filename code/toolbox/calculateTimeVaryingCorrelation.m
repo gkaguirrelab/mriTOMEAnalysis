@@ -6,18 +6,39 @@ runName = 'rfMRI_REST_AP_Run1';
 timeSeriesPath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
 load(fullfile(timeSeriesPath, [runName, '_timeSeriesCIFTI']));
 
+timebase = 0:800:420*800-800
 timeSeriesOne = meanTimeSeries.V1v_lh_mask;
 timeSeriesTwo = meanTimeSeries.V1v_rh_mask;
-windowLength = 50;
+windowLength = 100;
 
 [ timeVaryingCorrelation_slidingWindowPearson ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength)
 [ timeVaryingCorrelation_mtd ] = calculateTimeVaryingCorrelation(timeSeriesOne, timeSeriesTwo, windowLength, 'correlationMethod', 'mtd')
 
 plotFig = figure;
 hold on
-plot(timeVaryingCorrelation_slidingWindowPearson);
-plot(timeVaryingCorrelation_mtd);
+plot(timebase, timeVaryingCorrelation_slidingWindowPearson);
+plot(timebase, timeVaryingCorrelation_mtd);
 legend('Sliding Window Pearson', 'MTD')
+
+plotFig = figure;
+subplot(1,2,1)
+[ covariates ] = makeEyeSignalCovariates(subjectID, runName)
+pupilStruct = [];
+% resample the pupil data to the same temporal resolution as the BOLD data
+pupilStruct.timebase = covariates.timebase;
+pupilStruct.values = covariates.pupilDiameterConvolved;
+temporalFit = tfeIAMP('verbosity','none');
+pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
+    
+
+plot(pupilStruct.values, timeVaryingCorrelation_slidingWindowPearson, '.')
+xlabel('Pupil Diameter Convolved (mm)');
+ylabel('Sliding Window Pearson (mean centered)');
+
+subplot(1,2,2)
+plot(pupilStruct.values, timeVaryingCorrelation_mtd, '.')
+xlabel('Pupil Diameter Convolved (mm)');
+ylabel('MTD (mean centered)');
 
 %}
 
