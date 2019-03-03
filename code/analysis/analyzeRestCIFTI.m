@@ -3,7 +3,6 @@ function analyzeRestCIFTI(subjectID, runName, varargin)
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('covariatesToAnalyze', {'pupilDiameter+pupilChange'}, @iscell);
-
 p.parse(varargin{:});
 %% Define paths
 [ paths ] = definePaths(subjectID);
@@ -16,7 +15,7 @@ outputDir = paths.outputDir;
 
 %% Get the data and organize it
 
-getSubjectData(subjectID, runName, 'downloadOnly', 'pupil');
+%getSubjectData(subjectID, runName, 'downloadOnly', 'pupil');
 
 %% Smooth the functional file
 functionalFile = fullfile(functionalDir, [runName, '_Atlas_hp2000_clean.dtseries.nii']);
@@ -84,7 +83,7 @@ for area = 1:length(areasList)
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMaskCIFTI(masks.(maskName), cleanedTimeSeriesMatrix, 'whichCentralTendency', 'median');
+            [ meanTimeSeries.(maskName) ] = extractTimeSeriesFromMaskCIFTI(masks.(maskName), cleanedTimeSeriesMatrix, 'whichCentralTendency', 'median', 'meanCenter', false);
             savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID);
             if ~exist(savePath, 'dir')
                 mkdir(savePath);
@@ -105,11 +104,14 @@ end
 
 %% Correlate time series from different ROIs
 desiredOrder = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
-[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(meanTimeSeries, 'desiredOrder', desiredOrder);
 savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', subjectID);
+
+saveName = fullfile(savePath, [subjectID, '_', runName, '_preEye']);
 if ~exist(savePath, 'dir')
     mkdir(savePath);
 end
+[ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeCorrelationMatrix(meanTimeSeries, 'desiredOrder', desiredOrder, 'saveName', saveName);
+
 save(fullfile(savePath, [runName, '_CIFTI']), 'combinedCorrelationMatrix', 'acrossHemisphereCorrelationMatrix', '-v7.3');
 
 %% Remove eye signals from BOLD data
@@ -122,7 +124,7 @@ covariatesToAnalyze = p.Results.covariatesToAnalyze;
 regressors = [];
 
 % if we're dealing with more than one eye signal, loop over each
-multipleRegressorLabels = strsplit(covariatesToAnalyze, '+');
+multipleRegressorLabels = strsplit(covariatesToAnalyze{1}, '+');
 for rr = 1:length(multipleRegressorLabels)
     regressors = [regressors;  covariates.([multipleRegressorLabels{rr}, 'Convolved']); covariates.(['firstDerivative', upper(multipleRegressorLabels{rr}(1)), multipleRegressorLabels{rr}(2:end), 'Convolved'])];
 end
@@ -143,7 +145,7 @@ for area = 1:length(areasList)
             
             maskName = ['V', num2str(areasList{area}), dorsalOrVentral, '_', laterality{side}, '_mask'];
             
-            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors, covariates.timebase);
+            [ pupilFreeMeanTimeSeries.(maskName) ] = cleanTimeSeries( meanTimeSeries.(maskName), regressors', covariates.timebase);
             save(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'meanV1TimeSeries', subjectID, [runName '_timeSeries_eyeSignalsRemoved_CIFTI']), 'pupilFreeMeanTimeSeries', '-v7.3');
             
             
@@ -154,10 +156,11 @@ for area = 1:length(areasList)
     
 end
 
-[ pupilFreeMeanTimeSeries.V1Combined ] = cleanTimeSeries( cleanedMeanTimeSeries.V1Combined, pupilRegressors, pupilTimebase);
+[ pupilFreeMeanTimeSeries.V1Combined ] = cleanTimeSeries( meanTimeSeries.V1Combined, regressors', covariates.timebase);
 
 
 %% Re-examine correlation of time series from different ROIs
-[ combinedCorrelationMatrix_postEye, acrossHemisphereCorrelationMatrix_postEye] = makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder);
+saveName = fullfile(savePath, [subjectID, '_', runName, '_postEye']);
+[ combinedCorrelationMatrix_postEye, acrossHemisphereCorrelationMatrix_postEye] = makeCorrelationMatrix(pupilFreeMeanTimeSeries, 'desiredOrder', desiredOrder, 'saveName', saveName);
 save(fullfile(savePath, [runName, '_postEye_CIFTI']), 'combinedCorrelationMatrix_postEye', 'acrossHemisphereCorrelationMatrix_postEye', '-v7.3');
 end

@@ -2,6 +2,7 @@ function [ combinedCorrelationMatrix, acrossHemisphereCorrelationMatrix] = makeC
 
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('desiredOrder',[], @iscell);
+p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
 
@@ -64,6 +65,7 @@ combinedCorrelationMatrix = [(rhCorrelationMatrix + lhCorrelationMatrix)/2];
 
 % plot the rh correlation matrix
 plotFig = figure;
+subplot(1,2,1);
 imagesc(combinedCorrelationMatrix)
 
 % pretty it up
@@ -77,6 +79,7 @@ colorbar
 colors = redblue(100);
 colormap(colors)
 caxis([-1 1])
+pbaspect([1 1 1])
 
 %% Compare across hemispheres
 for rr = 1:length(rhLabel)
@@ -91,7 +94,7 @@ for rr = 1:length(rhLabel)
     end
 end
 
-plotFig = figure;
+subplot(1,2,2)
 imagesc(acrossHemisphereCorrelationMatrix)
 
 % pretty it up
@@ -107,6 +110,13 @@ colorbar
 colors = redblue(100);
 colormap(colors)
 caxis([-1 1])
+pbaspect([1 1 1])
+
+if ~isempty(p.Results.saveName)
+    h = gcf;
+    set(h,'PaperOrientation','landscape');
+    print(plotFig, [p.Results.saveName, '.pdf'], '-dpdf', '-fillpage')
+end
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
 function c = redblue(m)

@@ -1,12 +1,12 @@
-function [ preEyeCorrelationsByType, postEyeCorrelationsByType ] = makeAverageCorrelationMatrix(varargin)
+function [ preEyeCorrelationsByType, postEyeCorrelationsByType ] = makeAverageCorrelationMatrix(subjectList, varargin)
 
-%% Define relevant subjects
-subjects = {'TOME_3001', 'TOME_3002', 'TOME_3003', 'TOME_3004', 'TOME_3005', 'TOME_3007', 'TOME_3008', 'TOME_3009', 'TOME_3011', 'TOME_3012', 'TOME_3013', 'TOME_3014', 'TOME_3015', 'TOME_3016', 'TOME_3017', 'TOME_3018', 'TOME_3019', 'TOME_3020', 'TOME_3021', 'TOME_3022'};
-
-
+p = inputParser; p.KeepUnmatched = true;
+p.addParameter('saveName', [], @ischar);
+p.parse(varargin{:});
+ 
 %% make average correlation matrix prior to removal of eye signals
-for ss = 1:length(subjects)
-    potentialSubjects(ss).name = subjects{ss};
+for ss = 1:length(subjectList)
+    potentialsubjectList(ss).name = subjectList{ss};
 end
 
 homotopicIndices_within = [6,11,16,21,26,31];
@@ -22,16 +22,16 @@ homotopicCorrelations_preEye = [];
 hierarchicalCorrelations_preEye = [];
 backgroundCorrelations_preEye = [];
 
-for ss = 1:length(potentialSubjects)
-    potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
-    subjectID = potentialSubjects(ss).name;
+for ss = 1:length(potentialsubjectList)
+    potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialsubjectList(ss).name, '*.mat'));
+    subjectID = potentialsubjectList(ss).name;
     
     for rr = 1:length(potentialRuns)
         if ~contains(potentialRuns(rr).name, 'postEye')
             runNameFull = potentialRuns(rr).name;
             runNameSplit = strsplit(runNameFull, '.');
             runName = runNameSplit{1};
-            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
+            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialsubjectList(ss).name,potentialRuns(rr).name));
             % between hemispheres
             pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix));
             homotopicCorrelations_preEye = [homotopicCorrelations_preEye, pooledCorrelationMatrices_acrossHemisphere.(subjectID).(runName)(homotopicIndices_between)];
@@ -132,14 +132,15 @@ colormap(colors)
 caxis([-1.25 1.25])
 pbaspect([1 1 1])
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
-h = gcf;
-set(h,'PaperOrientation','landscape');
-print(plotFig, fullfile(savePath,'averagedCorrelationMatrices'), '-dpdf', '-fillpage')
+if ~isempty(p.Results.saveName)
+    h = gcf;
+    set(h,'PaperOrientation','landscape');
+    print(plotFig, [p.Results.saveName, '_preEye.pdf'], '-dpdf', '-fillpage')
+end
 
 %% make average correlation matrix for after removal of eye signals
-for ss = 1:length(subjects)
-    potentialSubjects(ss).name = subjects{ss};
+for ss = 1:length(subjectList)
+    potentialsubjectList(ss).name = subjectList{ss};
 end
 
 
@@ -147,16 +148,16 @@ homotopicCorrelations_postEye = [];
 hierarchicalCorrelations_postEye = [];
 backgroundCorrelations_postEye = [];
 
-for ss = 1:length(potentialSubjects)
-    potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name, '*.mat'));
-    subjectID = potentialSubjects(ss).name;
+for ss = 1:length(potentialsubjectList)
+    potentialRuns = dir(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialsubjectList(ss).name, '*.mat'));
+    subjectID = potentialsubjectList(ss).name;
     
     for rr = 1:length(potentialRuns)
         if contains(potentialRuns(rr).name, 'postEye')
             runNameFull = potentialRuns(rr).name;
             runNameSplit = strsplit(runNameFull, '.');
             runName = runNameSplit{1};
-            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialSubjects(ss).name,potentialRuns(rr).name));
+            correlationMatrix = load(fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices', potentialsubjectList(ss).name,potentialRuns(rr).name));
             pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName) = 0.5*(log(1+correlationMatrix.acrossHemisphereCorrelationMatrix_postEye) - log(1-correlationMatrix.acrossHemisphereCorrelationMatrix_postEye));
             homotopicCorrelations_postEye = [homotopicCorrelations_postEye, pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName)(homotopicIndices_between)];
             hierarchicalCorrelations_postEye = [hierarchicalCorrelations_postEye, pooledCorrelationMatrices_postEye_acrossHemisphere.(subjectID).(runName)(hierarchicalIndices_between)];
@@ -252,11 +253,11 @@ colormap(colors)
 caxis([-1.25 1.25])
 pbaspect([1 1 1])
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
-h = gcf;
-set(h,'PaperOrientation','landscape');
-print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_eyeSignalsRemoved'), '-dpdf', '-fillpage')
-
+if ~isempty(p.Results.saveName)
+    h = gcf;
+    set(h,'PaperOrientation','landscape');
+    print(plotFig, [p.Results.saveName, '_postEye.pdf'], '-dpdf', '-fillpage')
+end
 %% make difference correlation matrix
 withinHemisphereDifference = withinHemisphere_postEye_meanMatrix - withinHemisphere_preEye_meanMatrix;
 betweenHemisphereDifference = betweenHemisphere_postEye_meanMatrix - betweenHemisphere_preEye_meanMatrix;
@@ -311,11 +312,11 @@ colormap(colors)
 caxis([-0.25 0.25])
 pbaspect([1 1 1])
 
-savePath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'correlationMatrices');
-h = gcf;
-set(h,'PaperOrientation','landscape');
-print(plotFig, fullfile(savePath,'averagedCorrelationMatrices_difference'), '-dpdf', '-fillpage')
-
+if ~isempty(p.Results.saveName)
+    h = gcf;
+    set(h,'PaperOrientation','landscape');
+    print(plotFig, [p.Results.saveName, '_differences.pdf'], '-dpdf', '-fillpage')
+end
 %% Plot some information about correlation by connection type
 connectionTypes = {'hierarchical', 'homotopic', 'background'};
 
@@ -375,7 +376,10 @@ title('Post-Eye Signal Removal')
 ylabel('Regional Correlation, +/- SEM')
 xticklabels({'Hierarhical', 'Homotopic', 'Background'})
 xtickangle(45);
-print(plotFig, fullfile(savePath,'meanCorrelationByConnectionType'), '-dpdf', '-fillpage')
+if ~isempty(p.Results.saveName)
+    print(plotFig, [p.Results.saveName, '_meanCorrelationByConnectionType.pdf'], '-dpdf', '-fillpage')
+end
+
 
 plotFig = figure;
 subplot(1,2,1);
@@ -395,8 +399,9 @@ xticklabels({'Hierarchical and Homotopic', 'Background'})
 xtickangle(45)
 pbaspect([1 1 1])
 
-print(plotFig, fullfile(savePath,'meanCorrelatione_hierarchicalHomotopicCombined'), '-dpdf', '-fillpage')
-
+if ~isempty(p.Results.saveName)
+    print(plotFig, [p.Results.saveName, '_meanCorrelation_hierarchicalHomotopicCombined.pdf'], '-dpdf', '-fillpage')
+end
     
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
