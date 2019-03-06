@@ -24,6 +24,8 @@ function [grayordinates] = smoothCIFTI(functionalFile, varargin)
 %                          smoothed volume. If empty, the default, then it
 %                          will save in the same location as the inputted
 %                          functional volume
+%  workbenchPath         - a string that defines the full path to where
+%                          workbench commands can be found.
 %
 % Outputs:
 %  grayordinates         - an m x n matrix, where m is the number of
@@ -59,10 +61,6 @@ sigmaVolume = p.Results.volumeKernelFWHMmm/(2*(2*log(2))^0.5);
 system([p.Results.workbenchPath, 'wb_command -cifti-smoothing "' functionalFile, '" ', num2str(sigmaSurface), ' ', num2str(sigmaVolume), ' COLUMN "' smoothedFile, '" -left-surface "', fullfile(savePath, 'L.midthickness.32k_fs_LR.surf.gii'), '" -right-surface "', fullfile(savePath, 'R.midthickness.32k_fs_LR.surf.gii'), '"']);
 
 % load in smoothed gray-ordinate time series
-% So we can load it into MATLAB
-system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -to-text ', smoothedFile, ' ', fullfile(savePath, [fileName(1:end-9), '_smoothed.txt'])]);
-
-grayordinates = readtable(fullfile(savePath, [fileName(1:end-9), '_smoothed.txt']));
-grayordinates = table2array(grayordinates);
+[ grayordinates ] = loadCIFTI(smoothedFile);
 
 end
