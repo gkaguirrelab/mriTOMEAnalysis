@@ -2,10 +2,14 @@ function makeWholeBrainMap(stats, voxelIndices, templateFile, saveName, varargin
 % Make whole-brain map from the inputted stats.
 %
 % Syntax:
-%  [ statsVolume ] = makeWholeBrainMap(stats, voxelIndices, templateFile)
+%  [ statsVolume ] = makeWholeBrainMap(stats, voxelIndices, templateFile, saveName)
+%
+%  This routine creates whole brain maps on the basis of the inputted
+%  statistics and a template file. Based on the type of template file, the
+%  whole brain map is made in grayordinate (CIFTI) or volume format (nii).
 %
 % Inputs:
-%  stats: 					- A vector of with length equal
+%  stats 					- A vector of with length equal
 %							  to the number of voxels of interest. The
 %							  value of each vector will be placed into a
 %							  voxel on a whole brain map
@@ -17,7 +21,13 @@ function makeWholeBrainMap(stats, voxelIndices, templateFile, saveName, varargin
 %                             timeSeriesPerVoxel
 %  templateFile			    - a string that defines the full path to the a
 %                             template which shows what type of output we
-%                             want to create
+%                             want to create. This input  determines
+%                             whether to save out a CIFTI or NIFTI file.
+%  saveName                 - a string that defines the full path to the
+%                             desired output file. 
+% Optional key-value pairs:
+%  workbenchPath            - a string that defines the full path to where
+%                             workbench commands can be found.
 %
 
 %% Input parser
@@ -27,8 +37,12 @@ p.parse(varargin{:});
 
 
 %% Determine whether we're working with a volume or CIFTI
+% CIFTI files generally come in two formats, eithr dtseries or dscalar
+% (depending on if they refer to time series data, or just some scalar
+% statistic)
 if contains(templateFile, 'dtseries') || contains(templateFile, 'dscalar')
     fileType = 'CIFTI';
+% if the file is not CIFTI, assume it's a volume   
 else
     fileType = 'volume';
 end
@@ -72,3 +86,5 @@ if strcmp(fileType, 'CIFTI')
     system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -from-text "', fullfile(savePath, 'stats.txt'), '" "', templateFile, '" "', saveName, '"']);
 
 end
+
+end % end function
