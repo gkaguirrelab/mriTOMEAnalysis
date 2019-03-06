@@ -69,23 +69,25 @@ thePacket.stimulus.timebase = regressorsTimebase;
 thePacket.response.timebase = 0:p.Results.TR:totalTime-p.Results.TR;
 
 % mean center the regressors, if asked
-nRegressors = size(regressors,2);
+nRegressors = size(regressors,1);
 regressorsOriginal = regressors;
 if p.Results.meanCenterRegressors
     for nn = 1:nRegressors
-        regressorMean = nanmean(regressors(:,nn));
-        regressors(:,nn) = regressors(:,nn) - regressorMean;
-        regressors(:,nn) = regressors(:,nn) ./ regressorMean;
+        regressors(nn,:) = meanCenterTimeSeries(regressors(nn,:));
+        
+        % if desired, remove NaN values and replace them with 0. As these
+        % covariates are being mean centered, putting NaN values at 0
+        % essentially makes them irrelevant in determining final scaling.
         if (p.Results.zeroNansInRegressors)
-            nanIndices = find(isnan(regressors(:,nn)));
-            regressors(nanIndices,nn) = 0;
+            nanIndices = find(isnan(regressors(nn,:)));
+            regressors(nn,nanIndices) = 0;
         end
     end
 else
     for nn = 1:nRegressors
         if (p.Results.zeroNansInRegressors)
-            nanIndices = find(isnan(regressors(:,nn)));
-            regressors(nanIndices,nn) = 0;
+            nanIndices = find(isnan(regressors(nn,:)));
+            regressors(nn,nanIndices) = 0;
         end
     end
 end
@@ -93,7 +95,7 @@ end
 % add the regressors to the
 for nn = 1:nRegressors
     
-    thePacket.stimulus.values(end+1,:) = regressors(:,nn)';
+    thePacket.stimulus.values(end+1,:) = regressors(nn,:);
     
 end
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
@@ -104,22 +106,24 @@ temporalFit = tfeIAMP('verbosity','none');
 nTimeSeries = size(inputTimeSeries,1);
 for tt = 1:nTimeSeries
     
+    % load up the time series data from our given row
     thePacket.response.values = inputTimeSeries(tt,:);
     
+    % if the entire response is 0s or NaNs, don't bother trying to fit.
     if sum(any(thePacket.response.values)) == 0 || sum(isnan(thePacket.response.values)) == length(thePacket.response.values)
         cleanedTimeSeries(tt,:) = thePacket.response.values;
         beta(tt,:) = NaN;
         rSquared(tt) = NaN;
         pearsonR(tt) = NaN;
     else
-        % TFE linear regression here
+        % TFE linear regression 
         [paramsFit,~,modelResponseStruct] = temporalFit.fitResponse(thePacket,...
-            'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');
-        %        'defaultParamsInfo', defaultParamsInfo, 'errorType','1-r2', 'verbosity', 'none');
-        
+            'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression','errorType','1-r2');        
         
         % remove signal related to regressors to yield clean time series
         cleanedTimeSeries(tt,:) = thePacket.response.values - modelResponseStruct.values;
+        
+        % save out stats
         beta(tt,:) = paramsFit.paramMainMatrix;
         correlationMatrix = corrcoef(modelResponseStruct.values, thePacket.response.values, 'Rows', 'complete');
         rSquared(tt) = correlationMatrix(1,2)^2;
@@ -129,10 +133,12 @@ for tt = 1:nTimeSeries
     
 end
 
+% package up the stats
 stats.beta = beta';
 stats.rSquared = rSquared;
 stats.pearsonR = pearsonR;
 
+% save out stats, if desired
 if ~isempty(p.Results.saveName)
     
     
