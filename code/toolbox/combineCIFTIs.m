@@ -56,6 +56,7 @@ function combineCIFTIs(fileNamesCellArray, varargin)
 p = inputParser; p.KeepUnmatched = true;
 p.addParameter('workbenchPath', '/Applications/workbench/bin_macosx64/', @ischar);
 p.addParameter('savePath', [], @ischar);
+p.addParameter('saveName', [], @ischar);
 p.parse(varargin{:});
 
 
@@ -98,8 +99,13 @@ if ~isempty(p.Results.savePath)
 end
 % first to text file
 dlmwrite(fullfile(savePath, ['average_', runType, '_stats.txt']), meanGrayordinates, 'delimiter','\t')  
+if isempty(p.Results.saveName)
+    fullSaveName = fullfile(savePath, ['average_', runType, '_', covariateType, '_', statsType, '.dscalar.nii']);
+else
+    fullSaveName = fullfile(savePath, p.Results.saveName);
+end
 % now to CIFTI
-system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -from-text "', fullfile(savePath, ['average_', runType, '_stats.txt']), '" "', fileNamesCellArray{1}, '" "', fullfile(savePath, ['average_', runType, '_', covariateType, '_', statsType, '.dscalar.nii']), '"']);
+system(['bash ', p.Results.workbenchPath, 'wb_command -cifti-convert -from-text "', fullfile(savePath, ['average_', runType, '_stats.txt']), '" "', fileNamesCellArray{1}, '" "', fullSaveName, '"']);
 
 % delete text file intermediate
 system(['rm "', fullfile(savePath, ['average_', runType, '_stats.txt']), '"']);
