@@ -1,6 +1,38 @@
 function [ maskMatrix ] = makeMaskFromRetinoCIFTI(areaNum, eccenRange, anglesRange, hemisphere, varargin)
-
-
+% Make binary mask from Benson's retinotopy project.
+%
+% Syntax: 
+%  [ maskMatrix ] = makeMaskFromRetinoCIFTI(areaNum, eccenRange, anglesRange, hemisphere
+% 
+% Description:
+%  This routine makes binary retinotopy masks from Noah's project to be
+%  used with CIFTI files processed through HPC's standard pipeline. We
+%  can make masks on the basis of several different retinotopy
+%  parameters, including visual area number, eccentricity, polar angle,
+%  and hemisphere. The routine first makes a mask for each desired
+%  retinotopic property, then multiplies these masks together. Any
+%  surviving grayordinate was therefore included in each individual mask.
+%
+% Inputs:
+%  areaNum:					- a number that defines which visual area we're looking for. 
+% 					          Options include 1 (for V1), 2 or 3.
+%  eccenRange:		        - the range in eccentricity to be included, ranging from 0 to 90.
+%  anglesRange:	            - the range in polar angle to be included, ranging from 0 to 180. 
+% 						      Dorsal regions would include values between 90 and 180, 
+%							  while ventral regions would include values between 0 and 90.
+%  hemisphere:              - which hemisphere to be analyzed. Options include 'lh' for 
+% 							  left hemisphere, 'rh' for right, or 'combined' for both.
+%
+% Optional key-value pairs:
+%  saveName					- a string which defines the full path for where to save the 
+%						      resulting mask. If no value is passed (the default), no mask 
+%							  is saved.
+%
+% Output:
+%  maskMatrix:				- a 92812 x 1 binary vector that defines the retinotopic mask.
+%
+%
+% Example:
 %{
 % make a V1 mask for the left hemisphere
 areaNum = 1;
