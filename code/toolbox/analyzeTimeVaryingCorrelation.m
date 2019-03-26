@@ -1,9 +1,36 @@
-function analyzeTimeVaryingCorrelation(subjectID, runName, varargin)
+function [ pooledTimeVaryingCorrelationStruct ] = analyzeTimeVaryingCorrelation(subjectID, runName, varargin)
 
 %{
+close all
 subjectID = 'TOME_3005';
-runName = 'rfMRI_REST_AP_Run1';
-analyzeTimeVaryingCorrelation(subjectID, runName)
+runNames = getRunsPerSubject('TOME_3005');
+
+plotFig = figure; hold on;
+
+pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
+pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
+pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
+pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
+pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
+pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+
+for rr = 1:length(runNames);
+    runName = runNames{rr};
+    [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct);
+end
+subplot(1,3,1);
+makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
+subplot(1,3,2);
+makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues)
+subplot(1,3,3);
+makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.background.pupilValues, pooledTimeVaryingCorrelationStruct.background.correlationValues)
+
+
+mtdPlotFig = figure; hold on;
+for rr = 1:length(runNames);
+    runName = runNames{rr};
+    analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', mtdPlotFig, 'correlationMethod', 'mtd')
+end
 %}
 %% Input parser
 p = inputParser; p.KeepUnmatched = true;
@@ -11,6 +38,8 @@ p = inputParser; p.KeepUnmatched = true;
 p.addParameter('correlationMethod', 'slidingWindowPearson', @ischar);
 p.addParameter('normalizeTimeVaryingCorrelation', false, @islogical);
 p.addParameter('windowLength', 50, @isnumeric);
+p.addParameter('plotHandle', [], @ishandle);
+p.addParameter('pooledTimeVaryingCorrelationStruct', [], @isstruct);
 p.addParameter('TR', 800, @isnumeric);
 
 p.parse(varargin{:});
@@ -126,7 +155,20 @@ temporalFit = tfeIAMP('verbosity','none');
 pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
 
 %% Plot to summarize
-plotFig = figure; hold on;
+if isempty(p.Results.plotHandle)
+    plotFig = figure; hold on;
+end
+
+if isempty(p.Results.pooledTimeVaryingCorrelationStruct)
+    pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
+    pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
+    pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
+    pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
+    pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
+    pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+else
+    pooledTimeVaryingCorrelationStruct = p.Results.pooledTimeVaryingCorrelationStruct;
+end
 
 for ii = 1:length(timeVaryingCorrelations)
     
@@ -141,8 +183,11 @@ for ii = 1:length(timeVaryingCorrelations)
     subplot(1,3,subplotValue); hold on;
     
     % do the plotting
-    plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.');
+    plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
     
+    % stash the result
+    pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+    pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
 end
 ax1 = subplot(1,3,1);
 title('Homotopic')
