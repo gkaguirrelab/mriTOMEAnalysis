@@ -27,24 +27,24 @@ badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > 3);
 
 %% Create the different covariates
 % pupil diameter
-pupilDiameter = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,4);
+pupilDiameter = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,4)';
 pupilDiameter(badIndices) = NaN;
 
 % pupil change
 pupilChange = diff(pupilDiameter);
-pupilChange = [NaN; pupilChange];
+pupilChange = [NaN, pupilChange];
 
 % rectified pupil change
 rectifiedPupilChange = abs(diff(pupilDiameter));
-rectifiedPupilChange = [NaN; rectifiedPupilChange];
+rectifiedPupilChange = [NaN, rectifiedPupilChange];
 
 % "saccades"
-azimuth = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,1);
+azimuth = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,1)';
 azimuth(badIndices) = NaN;
-elevation = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,2);
+elevation = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,2)';
 elevation(badIndices) = NaN;
 eyeDisplacement = (diff(azimuth).^2 + diff(elevation).^2).^(1/2);
-eyeDisplacement = [NaN; eyeDisplacement];
+eyeDisplacement = [NaN, eyeDisplacement];
 
 % blinks
 controlFile = fopen(fullfile(pupilDir, [runName, '_controlFile.csv']));
@@ -79,13 +79,13 @@ constrictions(find(pupilChange < 0)) = pupilChange(find(pupilChange < 0));
 [pupilChangeConvolved] = convolveRegressorWithHRF(pupilChange, pupilTimebase);
 [rectifiedPupilChangeConvolved] = convolveRegressorWithHRF(rectifiedPupilChange, pupilTimebase);
 [eyeDisplacementConvolved] = convolveRegressorWithHRF(eyeDisplacement, pupilTimebase);
-[blinksConvolved] = convolveRegressorWithHRF(blinks', pupilTimebase);
+[blinksConvolved] = convolveRegressorWithHRF(blinks, pupilTimebase);
 [PUI1000Convolved] = convolveRegressorWithHRF(PUI1000, pupilTimebase);
 [PUI10000Convolved] = convolveRegressorWithHRF(PUI10000, pupilTimebase);
 [PUI100Convolved] = convolveRegressorWithHRF(PUI100, pupilTimebase);
 [PUI5000Convolved] = convolveRegressorWithHRF(PUI5000, pupilTimebase);
-[dilationsConvolved ] = convolveRegressorWithHRF(dilations', pupilTimebase);
-[constrictionsConvolved] = convolveRegressorWithHRF(constrictions', pupilTimebase);
+[dilationsConvolved ] = convolveRegressorWithHRF(dilations, pupilTimebase);
+[constrictionsConvolved] = convolveRegressorWithHRF(constrictions, pupilTimebase);
 
 
 %% Make first derivative of convolved HRF to account for temporal timing differences
@@ -141,9 +141,9 @@ covariates.timebase = pupilTimebase;
 %% Try bandpass filtering the raw pupil diameter in an attempt to replicate prior work from Schnieder and Yellin
 % interpolate NaN values
 badIndices = find(pupilResponse.pupilData.radiusSmoothed.ellipses.RMSE > 3);
-pupilDiameter = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,4);
-pupilDiameter(badIndices) = NaN;
-notNan = ~isnan(pupilDiameter);
+pupilDiameterForBandpassed = pupilResponse.pupilData.radiusSmoothed.eyePoses.values(:,4)';
+pupilDiameterForBandpassed(badIndices) = NaN;
+notNan = ~isnan(pupilDiameterForBandpassed);
 myFit = fit(pupilTimebase(notNan)',pupilResponse.pupilData.radiusSmoothed.eyePoses.values(notNan,4),'linearinterp');
 dataStruct.timebase = pupilTimebase';
 dataStruct.values = myFit(dataStruct.timebase)';
@@ -177,7 +177,7 @@ end
 
 %% Make covariates that have been bandpass filtered
 pupilDiameterBandpassed = filtData.values;
-[ pupilDiameterBandpassedConvolved ] = convolveRegressorWithHRF(pupilDiameterBandpassed', pupilTimebase);
+[ pupilDiameterBandpassedConvolved ] = convolveRegressorWithHRF(pupilDiameterBandpassed, pupilTimebase);
 firstDerivativePupilDiameterBandpassedConvolved = diff(pupilDiameterBandpassedConvolved);
 firstDerivativePupilDiameterBandpassedConvolved = [NaN, firstDerivativePupilDiameterBandpassedConvolved];
 covariates.pupilDiameterBandpassedConvolved = pupilDiameterBandpassedConvolved;
@@ -185,7 +185,7 @@ covariates.firstDerivativePupilDiameterBandpassedConvolved = firstDerivativePupi
 
 pupilChangeBandpassed = diff(pupilDiameterBandpassed);
 pupilChangeBandpassed = [NaN, pupilChangeBandpassed];
-[ pupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(pupilChangeBandpassed', pupilTimebase);
+[ pupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(pupilChangeBandpassed, pupilTimebase);
 firstDerivativePupilChangeBandpassedConvolved = diff(pupilChangeBandpassedConvolved);
 firstDerivativePupilChangeBandpassedConvolved =  [NaN, firstDerivativePupilChangeBandpassedConvolved];
 covariates.pupilChangeBandpassedConvolved = pupilChangeBandpassedConvolved;
@@ -193,17 +193,17 @@ covariates.firstDerivativePupilChangeBandpassedConvolved = firstDerivativePupilC
 
 rectifiedPupilChangeBandpassed = abs(diff(pupilDiameterBandpassed));
 rectifiedPupilChangeBandpassed = [NaN, rectifiedPupilChangeBandpassed];
-[ rectifiedPupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(rectifiedPupilChangeBandpassed', pupilTimebase);
+[ rectifiedPupilChangeBandpassedConvolved ] = convolveRegressorWithHRF(rectifiedPupilChangeBandpassed, pupilTimebase);
 firstDerivativeRectifiedPupilChangeBandpassedConvolved = diff(rectifiedPupilChangeBandpassedConvolved);
 firstDerivativeRectifiedPupilChangeBandpassedConvolved = [NaN, firstDerivativeRectifiedPupilChangeBandpassedConvolved];
 covariates.rectifiedPupilChangeBandpassedConvolved = rectifiedPupilChangeBandpassed;
 covariates.firstDerivativeRectifiedPupilChangeBandpassedConvolved = firstDerivativeRectifiedPupilChangeBandpassedConvolved;
 
 %% Package up the unconvolved covariates
-unconvolvedCovariates.pupilDiameter = pupilDiameter';
-unconvolvedCovariates.pupilChange = pupilChange';
-unconvolvedCovariates.rectifiedPupilChange = rectifiedPupilChange';
-unconvolvedCovariates.eyeDisplacement = eyeDisplacement';
+unconvolvedCovariates.pupilDiameter = pupilDiameter;
+unconvolvedCovariates.pupilChange = pupilChange;
+unconvolvedCovariates.rectifiedPupilChange = rectifiedPupilChange;
+unconvolvedCovariates.eyeDisplacement = eyeDisplacement;
 unconvolvedCovariates.pupilDiameterBandpassed = pupilDiameterBandpassed;
 unconvolvedCovariates.pupilChangeBandpassed = pupilChangeBandpassed;
 unconvolvedCovariates.rectifiedPupilChangeBandpassed = rectifiedPupilChangeBandpassed;
