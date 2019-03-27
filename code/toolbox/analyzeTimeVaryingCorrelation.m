@@ -16,7 +16,7 @@ pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
 
 for rr = 1:length(runNames);
     runName = runNames{rr};
-    [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct);
+    [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson');
 end
 subplot(1,3,1);
 makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
@@ -145,16 +145,9 @@ for ii = 1:length(allConnections)
     
 end
 
-%% Get pupil time series
-[ covariates ] = makeEyeSignalCovariates(subjectID, runName);
-pupilStruct = [];
-% resample the pupil data to the same temporal resolution as the BOLD data
-pupilStruct.timebase = covariates.timebase;
-pupilStruct.values = covariates.pupilDiameterConvolved;
-temporalFit = tfeIAMP('verbosity','none');
-pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
 
-%% Plot to summarize
+
+%% Plot to summarize and stash the output
 if isempty(p.Results.plotHandle)
     plotFig = figure; hold on;
 end
@@ -170,24 +163,82 @@ else
     pooledTimeVaryingCorrelationStruct = p.Results.pooledTimeVaryingCorrelationStruct;
 end
 
-for ii = 1:length(timeVaryingCorrelations)
-    
-    % determine which subplot we're adding to
-    if strcmp(connectionTypes{ii}, 'homotopic')
-        subplotValue = 1;
-    elseif strcmp(connectionTypes{ii}, 'hierarchical')
-        subplotValue = 2;
-    elseif strcmp(connectionTypes{ii}, 'background')
-        subplotValue = 3;
+if ~strcmp(p.Results.correlationMethod, 'jumpingWindowPearson')
+    % Get pupil time series
+    [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
+    pupilStruct = [];
+    % resample the pupil data to the same temporal resolution as the BOLD data
+    pupilStruct.timebase = covariates.timebase;
+    pupilStruct.values = covariates.pupilDiameterConvolved;
+    temporalFit = tfeIAMP('verbosity','none');
+    pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
+    for ii = 1:length(timeVaryingCorrelations)
+        
+        % determine which subplot we're adding to
+        if strcmp(connectionTypes{ii}, 'homotopic')
+            subplotValue = 1;
+        elseif strcmp(connectionTypes{ii}, 'hierarchical')
+            subplotValue = 2;
+        elseif strcmp(connectionTypes{ii}, 'background')
+            subplotValue = 3;
+        end
+        subplot(1,3,subplotValue); hold on;
+        
+        % do the plotting
+        plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+        
+        % stash the result
+        pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+        pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
     end
-    subplot(1,3,subplotValue); hold on;
+else
+    % on the basis of the BOLD time series, determine the pupil time series
+    % indices that correspond to the indices used to determine the
+    % jumpingWindowCorrelation
+    startingIndex = 1;
+    windowIndices = [];
+    rowNumber = 1;
+    while startingIndex + p.Results.windowLength <= length(timebase)
+        endingIndex = startingIndex + p.Results.windowLength - 1;
+        windowIndices(rowNumber,1) = startingIndex;
+        windowIndices(rowNumber,2) = endingIndex;
+        
+        % adjust starting index for next iteration
+        startingIndex = startingIndex + p.Results.windowLength;
+        
+        rowNumber = rowNumber + 1;
+    end
+    [ covariates, unconvovledCovariates ] = makeEyeSignalCovariates(subjectID, runName);
+    pupilStruct = [];
+    % resample the pupil data to the same temporal resolution as the BOLD data
+    pupilStruct.timebase = covariates.timebase;
+    pupilStruct.values = unconvovledCovariates.pupilDiameter;
+    for ii = 1:size(windowIndices,1)
+        startingTime = timebase(windowIndices(ii,1));
+        endingTime = timebase(windowIndices(ii,2));
+        [~, startingPupilIndex ] = min(abs(pupilStruct.timebase - startingTime));
+        [~, endingPupilIndex ] = min(abs(pupilStruct.timebase - endingTime));
+        
+        pupilValues(ii) = nanmean(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        
+    end
     
-    % do the plotting
-    plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+    for ii = 1:length(timeVaryingCorrelations)
+        
+        % determine which subplot we're adding to
+        if strcmp(connectionTypes{ii}, 'homotopic')
+            subplotValue = 1;
+        elseif strcmp(connectionTypes{ii}, 'hierarchical')
+            subplotValue = 2;
+        elseif strcmp(connectionTypes{ii}, 'background')
+            subplotValue = 3;
+        end
+        subplot(1,3,subplotValue); hold on;
+        
+        plot(pupilValues, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+        
+    end
     
-    % stash the result
-    pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
-    pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
 end
 ax1 = subplot(1,3,1);
 title('Homotopic')
