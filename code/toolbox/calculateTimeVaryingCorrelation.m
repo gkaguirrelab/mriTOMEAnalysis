@@ -69,6 +69,22 @@ if strcmp(p.Results.correlationMethod, 'slidingWindowPearson')
     
 end
 
+if strcmp(p.Results.correlationMethod, 'jumpingWindowPearson')
+    startingIndex = 1;
+    timeVaryingCorrelation = [];
+    while startingIndex + windowLength <= length(timeSeriesOne)
+        endingIndex = startingIndex + windowLength - 1;
+        correlationMatrix = corrcoef(timeSeriesOne(startingIndex:endingIndex), timeSeriesTwo(startingIndex:endingIndex));
+        timeVaryingCorrelation(end+1) = correlationMatrix(1,2);
+        startingIndex = startingIndex + windowLength;
+    end
+    
+    if p.Results.normalizeTimeVaryingCorrelation
+        timeVaryingCorrelation = (timeVaryingCorrelation - nanmean(timeVaryingCorrelation))./nanmean(timeVaryingCorrelation);
+    end
+    
+end
+
 if strcmp(p.Results.correlationMethod, 'mtd')
     data = [timeSeriesOne', timeSeriesTwo'];
     direction = 0; % middle, not forward
