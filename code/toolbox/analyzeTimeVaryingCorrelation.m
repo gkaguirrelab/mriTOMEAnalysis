@@ -37,6 +37,7 @@ p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('correlationMethod', 'slidingWindowPearson', @ischar);
 p.addParameter('pupilMetric', 'mean', @ischar);
+p.addParameter('linkAxes', true, @islogical);
 p.addParameter('normalizeTimeVaryingCorrelation', false, @islogical);
 p.addParameter('combineWithinConnectionType', true, @islogical);
 p.addParameter('windowLength', 50, @isnumeric);
@@ -334,6 +335,8 @@ elseif strcmp(p.Results.pupilMetric, 'std')
 end
 ylabel(p.Results.correlationMethod);
 
-linkaxes([ax1, ax2, ax3]);
+if p.Results.linkAxes
+    linkaxes([ax1, ax2, ax3]);
+end
 
 end
