@@ -2,8 +2,8 @@ function [ pooledTimeVaryingCorrelationStruct ] = analyzeTimeVaryingCorrelation(
 
 %{
 close all
-subjectID = 'TOME_3005';
-runNames = getRunsPerSubject('TOME_3005');
+subjectID = 'TOME_3004';
+runNames = getRunsPerSubject('TOME_3004');
 
 plotFig = figure; hold on;
 
@@ -16,7 +16,7 @@ pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
 
 for rr = 1:length(runNames);
     runName = runNames{rr};
-    [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson');
+    [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'mean');
 end
 subplot(1,3,1);
 makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
@@ -36,6 +36,7 @@ end
 p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('correlationMethod', 'slidingWindowPearson', @ischar);
+p.addParameter('pupilMetric', 'mean', @ischar);
 p.addParameter('normalizeTimeVaryingCorrelation', false, @islogical);
 p.addParameter('combineWithinConnectionType', true, @islogical);
 p.addParameter('windowLength', 50, @isnumeric);
@@ -173,11 +174,11 @@ end
 
 if ~strcmp(p.Results.correlationMethod, 'jumpingWindowPearson')
     % Get pupil time series
-    [ covariates ] = makeEyeSignalCovariates(subjectID, runName);
+    [ covariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runName);
     pupilStruct = [];
     % resample the pupil data to the same temporal resolution as the BOLD data
     pupilStruct.timebase = covariates.timebase;
-    pupilStruct.values = covariates.pupilDiameterConvolved;
+    pupilStruct.values = unconvolvedCovariates.pupilDiameter;
     temporalFit = tfeIAMP('verbosity','none');
     pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
     for ii = 1:length(timeVaryingCorrelations)
@@ -235,7 +236,11 @@ else
         [~, startingPupilIndex ] = min(abs(pupilStruct.timebase - startingTime));
         [~, endingPupilIndex ] = min(abs(pupilStruct.timebase - endingTime));
         
-        pupilValues(ii) = nanmean(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        if strcmp(p.Results.pupilMetric, 'mean')
+            pupilValues(ii) = nanmean(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        elseif strcmp(p.Results.pupilMetric, 'std')
+            pupilValues(ii) = nanstd(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        end
         
     end
     
@@ -304,17 +309,29 @@ end
 
 ax1 = subplot(1,3,1);
 title('Homotopic')
-xlabel('Pupil Diameter Convolved (mm)');
+if strcmp(p.Results.pupilMetric, 'mean')
+    xlabel('Mean Pupil Diameter (mm)');
+elseif strcmp(p.Results.pupilMetric, 'std')
+    xlabel('Standard Deviation of Pupil Size (mm)')
+end
 ylabel(p.Results.correlationMethod);
 
 ax2 = subplot(1,3,2);
 title('Hierarchical')
-xlabel('Pupil Diameter Convolved (mm)');
+if strcmp(p.Results.pupilMetric, 'mean')
+    xlabel('Mean Pupil Diameter (mm)');
+elseif strcmp(p.Results.pupilMetric, 'std')
+    xlabel('Standard Deviation of Pupil Size (mm)')
+end
 ylabel(p.Results.correlationMethod);
 
 ax3 = subplot(1,3,3);
 title('Background')
-xlabel('Pupil Diameter Convolved (mm)');
+if strcmp(p.Results.pupilMetric, 'mean')
+    xlabel('Mean Pupil Diameter (mm)');
+elseif strcmp(p.Results.pupilMetric, 'std')
+    xlabel('Standard Deviation of Pupil Size (mm)')
+end
 ylabel(p.Results.correlationMethod);
 
 linkaxes([ax1, ax2, ax3]);
