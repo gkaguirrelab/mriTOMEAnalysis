@@ -37,6 +37,7 @@ p = inputParser; p.KeepUnmatched = true;
 
 p.addParameter('correlationMethod', 'slidingWindowPearson', @ischar);
 p.addParameter('normalizeTimeVaryingCorrelation', false, @islogical);
+p.addParameter('combineWithinConnectionType', true, @islogical);
 p.addParameter('windowLength', 50, @isnumeric);
 p.addParameter('plotHandle', [], @ishandle);
 p.addParameter('pooledTimeVaryingCorrelationStruct', [], @isstruct);
@@ -152,6 +153,13 @@ if isempty(p.Results.plotHandle)
     plotFig = figure; hold on;
 end
 
+combinedPooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
+combinedPooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
+combinedPooledTimeVaryingCorrelationStruct.background.correlationValues = [];
+combinedPooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
+combinedPooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
+combinedPooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+
 if isempty(p.Results.pooledTimeVaryingCorrelationStruct)
     pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
     pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
@@ -184,12 +192,20 @@ if ~strcmp(p.Results.correlationMethod, 'jumpingWindowPearson')
         end
         subplot(1,3,subplotValue); hold on;
         
-        % do the plotting
-        plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+        if ~(p.Results.combineWithinConnectionType)
+            % do the plotting
+            plot(pupilStruct.values, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+            
+            % stash the result
+            pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+            pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
+        end
         
         % stash the result
-        pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
-        pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
+        combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+        combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilStruct.values];
+        
+        
     end
 else
     % on the basis of the BOLD time series, determine the pupil time series
@@ -235,11 +251,57 @@ else
         end
         subplot(1,3,subplotValue); hold on;
         
-        plot(pupilValues, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+        if ~(p.Results.combineWithinConnectionType)
+            plot(pupilValues, timeVaryingCorrelations{ii}, '.', 'Color', 'k');
+            % stash the result
+            pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+            pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [pooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilValues];
+            
+        end
+        
+        combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues = [combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).correlationValues, timeVaryingCorrelations{ii}];
+        combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues = [combinedPooledTimeVaryingCorrelationStruct.(connectionTypes{ii}).pupilValues, pupilValues];
+        
         
     end
     
 end
+
+if p.Results.combineWithinConnectionType
+    
+    % each window has one pupil value, but each window is represented
+    % multiple times for each individual connection. Grab the unique pupil
+    % values to identify each window
+    pupilValues = unique(combinedPooledTimeVaryingCorrelationStruct.homotopic.pupilValues);
+    
+    for ii = 1:length(pupilValues)
+        
+        subplot(1,3,1); hold on;
+        homotopicIndices = find(combinedPooledTimeVaryingCorrelationStruct.homotopic.pupilValues == pupilValues(ii));        
+        meanHomotopicCorrelationValues = mean(combinedPooledTimeVaryingCorrelationStruct.homotopic.correlationValues(homotopicIndices));
+        pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [pooledTimeVaryingCorrelationStruct.homotopic.correlationValues, meanHomotopicCorrelationValues];
+        pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pupilValues(ii)];
+        plot(pupilValues(ii), meanHomotopicCorrelationValues, '.', 'Color', 'k');
+       
+        subplot(1,3,2); hold on;
+        hierarchicalIndices = find(combinedPooledTimeVaryingCorrelationStruct.hierarchical.pupilValues == pupilValues(ii));        
+        meanHierarchicalCorrelationValues = mean(combinedPooledTimeVaryingCorrelationStruct.hierarchical.correlationValues(hierarchicalIndices));
+        pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues, meanHierarchicalCorrelationValues];
+        pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pupilValues(ii)];
+        plot(pupilValues(ii), meanHierarchicalCorrelationValues, '.', 'Color', 'k');
+
+        subplot(1,3,3); hold on;
+        backgroundIndices = find(combinedPooledTimeVaryingCorrelationStruct.background.pupilValues == pupilValues(ii));
+        meanBackgroundCorrelationValues = mean(combinedPooledTimeVaryingCorrelationStruct.background.correlationValues(backgroundIndices));
+        pooledTimeVaryingCorrelationStruct.background.correlationValues = [pooledTimeVaryingCorrelationStruct.background.correlationValues, meanBackgroundCorrelationValues];
+        pooledTimeVaryingCorrelationStruct.background.pupilValues = [pooledTimeVaryingCorrelationStruct.background.pupilValues, pupilValues(ii)];
+        plot(pupilValues(ii), meanBackgroundCorrelationValues, '.', 'Color', 'k');
+    end
+    
+    
+    
+end
+
 ax1 = subplot(1,3,1);
 title('Homotopic')
 xlabel('Pupil Diameter Convolved (mm)');
