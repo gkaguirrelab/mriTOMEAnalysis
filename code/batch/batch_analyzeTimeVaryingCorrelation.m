@@ -50,57 +50,73 @@ subjects = {'TOME_3001', ...
 for ss = 1:length(subjects)
     subjectID = subjects{ss};
     
-    runNames = getRunsPerSubject(subjectID);
+    %runNames = getRunsPerSubject(subjectID);
     
     plotFig = figure; hold on;
     set(gcf,'un','n','pos',[.05,.05,.7,.6])
     
-    pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
-    pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
-    pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+    pooledTimeVaryingCorrelationStruct.correlationValues = [];
+    pooledTimeVaryingCorrelationStruct.pupilValues = [];
+    
+    runNames{1} = 'rfMRI_REST_AP_Run1';
+    runNames{2} = 'rfMRI_REST_PA_Run2';
+    runNames{3} = 'rfMRI_REST_AP_Run3';
+    runNames{4} = 'rfMRI_REST_PA_Run4';
     
     for rr = 1:length(runNames)
         runName = runNames{rr};
-        [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'mean', 'linkAxes', false);
+        [ pooledTimeVaryingCorrelationStruct] = analyzeLGNV1Correlation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'slidingWindowPearson', 'pupilMetric', 'mean');
     end
-    ax1 = subplot(1,3,1);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
-    ax2 = subplot(1,3,2);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues)
-    ax3 = subplot(1,3,3);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.background.pupilValues, pooledTimeVaryingCorrelationStruct.background.correlationValues)
-    linkaxes([ax1, ax2, ax3]);
-    
-    saveas(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', [subjectID, '_mean.png']), 'png');
+    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.pupilValues, pooledTimeVaryingCorrelationStruct.correlationValues)
+    saveas(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', [subjectID, '_LGN-V1.png']), 'png');
     close all
     
-    plotFig = figure; hold on;
-    set(gcf,'un','n','pos',[.05,.05,.7,.6])
-    
-    pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
-    pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
-    pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
-    pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
-    
-    for rr = 1:length(runNames)
-        runName = runNames{rr};
-        [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'std', 'linkAxes', false);
-    end
-    ax1 = subplot(1,3,1);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
-    ax2 = subplot(1,3,2);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues)
-    ax3 = subplot(1,3,3);
-    makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.background.pupilValues, pooledTimeVaryingCorrelationStruct.background.correlationValues)
-    linkaxes([ax1, ax2, ax3]);
-    
-    saveas(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', [subjectID, '_std.png']), 'png');
-    close all
+%     pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
+%     pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
+%     pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+%     
+%     for rr = 1:length(runNames)
+%         runName = runNames{rr};
+%         [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'mean', 'linkAxes', false);
+%     end
+%     ax1 = subplot(1,3,1);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
+%     ax2 = subplot(1,3,2);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues)
+%     ax3 = subplot(1,3,3);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.background.pupilValues, pooledTimeVaryingCorrelationStruct.background.correlationValues)
+%     linkaxes([ax1, ax2, ax3]);
+%     
+%     saveas(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', [subjectID, '_mean.png']), 'png');
+%     close all
+%     
+%     plotFig = figure; hold on;
+%     set(gcf,'un','n','pos',[.05,.05,.7,.6])
+%     
+%     pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
+%     pooledTimeVaryingCorrelationStruct.homotopic.pupilValues = [];
+%     pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues = [];
+%     pooledTimeVaryingCorrelationStruct.background.pupilValues = [];
+%     
+%     for rr = 1:length(runNames)
+%         runName = runNames{rr};
+%         [ pooledTimeVaryingCorrelationStruct] = analyzeTimeVaryingCorrelation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'std', 'linkAxes', false);
+%     end
+%     ax1 = subplot(1,3,1);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.homotopic.pupilValues, pooledTimeVaryingCorrelationStruct.homotopic.correlationValues)
+%     ax2 = subplot(1,3,2);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.hierarchical.pupilValues, pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues)
+%     ax3 = subplot(1,3,3);
+%     makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.background.pupilValues, pooledTimeVaryingCorrelationStruct.background.correlationValues)
+%     linkaxes([ax1, ax2, ax3]);
+%     
+%     saveas(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', [subjectID, '_std.png']), 'png');
+%     close all
 end
 
 end
