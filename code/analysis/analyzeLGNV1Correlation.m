@@ -12,7 +12,7 @@ pooledTimeVaryingCorrelationStruct.pupilValues = [];
 
 for rr = 1:length(runNames);
     runName = runNames{rr};
-    [ pooledTimeVaryingCorrelationStruct] = analyzeLGNV1Correlation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'slidingWindowPearson', 'pupilMetric', 'mean');
+    [ pooledTimeVaryingCorrelationStruct] = analyzeLGNV1Correlation(subjectID, runName, 'plotHandle', plotFig, 'pooledTimeVaryingCorrelationStruct', pooledTimeVaryingCorrelationStruct, 'correlationMethod', 'jumpingWindowPearson', 'pupilMetric', 'mean');
 end
 makeBinScatterPlot(pooledTimeVaryingCorrelationStruct.pupilValues, pooledTimeVaryingCorrelationStruct.correlationValues)
 %}
@@ -68,14 +68,50 @@ pathToTemplateFile = fullfile('/Users', userID, 'Dropbox-Aguirre-Brainard-Lab/ME
 timeVaryingCorrelation = calculateTimeVaryingCorrelation(V1MeanTimeSeries, LGNMeanTimeSeries, p.Results.windowLength, 'correlationMethod', p.Results.correlationMethod, 'normalizeTimeVaryingCorrelation', p.Results.normalizeTimeVaryingCorrelation);
 
 %% Extract pupil size over the same time window
-% Get pupil time series
-[ covariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runName);
-pupilStruct = [];
-% resample the pupil data to the same temporal resolution as the BOLD data
-pupilStruct.timebase = covariates.timebase;
-pupilStruct.values = unconvolvedCovariates.pupilDiameter;
-temporalFit = tfeIAMP('verbosity','none');
-pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
+
+if ~strcmp(p.Results.correlationMethod, 'jumpingWindowPearson')
+    % Get pupil time series
+    [ covariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runName);
+    pupilStruct = [];
+    % resample the pupil data to the same temporal resolution as the BOLD data
+    pupilStruct.timebase = covariates.timebase;
+    pupilStruct.values = unconvolvedCovariates.pupilDiameter;
+    temporalFit = tfeIAMP('verbosity','none');
+    pupilStruct = temporalFit.resampleTimebase(pupilStruct, timebase, 'resampleMethod', 'resample');
+else
+    startingIndex = 1;
+    windowIndices = [];
+    rowNumber = 1;
+    while startingIndex + p.Results.windowLength <= length(timebase)
+        endingIndex = startingIndex + p.Results.windowLength - 1;
+        windowIndices(rowNumber,1) = startingIndex;
+        windowIndices(rowNumber,2) = endingIndex;
+        
+        % adjust starting index for next iteration
+        startingIndex = startingIndex + p.Results.windowLength;
+        
+        rowNumber = rowNumber + 1;
+    end
+    [ covariates, unconvolvedCovariates ] = makeEyeSignalCovariates(subjectID, runName);
+    pupilStruct = [];
+    % resample the pupil data to the same temporal resolution as the BOLD data
+    pupilStruct.timebase = covariates.timebase;
+    pupilStruct.values = unconvolvedCovariates.pupilDiameter;
+    for ii = 1:size(windowIndices,1)
+        startingTime = timebase(windowIndices(ii,1));
+        endingTime = timebase(windowIndices(ii,2));
+        [~, startingPupilIndex ] = min(abs(pupilStruct.timebase - startingTime));
+        [~, endingPupilIndex ] = min(abs(pupilStruct.timebase - endingTime));
+        
+        if strcmp(p.Results.pupilMetric, 'mean')
+            pupilValues(ii) = nanmean(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        elseif strcmp(p.Results.pupilMetric, 'std')
+            pupilValues(ii) = nanstd(pupilStruct.values(startingPupilIndex:endingPupilIndex));
+        end
+        
+    end
+    pupilStruct.values = pupilValues;
+end
 
 %% Stash the result
 if isempty(p.Results.pooledTimeVaryingCorrelationStruct)
@@ -94,5 +130,12 @@ if isempty(p.Results.plotHandle)
 end
 
 plot(pupilStruct.values, timeVaryingCorrelation, '.', 'Color', 'k');
+if strcmp(p.Results.pupilMetric, 'mean')
+    xlabel('Pupil size (mm)');
+else
+    xlabel('Pupil STD (mm)');
+end
+    
+ylabel(p.Results.correlationMethod);
 
 end
