@@ -51,6 +51,19 @@
 		"update": "",
 		"url": "http:\/\/www.mathworks.com\/matlabcentral\/mlc-downloads\/downloads\/submissions\/48294\/versions\/4\/download\/zip"
 	},
+    {
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "plotSpread",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "webget",
+		"update": "",
+		"url": "https:\/\/www.mathworks.com\/matlabcentral\/mlc-downloads\/downloads\/submissions\/37105\/versions\/3\/download\/zip"
+	},
         {
 		"flavor": "",
 		"hook": "",
