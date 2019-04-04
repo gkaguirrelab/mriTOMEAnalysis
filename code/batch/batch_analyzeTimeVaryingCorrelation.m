@@ -1,4 +1,3 @@
-function batch_analyzeWholeBrain
 
 % set up error log
 errorLogPath = fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), '/mriTOMEAnalysis/errorLogs/');
@@ -202,6 +201,7 @@ for ss = 1:length(subjects)
 
 
 % within V1, pupil mean
+plotFig = figure; hold on;
     pooledTimeVaryingCorrelationStruct.homotopic.correlationValues = [];
     pooledTimeVaryingCorrelationStruct.hierarchical.correlationValues = [];
     pooledTimeVaryingCorrelationStruct.background.correlationValues = [];
@@ -374,4 +374,63 @@ for ss = 1:length(subjects)
     background.pupilSTD.rSquared(end+1) = rSquared;
 end
 
-end
+%% Summary plotting
+close all
+plotFig = figure;
+subplot(2,2,1); hold on;
+plotSpread([homotopic.pupilMean.slope', hierarchical.pupilMean.slope', background.pupilMean.slope']);
+
+medianHomotopicMean = median(homotopic.pupilMean.slope);
+medianHierarchicalMean = median(hierarchical.pupilMean.slope);
+medianBackgroundMean = median(background.pupilMean.slope);
+
+lineWidth = 0.33;
+line([1-lineWidth 1+lineWidth], [medianHomotopicMean, medianHomotopicMean], 'Color', 'b');
+line([2-lineWidth 2+lineWidth], [medianHierarchicalMean, medianHierarchicalMean], 'Color', 'b');
+line([3-lineWidth 3+lineWidth], [medianBackgroundMean, medianBackgroundMean], 'Color', 'b');
+
+xlabel('Within Visual Cortices Connection Type')
+ylabel('Slope')
+title('Pupil Mean vs. Jumping Correlation')
+xticks(1:3);
+xticklabels({'Homotopic', 'Hierarchical', 'Background'});
+
+subplot(2,2,2); hold on;
+plotSpread(LGNV1.pupilMean.slope');
+line([1-lineWidth 1+lineWidth], [median(LGNV1.pupilMean.slope), median(LGNV1.pupilMean.slope)], 'Color', 'b');
+xticks();
+xticklabels('');
+xlabel('LGN-V1');
+ylabel('Slope');
+title('Pupil Mean vs. Jumping Correlation');
+
+subplot(2,2,3); hold on;
+plotSpread([homotopic.pupilSTD.slope', hierarchical.pupilSTD.slope', background.pupilSTD.slope']);
+medianHomotopicSTD = median(homotopic.pupilSTD.slope);
+medianHierarchicalSTD = median(hierarchical.pupilSTD.slope);
+medianBackgroundSTD = median(background.pupilSTD.slope);
+
+lineWidth = 0.33;
+line([1-lineWidth 1+lineWidth], [medianHomotopicSTD, medianHomotopicSTD], 'Color', 'b');
+line([2-lineWidth 2+lineWidth], [medianHierarchicalSTD, medianHierarchicalSTD], 'Color', 'b');
+line([3-lineWidth 3+lineWidth], [medianBackgroundSTD, medianBackgroundSTD], 'Color', 'b');
+
+xlabel('Within Visual Cortices Connection Type')
+ylabel('Slope')
+title('Pupil STD vs. Jumping Correlation')
+xticks(1:3);
+xticklabels({'Homotopic', 'Hierarchical', 'Background'});
+
+
+subplot(2,2,4);
+plotSpread(LGNV1.pupilSTD.slope');
+line([1-lineWidth 1+lineWidth], [median(LGNV1.pupilSTD.slope), median(LGNV1.pupilSTD.slope)], 'Color', 'b');
+xticks();
+xticklabels('');
+xlabel('LGN-V1');
+ylabel('Slope');
+title('Pupil STD vs. Jumping Correlation');
+
+set(plotFig,'un','n','pos',[.05,.05,.7,.6])
+set(plotFig,'PaperOrientation','landscape');
+print(plotFig, fullfile(getpref('mriTOMEAnalysis', 'TOME_analysisPath'), 'mriTOMEAnalysis', 'timeVaryingCorrelation', 'slopeAcrossSubjects.pdf'), '-dpdf', '-fillpage')
