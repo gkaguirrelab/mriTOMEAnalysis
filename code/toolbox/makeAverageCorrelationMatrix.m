@@ -361,21 +361,38 @@ end
 SEMPostEye.homotopicHierarchicalCombined = std(bootstrapResultsPostEye.homotopicHierarchicalCombined);
 meanPostEye.homotopicHierarchicalCombined = mean(bootstrapResultsPostEye.homotopicHierarchicalCombined);
 
+for cc = 1:length(connectionTypes)
+    bootstrapResultsDifference.(connectionTypes{cc}) = [];
+    for bb = 1:nBootstraps
+        bootstrapIndices = datasample(1:length(postEyeCorrelationsByType.(connectionTypes{cc})), length(postEyeCorrelationsByType.(connectionTypes{cc})));
+        bootstrapResultsDifference.(connectionTypes{cc}) = [bootstrapResultsDifference.(connectionTypes{cc}), mean(postEyeCorrelationsByType.(connectionTypes{cc})(bootstrapIndices)) - mean(preEyeCorrelationsByType.(connectionTypes{cc})(bootstrapIndices))];
+    end
+    SEMDifference.(connectionTypes{cc}) = std(bootstrapResultsDifference.(connectionTypes{cc}));
+    meanDifference.(connectionTypes{cc}) = mean(bootstrapResultsDifference.(connectionTypes{cc}));
+end
 
 plotFig = figure;
-subplot(1,2,1);
+subplot(1,3,1);
 barwitherr([SEMPreEye.hierarchical, SEMPreEye.homotopic, SEMPreEye.background], [meanPreEye.hierarchical, meanPreEye.homotopic, meanPreEye.background]);
 title('Pre-Eye Signal Removal')
 ylabel('Regional Correlation, +/- SEM')
 xticklabels({'Hierarhical', 'Homotopic', 'Background'})
 xtickangle(45);
 
-subplot(1,2,2);
+subplot(1,3,2);
 barwitherr([SEMPostEye.hierarchical, SEMPostEye.homotopic, SEMPostEye.background], [meanPostEye.hierarchical, meanPostEye.homotopic, meanPostEye.background]);
 title('Post-Eye Signal Removal')
 ylabel('Regional Correlation, +/- SEM')
 xticklabels({'Hierarhical', 'Homotopic', 'Background'})
 xtickangle(45);
+
+subplot(1,3,3);
+barwitherr([SEMDifference.hierarchical, SEMDifference.homotopic, SEMDifference.background], [meanDifference.hierarchical, meanDifference.homotopic, meanDifference.background]);
+title('Post-Pre Difference')
+ylabel('Regional Correlation, +/- SEM')
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45);
+
 if ~isempty(p.Results.saveName)
     print(plotFig, [p.Results.saveName, '_meanCorrelationByConnectionType.pdf'], '-dpdf', '-fillpage')
 end
@@ -402,7 +419,266 @@ pbaspect([1 1 1])
 if ~isempty(p.Results.saveName)
     print(plotFig, [p.Results.saveName, '_meanCorrelation_hierarchicalHomotopicCombined.pdf'], '-dpdf', '-fillpage')
 end
-    
+
+%% VSS plot
+plotFig = figure; 
+subplot(3,3,1);
+imagesc(withinHemisphere_preEye_meanMatrix);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+title('Within Hemisphere')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
+subplot(3,3,2);
+imagesc(betweenHemisphere_preEye_meanMatrix);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+xlabel('Left Hemisphere')
+ylabel('Right Hemisphere')
+title('Between Hemispheres')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+
+subplot(3,3,3);
+barwitherr([SEMPreEye.hierarchical, SEMPreEye.homotopic, SEMPreEye.background], [meanPreEye.hierarchical, meanPreEye.homotopic, meanPreEye.background]);
+title('Pre-Eye Signal Removal')
+ylabel('Regional Correlation, +/- SEM')
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45);
+ylim([0 0.9]);
+
+
+subplot(3,3,4);
+imagesc(withinHemisphere_postEye_meanMatrix);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+title('Within Hemisphere')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
+subplot(3,3,5);
+imagesc(betweenHemisphere_postEye_meanMatrix);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+xlabel('Left Hemisphere')
+ylabel('Right Hemisphere')
+title('Between Hemispheres')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-1.25 1.25])
+pbaspect([1 1 1])
+
+subplot(3,3,6);
+barwitherr([SEMPostEye.hierarchical, SEMPostEye.homotopic, SEMPostEye.background], [meanPostEye.hierarchical, meanPostEye.homotopic, meanPostEye.background]);
+title('Post-Eye Signal Removal')
+ylabel('Regional Correlation, +/- SEM')
+ylim([0 0.9]);
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45);
+
+subplot(3,3,7);
+imagesc(withinHemisphereDifference);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+title('Within Hemisphere')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-0.25 0.25])
+pbaspect([1 1 1])
+hold on;
+rectangle('Position', [5.5, 5.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [4.5, 4.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [3.5, 3.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [2.5, 2.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [1.5, 1.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+rectangle('Position', [0.5, 0.5, 1, 1], 'FaceColor', 'y', 'LineWidth', 0.1)
+plot(1,1, '*', 'Color', 'k');
+plot(2,2, '*', 'Color', 'k');
+plot(3,3, '*', 'Color', 'k');
+plot(4,4, '*', 'Color', 'k');
+plot(5,5, '*', 'Color', 'k');
+plot(6,6, '*', 'Color', 'k');
+
+subplot(3,3,8);
+imagesc(betweenHemisphereDifference);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+xlabel('Left Hemisphere')
+ylabel('Right Hemisphere')
+title('Between Hemispheres')
+colorbar
+colors = redblue(100);
+colormap(colors)
+caxis([-0.25 0.25])
+pbaspect([1 1 1])
+
+subplot(3,3,9);
+barwitherr([SEMDifference.hierarchical, SEMDifference.homotopic, SEMDifference.background], [meanDifference.hierarchical, meanDifference.homotopic, meanDifference.background]);
+title('Post-Pre Difference')
+ylabel('Regional Correlation, +/- SEM')
+xticklabels({'Hierarhical', 'Homotopic', 'Background'})
+xtickangle(45); 
+
+if ~isempty(p.Results.saveName)
+    set(plotFig, 'Renderer','painters');
+    set(plotFig, 'Position', [269 131 1050 854])
+    print(plotFig, [p.Results.saveName, '_VSS.pdf'], '-dpdf')
+end
+
+% homotopic, hierarchical, background key
+homotopicIndices_within = [6,11,16,21,26,31];
+hierarchicalIndices_within = [2,3,7,9,13,14,24,23,30,28,34,35];
+backgroundIndices_within = [5,4,12,10,18,17,20,19,27,25,33,32];
+
+homotopicIndices_between = [6, 11, 16, 21, 26, 31, 1, 8, 15, 22, 29, 36];
+hierarchicalIndices_between = [];
+backgroundIndices_between = [5,4,12,10,18,17,20,19,27,25,33,32];
+matrixTemplate = zeros(6,6);
+
+
+plotFig = figure;
+subplot(2,3,2);
+homotopic_within = matrixTemplate;
+homotopic_within(homotopicIndices_within) = 1;
+imagesc(homotopic_within);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+
+subplot(2,3,5);
+homotopic_between = matrixTemplate;
+homotopic_between(homotopicIndices_between) = 1;
+imagesc(homotopic_between);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+
+subplot(2,3,1);
+hierarchical_within = matrixTemplate;
+hierarchical_within(hierarchicalIndices_within) = 1;
+imagesc(hierarchical_within);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+
+subplot(2,3,4)
+hierarchical_between = matrixTemplate;
+hierarchical_between(hierarchicalIndices_between) = 1;
+imagesc(hierarchical_between);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+
+subplot(2,3,3);
+background_within = matrixTemplate;
+background_within(backgroundIndices_within) = 1;
+imagesc(background_within);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+
+subplot(2,3,6);
+background_between = matrixTemplate;
+background_between(backgroundIndices_between) = 1;
+imagesc(background_between);
+rhLabel = {'V3v', 'V2v', 'V1v', 'V1d', 'V2d', 'V3d'};
+set(gca, 'XTick', 1:length(rhLabel))
+set(gca, 'YTick', 1:length(rhLabel))
+set(gca, 'XTickLabel', rhLabel)
+set(gca, 'YTickLabel', rhLabel)
+set(gca,'YDir','normal')
+pbaspect([1 1 1])
+
+ if ~isempty(p.Results.saveName)
+    print(plotFig, [p.Results.saveName, '_connectionKey.pdf'], '-dpdf', '-fillpage')
+end
 
 %% Local function just to make colormap for easier comparison to Butt et al 2015
     function c = redblue(m)
