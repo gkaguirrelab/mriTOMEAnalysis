@@ -1,4 +1,4 @@
-projectLabel,tome,gearName,hcp-struct,rootSession,T1,ConfigKeys,"{'Subject','RegName','StructuralUnwarpDirection'}",ConfigVals,"{subjectName,'FS','z'}"
+projectLabel,tome,gearName,hcp-struct,rootSession,T1,ConfigKeys,"{'Subject','RegName','StructuralUnwarpDirection'}",ConfigVals,"{subjectName,'MSMSulc','z'}"
 Inputs,FreeSurferLicense,T1,T2,,,,,,
 DefaultLabel,,T1w_MPR ,T2w_SPC,,,,,,
 FileSuffix,txt,nifti,nifti,,,,,,
