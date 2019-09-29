@@ -52,15 +52,16 @@ if ismac
     setpref(projectName,'analysisScratchDir','/tmp/flywheel');
     setpref(projectName,'projectRootDir',fullfile('/Users/',userID,'/Documents/flywheel',projectName));
     setpref(projectName,'TOMEDataPath', TOME_dataBasePath);
-    setpref(projectName, 'TOME_analysisPath', TOME_analysisBasePath);
-    setpref(projectName, 'TOME_processingPath', TOME_processingBasePath);
+    setpref(projectName, 'TOMEAnalysisPath', TOME_analysisBasePath);
+    setpref(projectName, 'TOMEProcessingPath', TOME_processingBasePath);
     
 elseif isunix
     % Code to run on Linux plaform
     setpref(projectName,'analysisScratchDir','/tmp/flywheel');
     setpref(projectName,'projectRootDir',fullfile('/home/',userID,'/Documents/flywheel',projectName));
     setpref(projectName,'TOMEDataPath', TOME_dataBasePath);
-    setpref(projectName, 'TOME_analysisPath', TOME_analysisBasePath);
+    setpref(projectName, 'TOMEAnalysisPath', TOME_analysisBasePath);
+    setpref(projectName, 'TOMEProcessingPath', TOME_processingBasePath);
     
 elseif ispc
     % Code to run on Windows platform

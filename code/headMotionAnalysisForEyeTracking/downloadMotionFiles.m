@@ -19,7 +19,7 @@ end
 projectName = 'tome';
 gearName = 'hcp-func';
 scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
-resultSaveDirStem = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion';
+resultSaveDirStem = fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),'deriveCameraPositionFromHeadMotion');
 outputFileSuffix = '_hcpfunc.zip';
 resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
 
