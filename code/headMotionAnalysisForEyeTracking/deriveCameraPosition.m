@@ -109,7 +109,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 % Examples:
 %{
     % One subject with plots
-    deriveCameraPosition('TOME_3004', [194 33 151],'verbose',true,'showPlots',true)
+    deriveCameraPosition('TOME_3004',[194 33 151],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
 %}
 %{
     % The coords were obtained within the Flywheel image viewer for the
@@ -154,7 +154,9 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3040', [189 32 155]; ...
                 'TOME_3042', [189 28 158]; ...
                 'TOME_3043', [192 31 153]; ...
-                'TOME_3044', [188 31 155]
+                'TOME_3044', [188 31 155]; ...
+                'TOME_3045', [187 29 155]; ...
+                'TOME_3046', [190 25 161]  ...
                 };
     for ii=1:size(dataArray,1)
         deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2})

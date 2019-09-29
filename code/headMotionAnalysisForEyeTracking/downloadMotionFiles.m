@@ -13,8 +13,11 @@ scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
 resultSaveDirStem = '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion';
 outputFileSuffix = '_hcpfunc.zip';
 resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
-sessionLabelPrefix = {'Session 1','Session 1a','Session 1b','T1 and T2 images'};
-sessionLabelReplacement = {'session1_restAndStructure','session1_restAndStructure','session1_restAndStructure','session1_restAndStructure'};
+sessionLabelPrefix = {'Session 1','Session 1a','Session 1b'};
+%sessionLabelPrefix = {'Session 2','Session 2a','Session 2b'};
+sessionLabelReplacement = {'session1_restAndStructure','session1_restAndStructure','session1_restAndStructure'};
+%sessionLabelReplacement = {'session2_restAndStructure','session2_restAndStructure','session2_restAndStructure'};
+
 devNull = ' >/dev/null';
 
 % If the scratch dir does not exist, make it
