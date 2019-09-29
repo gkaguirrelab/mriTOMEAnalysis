@@ -31,6 +31,9 @@ end
 
 
 %% handle hosts with custom dropbox locations
+
+[~,hostname] = system('hostname');
+hostname = strtrim(lower(hostname));
 switch hostname
     case 'seele.psych.upenn.edu'
         dropboxDir = '/Volumes/seeleExternalDrive/Dropbox (Aguirre-Brainard Lab)';
