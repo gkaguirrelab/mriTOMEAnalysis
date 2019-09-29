@@ -13,7 +13,7 @@ switch sessionIdx
         sessionLabelReplacement = {'session1_restAndStructure','session1_restAndStructure','session1_restAndStructure'};
     case 2
         sessionLabelPrefix = {'Session 2','Session 2a','Session 2b'};
-        sessionLabelReplacement = {'session2_restAndStructure','session2_restAndStructure','session2_restAndStructure'};
+        sessionLabelReplacement = {'session2_spatialStimuli','session2_spatialStimuli','session2_spatialStimuli'};
 end
 
 projectName = 'tome';
