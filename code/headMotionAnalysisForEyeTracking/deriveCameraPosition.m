@@ -109,7 +109,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 % Examples:
 %{
     % One subject with plots
-    deriveCameraPosition('TOME_3045',[187 29 155],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
+    deriveCameraPosition('TOME_3046',[190 25 161],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
 %}
 %{
     % The coords were obtained within the Flywheel image viewer for the
