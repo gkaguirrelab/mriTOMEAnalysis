@@ -109,7 +109,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 % Examples:
 %{
     % One subject with plots
-    deriveCameraPosition('TOME_3004',[194 33 151],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
+    deriveCameraPosition('TOME_3045',[187 29 155],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
 %}
 %{
     % The coords were obtained within the Flywheel image viewer for the
@@ -181,9 +181,14 @@ p.addParameter('hostname',char(java.lang.System.getProperty('user.name')),@ischa
 p.addParameter('username',char(java.net.InetAddress.getLocalHost.getHostName),@ischar);
 
 % Optional analysis params
-p.addParameter('processingDir','/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_processing',@ischar);
-p.addParameter('analysisDir', '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion/',@ischar);
-p.addParameter('t1FileName', '/Users/aguirre/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/deriveCameraPositionFromHeadMotion/T1w_acpc_dc_restore.nii.gz',@ischar);
+p.addParameter('processingDir',...
+    getpref('mriTOMEAnalysis', 'TOMEProcessingPath'),@ischar);
+p.addParameter('analysisDir', ...
+    fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),...
+    'deriveCameraPositionFromHeadMotion'),@ischar);
+p.addParameter('t1FileName', ...
+    fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),...
+    'deriveCameraPositionFromHeadMotion','T1w_acpc_dc_restore.nii.gz'),@ischar);
 p.addParameter('scratchSaveDir',getpref('flywheelMRSupport','flywheelScratchDir'),@ischar);
 p.addParameter('sessionDir','session1_restAndStructure',@ischar);
 p.addParameter('freesurferBinDir','/Applications/freesurfer/bin/',@ischar);

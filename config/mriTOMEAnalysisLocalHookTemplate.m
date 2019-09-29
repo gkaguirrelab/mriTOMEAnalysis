@@ -29,6 +29,24 @@ if (ispref(projectName))
     rmpref(projectName);
 end
 
+
+%% handle hosts with custom dropbox locations
+switch hostname
+    case 'seele.psych.upenn.edu'
+        dropboxDir = '/Volumes/seeleExternalDrive/Dropbox (Aguirre-Brainard Lab)';
+    case 'magi-1-melchior.psych.upenn.edu'
+        dropboxDir = '/Volumes/melchiorBayTwo/Dropbox (Aguirre-Brainard Lab)';
+    case 'magi-2-balthasar.psych.upenn.edu'
+        dropboxDir = '/Volumes/balthasarExternalDrive/Dropbox (Aguirre-Brainard Lab)';
+    otherwise
+        [~, userName] = system('whoami');
+        userName = strtrim(userName);
+        dropboxDir = ...
+            fullfile('/Users', userName, ...
+            'Dropbox (Aguirre-Brainard Lab)');
+end
+
+
 %% Specify base paths for materials and data
 [~, userID] = system('whoami');
 userID = strtrim(userID);
@@ -39,9 +57,9 @@ switch userID
         TOME_processingBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_processing/'];
         
     otherwise
-        TOME_dataBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_data/'];
-        TOME_analysisBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_analysis/'];
-        TOME_processingBasePath = ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/TOME_processing/'];
+        TOME_dataBasePath = fullfile(dropboxDir,'TOME_data');
+        TOME_analysisBasePath = fullfile(dropboxDir,'TOME_analysis');
+        TOME_processingBasePath = fullfile(dropboxDir,'TOME_processing');
         
 end
 
