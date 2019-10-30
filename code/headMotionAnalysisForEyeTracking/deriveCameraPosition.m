@@ -159,7 +159,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3046', [190 25 161]  ...
                 };
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2})
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli')
     end
 %}
 
@@ -282,6 +282,10 @@ for ii=1:length(targetFiles)
     % Convert the rootName format of the run number    
     tmpString = strsplit(acquisitionRootName,[sessionInfo.subject '_' ]);
     tmpString = tmpString{2};
+    tmpString = strrep(tmpString,'run1','run01');
+    tmpString = strrep(tmpString,'run2','run02');
+    tmpString = strrep(tmpString,'run3','run03');
+    tmpString = strrep(tmpString,'run4','run04');
     tmpString = strrep(tmpString,'Run1','run01');
     tmpString = strrep(tmpString,'Run2','run02');
     tmpString = strrep(tmpString,'Run3','run03');
