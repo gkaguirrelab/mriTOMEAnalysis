@@ -1,4 +1,4 @@
-projectLabel,tome,gearName,forwardModel,rootSession,funcZip01,ConfigKeys,"{'averageAcquisitions','dataFileType','dataSourceType','modelClass','modelOpts','RegName','tr'}",ConfigVals,"{'1','cifti','icafix','flobsHRF',modelOpts,'FS','0.8'}"
+projectLabel,tome,gearName,forwardModel,rootSession,funcZip01,ConfigKeys,"{'averageAcquisitions','dataFileType','dataSourceType','modelClass','modelOpts','tr'}",ConfigVals,"{'1','cifti','icafix','flobsHRF',modelOpts,'0.8'}"
 Inputs,structZip,funcZip01,stimFile,maskFile,modelOpts,analysisSubmissionTag,,,
 DefaultLabel,hcp-struct/hcpstruct.zip,,,,,,,,
 FileSuffix,zip,zip,mat,nii,,,,,
