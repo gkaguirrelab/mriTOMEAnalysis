@@ -1,12 +1,10 @@
-projectLabel,tome,gearName,bayesPRF,rootSession,NativeMgzMaps,ConfigKeys,"{'min-input-eccen','max-input-eccen','weight-min','scale','field-sign-weight','radius-weight'}",ConfigVals,"{0.25,8.0,0.1,20,1.0,0.0}"
+projectLabel,tome,gearName,bayesPRF,rootSession,NativeMgzMaps,ConfigKeys,"{'min-input-eccen','max-input-eccen','weight-min','scale','field-sign-weight','radius-weight'}",ConfigVals,"{0,8.0,0.1,100,1.0,1.0}"
 Inputs,structZipPath,NativeMgzMaps,analysisSubmissionTag,,,,,,
 DefaultLabel,hcp-struct/hcpstruct.zip,,,,,,,,
 FileSuffix,zip,zip,,,,,,,
 ContainerType,analysis,analysis,,,,,,,
 ExactStringMatch,0,0,,Notes,,,,,
 ,,,,,,,,,
-TOME_3045,TOME_3045/Session 1,TOME_3045/Session 2/forwardmodel/TOME_3045_maps_nativeMGZ.zip,TOME_3045_bayesPRF,,,,,,
-stop,,,,,,,,,
 TOME_3001,TOME_3001/Session 1,TOME_3001/Session 2/forwardmodel/TOME_3001_maps_nativeMGZ.zip,TOME_3001_bayesPRF,,,,,,
 TOME_3002,TOME_3002/Session 1,TOME_3002/Session 2/forwardmodel/TOME_3002_maps_nativeMGZ.zip,TOME_3002_bayesPRF,,,,,,
 TOME_3003,TOME_3003/Session 1,TOME_3003/Session 2/forwardmodel/TOME_3003_maps_nativeMGZ.zip,TOME_3003_bayesPRF,,,,,,
