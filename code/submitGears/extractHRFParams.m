@@ -13,6 +13,7 @@ jobList = fw.jobs.find(...
 
 % Create a temporary directory to save files
 outDir = tempdir;
+plotDir = '/Users/aguirre/Desktop/flobsHRFPlots';
 
 % Loop through the analyses. Can't figure out how to get the flywheel api
 % to let me know if an analysis still exists or not, so right now I'm doing
@@ -38,6 +39,15 @@ for jj = 1:length(jobList)
         
         % Report this result to the screen
         fprintf([fileName ' - (hrfParams),[%2.4f,%2.4f,%2.4f]\n'],results.summary.medianParams)
+        
+        % Download the plots
+        % Find the results.mat file and download
+        plotIdx = find(cellfun(@(x) strcmp(x.type,'pdf'),analysisHandle.files));
+        for pp = 1:length(plotIdx)
+            fileName = analysisHandle.files{plotIdx(pp)}.name;
+            outPath = fullfile(plotDir,fileName);
+            fw.downloadOutputFromAnalysis(analysisHandle.id,fileName,outPath);
+        end
         
     end
     
