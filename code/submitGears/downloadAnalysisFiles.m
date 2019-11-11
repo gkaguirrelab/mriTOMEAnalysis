@@ -9,8 +9,10 @@ gearName = 'bayesprf';
 modelClass = '';
 outDir = '/Users/aguirre/Desktop/bayesPRFPlots';
 
-% Leave one of these empty
-fileType = 'image';
+% Options for fileType include: {'image', 'pdf', 'MATLAB data', 'archive'} 
+fileType = 'MATLAB data';
+
+% Can specify a specific fileName to download instead of a fileType
 fileName = '';
 
 %% Instantiate the flywheel object
