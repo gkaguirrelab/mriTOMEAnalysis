@@ -1,0 +1,8 @@
+projectLabel,LFContrast,gearName,forwardModel,rootSession,funcZip01,ConfigKeys,"{'averageAcquisitions','averageVoxels','dataFileType','dataSourceType','modelClass','modelOpts','tr'}",ConfigVals,"{'0','1','cifti','icafix','eventGain',modelOpts,'0.8'}"
+Inputs,structZip,funcZip01,stimFile,maskFile,modelOpts,analysisSubmissionTag,,,
+DefaultLabel,hcp-struct/hcpstruct.zip,,,,,,,,
+FileSuffix,zip,zip,mat,nii,,,,,
+ContainerType,analysis,analysis,session,project,config,,,,
+ExactStringMatch,0,0,0,,,,Notes,,
+,,,,,,,,,
+KAS25,KAS25/Research^Aguirre1,KAS25/Research^Aguirre1/hcp-icafix/KAS25_ICAFIX_multi_tfMRI_LFContrast_AP_run1_tfMRI_LFContrast_PA_run1_tfMRI_LFContrast_AP_run2_tfMRI_LFContrast_PA_run2_tfMRI_LFContrast_AP_run3_hcpicafix.zip,KAS25/Research^Aguirre1/KAS25_sess1_acq1-5.mat,V1_combined_ecc_0_to_20.dscalar.nii,"'(polyDeg), 5, (typicalGain), 300'",KAS25_eventGain_acq1-5,,,
