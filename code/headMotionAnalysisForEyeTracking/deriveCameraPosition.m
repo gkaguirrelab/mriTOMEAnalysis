@@ -173,6 +173,7 @@ p.addRequired('cornealCoord',@isnumeric);
 % Optional display and I/O params
 p.addParameter('verbose',true,@islogical);
 p.addParameter('showPlots',false,@islogical);
+p.addParameter('savePlots',true,@islogical);
 
 % Optional environment params
 p.addParameter('tbSnapshot',[],@(x)(isempty(x) | isstruct(x)));
@@ -304,14 +305,26 @@ for ii=1:length(targetFiles)
     save(outCameraPositionFile,'relativeCameraPosition');
     
     % Plot the relativeCameraPosition variables
-    if p.Results.showPlots
-        figure('Name',acquisitionRootName);
+    if p.Results.showPlots || p.Results.savePlots
+        if p.Results.showPlots
+            plotFig = figure('Name',acquisitionRootName);
+        else
+            plotFig = figure('Name',acquisitionRootName,'Visible','off');
+        end
         plot(relativeCameraPosition.values(1,:));
         hold on
         plot(relativeCameraPosition.values(2,:));
         plot(relativeCameraPosition.values(3,:));
         ylim([-4 4]);
         legend({'left->right','down->up','further->closer'})
+        title(['Head motion at corneal apex - ' acquisitionRootName],'Interpreter','none');
+        xlabel('time [frames]');
+        ylabel('translation [mm]');
+        if p.Results.savePlots
+            tmp = [videoAcqStemName '_relativeCameraPosition_QA.pdf'];
+            print(plotFig,tmp,'-dpdf');
+            close(plotFig)
+        end
     end
     
     % Report completion of this step
