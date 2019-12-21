@@ -21,7 +21,8 @@ gearName = 'hcp-func';
 scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
 resultSaveDirStem = fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),'deriveCameraPositionFromHeadMotion');
 outputFileSuffix = '_hcpfunc.zip';
-resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/EPItoT1w.dat'};
+resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','MotionMatrices','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/T1w_acpc_dc_restore_brain.nii.gz'};
+resultIsDir = [0 0 1 0];
 
 devNull = ' >/dev/null';
 
@@ -53,7 +54,7 @@ for ii = 1:numel(analyses)
     thisSession = fw.getSession(thisAnalysis.parent.id);
     sessionLabelIdx = startsWith(thisSession.label,sessionLabelPrefix);
     
-    % This is not the session you are looking for: move along, move along.
+    % This is not the session you are looking for; move along, move along.
     if sum(sessionLabelIdx)==0
         continue
     end
@@ -97,7 +98,7 @@ for ii = 1:numel(analyses)
     % Download the matching file to the rootSaveDir. This can take a while
     zipFileName = fw.downloadOutputFromAnalysis(thisAnalysis.id,thisName,fullfile(scratchSaveDir,thisName));
     
-    % Unzip the downloaded file; overwright existing; pipe the terminal
+    % Unzip the downloaded file; overwrite existing; pipe the terminal
     % output to dev/null
     command = ['unzip -o -a ' zipFileName ' -d ' zipFileName '_unzip' devNull];
     system(command);
@@ -114,6 +115,11 @@ for ii = 1:numel(analyses)
     for jj=1:length(resultFileSuffix)
         dirCommand = [zipFileName '_unzip/**/' resultFileSuffix{jj}];
         targetFiles = dir(dirCommand);
+        if resultIsDir(jj)
+            targetFiles = targetFiles(1);
+            targetFiles.name = resultFileSuffix{jj};
+            targetFiles.folder = strrep(targetFiles.folder,[filesep resultFileSuffix{jj}],'');
+        end
         sourceFile = fullfile(targetFiles(1).folder,targetFiles(1).name);
         destinationFile = fullfile(resultSaveDirStem,sessionLabelReplacement{sessionLabelIdx},[saveStem '_' targetFiles(1).name]);
         copyfile(sourceFile,destinationFile);
