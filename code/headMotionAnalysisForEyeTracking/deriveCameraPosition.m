@@ -39,7 +39,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %
 %   At a high level, the processing steps for a given acquisition for a
 %   given subject are:
-%       
+%
 %     - Given the right eye surface coordinate in T1 space, project that
 %       coordinate to the EPI space for this subject/acqusition. This is
 %       done by using FLIRT to calculate the affine transformation for
@@ -107,13 +107,13 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %                           files.
 %  'epiVoxelSizeMm'       - Scalar. Size of the EPI voxels.
 %  'msecsTR'              - Scalar. TR of the fMRI data.
-%  't1Dims'               - 1x3 vector. Dimensions of the T1 image as 
+%  't1Dims'               - 1x3 vector. Dimensions of the T1 image as
 %                           expressed in Flywheel viewer
 %
 % Outputs
 %   none
 %
-% 
+%
 % Examples:
 %{
     % One subject with plots
@@ -202,6 +202,7 @@ p.addParameter('fslBinDir','/usr/local/fsl/bin/',@ischar);
 p.addParameter('epiVoxelSizeMm', 2, @isscalar);
 p.addParameter('msecsTR', 800, @isscalar);
 p.addParameter('t1Dims', [227 272 227], @isnumeric);
+p.addParameter('rmseThreshold', 3, @isnumeric);
 
 
 %% Parse and check the parameters
@@ -228,7 +229,7 @@ for ii=1:length(targetFiles)
     % Get the root name for this acquisition
     acquisitionRootName = strsplit(targetFiles(ii).name,'_Scout_gdc.nii.gz');
     acquisitionRootName = acquisitionRootName{1};
-
+    
     % Assemble the file strings
     scoutFile = fullfile(targetFiles(ii).folder,targetFiles(ii).name);
     t1FileName = fullfile(targetFiles(ii).folder,[acquisitionRootName '_T1w_acpc_dc_restore_brain.nii.gz']);
@@ -238,7 +239,8 @@ for ii=1:length(targetFiles)
     eyeVoxelScoutFile = fullfile(p.Results.scratchSaveDir,[p.Results.subject '_ScoutSpaceEyeCoord_' num2str(tic()) '.nii.gz']);
     infoFile = fullfile(targetFiles(ii).folder,[acquisitionRootName '_sessionInfo.mat']);
     motionMatricesDir = fullfile(targetFiles(ii).folder,[acquisitionRootName '_MotionMatrices']);
-
+    moveRegressorsFile = fullfile(targetFiles(ii).folder,[acquisitionRootName '_Movement_Regressors.txt']);
+    
     % Create an affine transform between the T1 and Scout spaces
     command = [p.Results.fslBinDir 'flirt' ...
         ' -in ' escapeFileCharacters(t1FileName) ...
@@ -247,12 +249,12 @@ for ii=1:length(targetFiles)
         ' -out ' escapeFileCharacters(t12ScoutFileName) ...
         ' -dof 6' ...
         ];
-
+    
     system([fslSetUp command devNull]);
     
     % Create a right eye corneal surface coordinate in the T1 space. Placed
     % in an eval function to silence console output
-    evalc('eyeVoxelT1 = MRIread(escapeFileCharacters(t1FileName));');    
+    evalc('eyeVoxelT1 = MRIread(escapeFileCharacters(t1FileName));');
     eyeVoxelT1.vol = eyeVoxelT1.vol.*0;
     
     % Place a point in the T1 volume corresponding to the right cornea The
@@ -262,7 +264,7 @@ for ii=1:length(targetFiles)
     % IPR.
     coordSAL = cornealCoord;
     coordIPR = p.Results.t1Dims - coordSAL;
-
+    
     % In matlab, the eyeVoxelT1.vol dimensions are posterior-anterior,
     % right-left, inferior-superior (PRI). Although the coordinates are
     % ostensibly one-indexed in the FLywheel viewer, we find we have to add
@@ -273,33 +275,37 @@ for ii=1:length(targetFiles)
     
     % Save the volume in a tmp location
     MRIwrite(eyeVoxelT1,escapeFileCharacters(eyeVoxelT1File));
-
+    
     % Project the eyeVoxelT1 to the Scout_gdc space
     command = [p.Results.fslBinDir 'flirt' ...
         ' -in ' escapeFileCharacters(eyeVoxelT1File) ...
         ' -ref ' escapeFileCharacters(scoutFile) ...
         ' -applyxfm -init ' escapeFileCharacters(affineRegFile) ...
         ' -out ' escapeFileCharacters(eyeVoxelScoutFile) ...
-        ];
-
+        ];    
     system([fslSetUp command devNull]);
-      
+    
     % Load the resulting volume
     evalc('eyeVoxelScout = MRIread(escapeFileCharacters(eyeVoxelScoutFile));');
     
+    % Get the dimensions of the scout volume
+    scoutDims = size(eyeVoxelScout.vol);
+    
     % Find the eye voxel coordinate. This will be in PRI orientation
     [~,ind] = max(eyeVoxelScout.vol(:));
-    [eyeVoxelPRI(1), eyeVoxelPRI(2), eyeVoxelPRI(3)] = ind2sub(size(eyeVoxelScout.vol),ind);
+    [eyeVoxelPRI(1), eyeVoxelPRI(2), eyeVoxelPRI(3)] = ind2sub(scoutDims,ind);
     
     % Find the position of the eyeVoxel in mm relative to the [0 0 0]
     % coordinate position, as this is what is used by MCFLIRT to produce
-    % the head motion matrices
-    eyeVoxelPRImm = eyeVoxelPRI .* p.Results.epiVoxelSizeMm;
+    % the motion matrices. Need to find out if MCFLIRT has the origin in
+    % the center or edge of the [0 0 0] voxel. Currently assumes the
+    % center.
+    eyeVoxelPRImm = (eyeVoxelPRI - [1 1 1]) .* p.Results.epiVoxelSizeMm;
     
     % Covert dimension order from PRI to RPI, as this is the order of
     % dimensions for the rotation matrices.
     eyeVoxelRPImm = eyeVoxelPRImm([2 1 3]);
-    
+            
     % Determine the corresponding video acquisition stem
     dataLoad = load(infoFile);
     sessionInfo = dataLoad.sessionInfo;
@@ -320,7 +326,7 @@ for ii=1:length(targetFiles)
         sessionInfo.date = '042617a';
     end
     
-    % Convert the rootName format of the run number    
+    % Convert the rootName format of the run number
     tmpString = strsplit(acquisitionRootName,[sessionInfo.subject '_' ]);
     tmpString = tmpString{2};
     tmpString = strrep(tmpString,'run1','run01');
@@ -336,9 +342,30 @@ for ii=1:length(targetFiles)
     % Create the relativeCameraPosition
     relativeCameraPosition = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
     
+    % Rotate the relativeCameraPosition to best match the pupilData. The
+    % relativeCamera position variable is calculated from head motion
+    % relative to the coordinate frame of the Scout image. The camera is
+    % not necessarily aligned with this coordinate frame, as the head may
+    % be tilted. Consider the case in which the camera is positioned to
+    % the side of the head, aimed towards the eyes. In this case,
+    % horizontal head movements (w.r.t. the Scout coordinate frame) will
+    % not produce any change in the location of the pupil center in the
+    % camea coordinate frame. To accout for this, we identify the rotation
+    % (and scaling) of the camera RL and IS positions that best match the
+    % change in location in the RL and IS pupil centers over the course of
+    % the acquisition.
+    % We also compute the small shift in time that best matches the head
+    % and camera motion measurements
+    maxFrameShift = ((p.Results.msecsTR/1000)*60)/2;
+    [relativeCameraPosition, scoutToImageTransformMatrix, pixelsPerMm, scoutToImageTheta, frameShift] = ...
+        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift);
+    
     % add meta data
     relativeCameraPosition.meta = p.Results;
     relativeCameraPosition.meta.sessionInfo = sessionInfo;
+    relativeCameraPosition.meta.scoutToImageTransformMatrix = scoutToImageTransformMatrix;
+    relativeCameraPosition.meta.scoutToImageTheta = scoutToImageTheta;
+    relativeCameraPosition.meta.pixelsPerMm = pixelsPerMm;
     
     % Save the relativeCameraPosition variable
     outCameraPositionFile = [videoAcqStemName '_relativeCameraPosition.mat'];
@@ -357,7 +384,10 @@ for ii=1:length(targetFiles)
         plot(relativeCameraPosition.values(3,:));
         ylim([-4 4]);
         legend({'left->right','down->up','further->closer'})
-        title(['Head motion at corneal apex - ' acquisitionRootName],'Interpreter','none');
+        tLine1 = ['Relative camera position - ' acquisitionRootName ];
+        tLine2 = ['theta [deg] = ' num2str(scoutToImageTheta) '; pixelsPerMm = ' num2str(pixelsPerMm) '; frameShift = ' num2str(frameShift)];
+        tString = {tLine1,tLine2};
+        title(tString,'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [mm]');
         if p.Results.savePlots
@@ -388,13 +418,23 @@ end % deriveCameraPosition
 
 function relativeCameraPosition = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
 
+% Load the head motion regressors
 numTRs = length(motionMats);
 eyePositionRPImm = nan(numTRs,3);
 
-% Loop over TRs
+% For each TR, we obtain the inverse of the motion matrix, which is then
+% used to project where the eye voxel (in Scout space) was located in space
+% with respect to the Scout coordinate system at each TR.
 for ii = 1:numTRs
+    
+    % Get the inverse of this matrix
+    m = motionMats{ii};
+    mPrime = m;
+    mPrime(1:3,4) = -inv(m(1:3,1:3)) * m(1:3,4);
+    mPrime(1:3,1:3)=inv(m(1:3,1:3));
+        
     % Rotate the eye position
-    newEyePosition = motionMats{ii} * [eyeVoxelRPImm 1]';
+    newEyePosition = mPrime * [eyeVoxelRPImm 1]';
     
     % Store the newEyePosition
     eyePositionRPImm(ii,:)=newEyePosition(1:3);
@@ -451,10 +491,10 @@ nElementsPost = nElementsPost-trim;
 %    |    .-.
 % -Z |   |   | <- Head
 %    +   `^u^'
-% +Z |      
-%    |      
+% +Z |
+%    |
 %    |      W <- Camera    (As seen from above)
-%    V     
+%    V
 %
 %     <-----+----->
 %        -X   +X
@@ -463,19 +503,19 @@ nElementsPost = nElementsPost-trim;
 % +Y = up
 % +Z = front (towards the camera)
 %
-% Thus, if the eye moved from the subject's left to the subject's right (a positive change in the RPI coordinate frame),
-% this corresponds to a movement of the camera towards +X in the world
-% coordinate system. A movement of the eye from the subject's posterior to
-% the subject's anterior (a positive change in the RPI coordinate frame)
-% corresponds to the camera moving towards a more negative position (i.e.,
-% close towards the cornea).
+% Thus:
+% - Displacement of the eye from (subject's) right --> left (+ in RPI)
+%   corresponds to -X camera movement in world coordinates
+% - Disolacement of the eye from (subject's) posterior --> anterior (+ in
+%   RPI) corresponds to -Z movement of the camera.
+% - Displacement of the eye from the (subject's) inferior --> superior (+
+%   in RPI) corresponds to -Y movement of the camera.
 %
-% The scanner coordinates x,y,z correspond to right-left,
-% posterior-anterior, inferior-superior. The camera world coordinates are
-% x,y,z corresponding to right-left, down-up, back-front (towards the
-% camera).
+% The scanner coordinates x,y,z correspond to right-left, posterior-
+% anterior, inferior-superior. The camera world coordinates are x,y,z
+% corresponding to right-left, down-up, back-front (towards the camera).
 scanToCameraCoords = [1,3,2];
-scanToCameraSign = [1,-1,1];
+scanToCameraSign = [-1,-1,1];
 
 % Loop over the world coordinate dimensions and create the relative camera
 % position vector, with a length equal to the timebase of the video
@@ -490,6 +530,85 @@ end
 
 end
 
+
+function [adjustedRelativeCameraPosition, R, S, theta, shiftVal] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
+
+% Load the pupilData
+load([videoAcqStemName '_pupil.mat'],'pupilData');
+
+% Find the "good" frames
+goodIdx = pupilData.initial.ellipses.RMSE < rmseThreshold;
+
+% Create a matrix of xy locations of the pupil center
+B = [pupilData.initial.ellipses.values(goodIdx,1), ...
+    pupilData.initial.ellipses.values(goodIdx,2)]';
+B = B-B(:,1);
+
+% Create a matrix of x'y' locations of the camera in the Scout coordinate
+% frame
+A = [relativeCameraPosition.values(1,goodIdx)', ...
+    relativeCameraPosition.values(2,goodIdx)']';
+
+% Find the rotation that best matches head motion and pupil position
+regParams = absor(A,B,'doScale',true,'weights',1./pupilData.initial.ellipses.RMSE(goodIdx));
+R = regParams.R;
+S = regParams.s;
+
+% Apply the rotation component to the camera position values
+adjustedRelativeCameraPosition = relativeCameraPosition;
+for ii = 1:size(relativeCameraPosition.values,2)
+    v = relativeCameraPosition.values(1:2,ii);
+    vPrime = R*v;
+    adjustedRelativeCameraPosition.values(1:2,ii)=vPrime;
+end
+
+% Now find the small temporal shift that best matches the pupil and head
+% motion vectors
+frameShifts = -maxFrameShift:maxFrameShift;
+corrVals = nan(size(frameShifts));
+for tt = 1:length(frameShifts)
+    cameraX = adjustedRelativeCameraPosition.values(1,:);
+    cameraX(~goodIdx)=nan;
+    cameraY = adjustedRelativeCameraPosition.values(2,:);
+    cameraY(~goodIdx)=nan;
+    cameraX = circshift(cameraX',frameShifts(tt));
+    cameraY = circshift(cameraY',frameShifts(tt));
+    if frameShifts(tt)<0
+        cameraX(end+frameShifts(tt):end)=nan;
+        cameraY(end+frameShifts(tt):end)=nan;
+    end
+    if frameShifts(tt)>0
+        cameraX(1:frameShifts(tt))=nan;
+        cameraY(1:frameShifts(tt))=nan;
+    end    
+    corrVals(tt) = mean([...
+        corr(cameraX,pupilData.initial.ellipses.values(:,1),'Rows','pairwise'), ...
+        corr(cameraY,pupilData.initial.ellipses.values(:,2),'Rows','pairwise') ...
+        ]);
+end
+
+% Apply the best frame shift
+[~,idx] = max(corrVals);
+shiftVal = frameShifts(idx);
+for dd = 1:3
+    adjustedRelativeCameraPosition.values(dd,:) = ...
+        circshift(adjustedRelativeCameraPosition.values(dd,:),shiftVal);
+    if shiftVal<0
+        adjustedRelativeCameraPosition.values(dd,end+shiftVal:end)=0;
+    end
+    if shiftVal>0
+        adjustedRelativeCameraPosition.values(dd,1:shiftVal)=0;
+    end
+end
+
+% Store theta, and place in the -180 : 180 range
+theta = regParams.theta;
+if theta > 180
+    theta = theta - 360;
+end
+
+
+end
 
 
 function nameOut = escapeFileCharacters(nameIn)
