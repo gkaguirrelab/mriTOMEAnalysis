@@ -363,15 +363,12 @@ for ii=1:length(targetFiles)
     % We also compute the small shift in time that best matches the head
     % and camera motion measurements
     maxFrameShift = ((p.Results.msecsTR/1000)*60)/2;
-    [relativeCameraPosition, scoutToImageTransformMatrix, pixelsPerMm, scoutToImageTheta, frameShift] = ...
+    [relativeCameraPosition, adjustParams] = ...
         alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift);
     
     % add meta data
     relativeCameraPosition.meta = p.Results;
     relativeCameraPosition.meta.sessionInfo = sessionInfo;
-    relativeCameraPosition.meta.scoutToImageTransformMatrix = scoutToImageTransformMatrix;
-    relativeCameraPosition.meta.scoutToImageTheta = scoutToImageTheta;
-    relativeCameraPosition.meta.pixelsPerMm = pixelsPerMm;
     
     % Save the relativeCameraPosition variable
     outCameraPositionFile = [videoAcqStemName '_relativeCameraPosition.mat'];
@@ -392,7 +389,7 @@ for ii=1:length(targetFiles)
         ylim([-4 4]);
         legend({'+right','+up','+further'})
         tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
-        tLine2 = ['theta [deg] = ' num2str(scoutToImageTheta) '; pixelsPerMm = ' num2str(pixelsPerMm) '; frameShift = ' num2str(frameShift)];
+        tLine2 = ['theta [deg] = ' num2str(adjustParams(2)) '; pixelsPerMm = ' num2str(adjustParams(3)) '; frameShift = ' num2str(adjustParams(1))];
         tString = {tLine1,tLine2};
         title(tString,'Interpreter','none');
         xlabel('time [frames]');
@@ -552,83 +549,78 @@ end
 end
 
 
-function [adjustedRelativeCameraPosition, R, S, theta, shiftVal] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
+function [adjustedRelativeCameraPosition, adjustParams] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
 
 % Load the pupilData
 load([videoAcqStemName '_pupil.mat'],'pupilData');
 
-% Find the "good" frames
-goodIdx = pupilData.initial.ellipses.RMSE < rmseThreshold;
+% Load the timebase
+load([videoAcqStemName '_timebase.mat'],'timebase');
 
-% Create a matrix of xy locations of the pupil center. We have to invert
-% that value of the x dimension so that the rotation matrix will not flip
-% this around.
-B = [-pupilData.initial.ellipses.values(goodIdx,1), ...
+% Find the "good" frames after the start of the scan
+[~,startFrame] = min(abs(timebase.values));
+goodIdx = logical(double(pupilData.initial.ellipses.RMSE < rmseThreshold) .* ...
+    (timebase.values > startFrame));
+
+% Create a matrix of xy locations of the pupil center.
+B = [pupilData.initial.ellipses.values(goodIdx,1), ...
     pupilData.initial.ellipses.values(goodIdx,2)]';
-B = B-B(:,1);
+
+% Create weight vector
+weights = 1./pupilData.initial.ellipses.RMSE(goodIdx)';
+
+% Set the pupilCenter position to be relative to the mean position prior to
+% time zero
+notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:startFrame)));
+w = 1./pupilData.initial.ellipses.RMSE(notNanIdx);
+refCenter = mean(w.*pupilData.initial.ellipses.values(notNanIdx,1:2))';
+B = B-refCenter;
+
+% We have to invert the value of the x dimension of B so that the rotation
+% matrix will not flip this around.
+B(1,:) = -B(1,:);
 
 % Create a matrix of x'y' locations of the camera in the Scout coordinate
 % frame
-A = [relativeCameraPosition.values(1,goodIdx)', ...
-    relativeCameraPosition.values(2,goodIdx)']';
+A = [relativeCameraPosition.values(1,:)', ...
+    relativeCameraPosition.values(2,:)']';
 
-% Find the rotation that best matches head motion and pupil position
-regParams = absor(A,B,'doScale',true,'weights',1./pupilData.initial.ellipses.RMSE(goodIdx));
-R = regParams.R;
-S = regParams.s;
+% Set up some anonymous functions for the fit
+R = @(theta) [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
+modelAtIdx = @(vec) vec(:,goodIdx);
+pupilPositionFit = @(p) (censorShift(A,p(1))'*R(p(2)).*p(3))';
+myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
 
-% Apply the rotation component to the camera position values
+% Perform the fit. The parameters ae in the order of:
+%   adjustParams(1) = frame shift
+%   adjustParams(2) = theta (deg)
+%   adjustParams(3) = scale (pixelsPerMm)
+options = optimoptions(@fmincon,...
+    'Display','off');
+adjustParams = fmincon(myObj,[0 0 10],[],[],[],[],[-maxFrameShift -22.5 10],[+maxFrameShift 22.5 20],[],options);
+
+% Obtain the adjustedRelativeCameraPosition
+pupilPositionFitNoScale = @(p) (censorShift(A,p(1))'*R(p(2)))';
+fitResult = pupilPositionFitNoScale(adjustParams);
 adjustedRelativeCameraPosition = relativeCameraPosition;
-for ii = 1:size(relativeCameraPosition.values,2)
-    v = relativeCameraPosition.values(1:2,ii);
-    vPrime = R*v;
-    adjustedRelativeCameraPosition.values(1:2,ii)=vPrime;
+adjustedRelativeCameraPosition.values(1,:) = fitResult(1,:);
+adjustedRelativeCameraPosition.values(2,:) = fitResult(2,:);
+adjustedRelativeCameraPosition.meta.adjustParams = adjustParams;
+
 end
 
-% Now find the small temporal shift that best matches the pupil and head
-% motion vectors
-frameShifts = -maxFrameShift:maxFrameShift;
-corrVals = nan(size(frameShifts));
-for tt = 1:length(frameShifts)
-    cameraX = adjustedRelativeCameraPosition.values(1,:);
-    cameraX(~goodIdx)=nan;
-    cameraY = adjustedRelativeCameraPosition.values(2,:);
-    cameraY(~goodIdx)=nan;
-    cameraX = circshift(cameraX',frameShifts(tt));
-    cameraY = circshift(cameraY',frameShifts(tt));
-    if frameShifts(tt)<0
-        cameraX(end+frameShifts(tt):end)=nan;
-        cameraY(end+frameShifts(tt):end)=nan;
-    end
-    if frameShifts(tt)>0
-        cameraX(1:frameShifts(tt))=nan;
-        cameraY(1:frameShifts(tt))=nan;
-    end    
-    corrVals(tt) = mean([...
-        corr(cameraX,pupilData.initial.ellipses.values(:,1),'Rows','pairwise','Type','Spearman'), ...
-        corr(cameraY,pupilData.initial.ellipses.values(:,2),'Rows','pairwise','Type','Spearman') ...
-        ]);
-end
 
-% Apply the best frame shift
-[~,idx] = max(corrVals);
-shiftVal = frameShifts(idx);
-for dd = 1:3
-    adjustedRelativeCameraPosition.values(dd,:) = ...
-        circshift(adjustedRelativeCameraPosition.values(dd,:),shiftVal);
-    if shiftVal<0
-        adjustedRelativeCameraPosition.values(dd,end+shiftVal:end)=0;
+function vecOut = censorShift(vecIn,frameShift)
+for jj = 1:size(vecIn,1)
+    vecOut(jj,:) = fshift(vecIn(jj,:),frameShift);
+    if frameShift<0
+        vecOut(jj,end+round(frameShift):end)=nan;
     end
-    if shiftVal>0
-        adjustedRelativeCameraPosition.values(dd,1:shiftVal)=0;
+    if frameShift>0
+        vecOut(jj,1:round(frameShift))=nan;
     end
 end
-
-% Store theta
-theta = regParams.theta;
-
 end
-
 
 function nameOut = escapeFileCharacters(nameIn)
 % Sanitize file strings to be used in system commands
