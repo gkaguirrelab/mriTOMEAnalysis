@@ -167,6 +167,9 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3046', [190 25 161]  ...
                 };
     for ii=1:size(dataArray,1)
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure')
+    end
+    for ii=1:size(dataArray,1)
         deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli')
     end
 %}
