@@ -342,6 +342,9 @@ for ii=1:length(targetFiles)
     % Create the relativeCameraPosition
     relativeCameraPosition = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
     
+    % Store the pre-rotated relativeCameraPosition
+    preRotateRelativeCameraPosition = relativeCameraPosition;
+    
     % Rotate the relativeCameraPosition to best match the pupilData. The
     % relativeCamera position variable is calculated from head motion
     % relative to the coordinate frame of the Scout image. The camera is
@@ -378,18 +381,33 @@ for ii=1:length(targetFiles)
         else
             plotFig = figure('Name',acquisitionRootName,'Visible','off');
         end
+        subplot(2,1,1)        
         plot(relativeCameraPosition.values(1,:));
         hold on
         plot(relativeCameraPosition.values(2,:));
         plot(relativeCameraPosition.values(3,:));
         ylim([-4 4]);
-        legend({'left->right','down->up','further->closer'})
-        tLine1 = ['Relative camera position - ' acquisitionRootName ];
+        legend({'+right','+up','+further'})
+        tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
         tLine2 = ['theta [deg] = ' num2str(scoutToImageTheta) '; pixelsPerMm = ' num2str(pixelsPerMm) '; frameShift = ' num2str(frameShift)];
         tString = {tLine1,tLine2};
         title(tString,'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [mm]');
+
+        subplot(2,1,2)        
+        plot(preRotateRelativeCameraPosition.values(1,:));
+        hold on
+        plot(preRotateRelativeCameraPosition.values(2,:));
+        plot(preRotateRelativeCameraPosition.values(3,:));
+        ylim([-4 4]);
+        legend({'+right','+up','+further'})
+        tLine1 = ['Pre-rotation camera position'];
+        tString = {tLine1};
+        title(tString,'Interpreter','none');
+        xlabel('time [frames]');
+        ylabel('translation [mm]');
+
         if p.Results.savePlots
             tmp = [videoAcqStemName '_relativeCameraPosition_QA.pdf'];
             print(plotFig,tmp,'-dpdf');
@@ -515,7 +533,7 @@ nElementsPost = nElementsPost-trim;
 % anterior, inferior-superior. The camera world coordinates are x,y,z
 % corresponding to right-left, down-up, back-front (towards the camera).
 scanToCameraCoords = [1,3,2];
-scanToCameraSign = [-1,-1,1];
+scanToCameraSign = [1,-1,1];
 
 % Loop over the world coordinate dimensions and create the relative camera
 % position vector, with a length equal to the timebase of the video
@@ -539,8 +557,10 @@ load([videoAcqStemName '_pupil.mat'],'pupilData');
 % Find the "good" frames
 goodIdx = pupilData.initial.ellipses.RMSE < rmseThreshold;
 
-% Create a matrix of xy locations of the pupil center
-B = [pupilData.initial.ellipses.values(goodIdx,1), ...
+% Create a matrix of xy locations of the pupil center. We have to invert
+% that value of the x dimension so that the rotation matrix will not flip
+% this around.
+B = [-pupilData.initial.ellipses.values(goodIdx,1), ...
     pupilData.initial.ellipses.values(goodIdx,2)]';
 B = B-B(:,1);
 
@@ -582,8 +602,8 @@ for tt = 1:length(frameShifts)
         cameraY(1:frameShifts(tt))=nan;
     end    
     corrVals(tt) = mean([...
-        corr(cameraX,pupilData.initial.ellipses.values(:,1),'Rows','pairwise'), ...
-        corr(cameraY,pupilData.initial.ellipses.values(:,2),'Rows','pairwise') ...
+        corr(cameraX,pupilData.initial.ellipses.values(:,1),'Rows','pairwise','Type','Spearman'), ...
+        corr(cameraY,pupilData.initial.ellipses.values(:,2),'Rows','pairwise','Type','Spearman') ...
         ]);
 end
 
@@ -601,12 +621,8 @@ for dd = 1:3
     end
 end
 
-% Store theta, and place in the -180 : 180 range
+% Store theta
 theta = regParams.theta;
-if theta > 180
-    theta = theta - 360;
-end
-
 
 end
 
