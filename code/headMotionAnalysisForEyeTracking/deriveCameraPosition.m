@@ -363,7 +363,7 @@ for ii=1:length(targetFiles)
     % We also compute the small shift in time that best matches the head
     % and camera motion measurements
     maxFrameShift = ((p.Results.msecsTR/1000)*60)/2;
-    [relativeCameraPosition, adjustParams] = ...
+    [relativeCameraPosition, adjustParams, pupilPositions, pupilPositionsFit, goodFrameIdx] = ...
         alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift);
     
     % add meta data
@@ -381,32 +381,56 @@ for ii=1:length(targetFiles)
         else
             plotFig = figure('Name',acquisitionRootName,'Visible','off');
         end
-        subplot(2,1,1)        
+        subplot(3,1,1)
+        nFrames = size(pupilPositionsFit,2);
+        plot(1:nFrames,zeros(1,nFrames),':','color',[0.2 0.2 0.2]);
+        hold on
+        h = scatter(find(goodFrameIdx),pupilPositions(1,:),1,'MarkerFaceColor','b','MarkerEdgeColor','none'); 
+        h.MarkerFaceAlpha = .025;
+        plot(1:nFrames,pupilPositionsFit(1,:),'-','color',[0.5 0.5 1]);
+        h = scatter(find(goodFrameIdx),pupilPositions(2,:),1,'MarkerFaceColor','r','MarkerEdgeColor','none'); 
+        h.MarkerFaceAlpha = .025;
+        plot(1:nFrames,pupilPositionsFit(2,:),'-','color',[1 0.5 0.5]);
+        corrX = corr(pupilPositionsFit(1,goodFrameIdx)',pupilPositions(1,:)','Rows','pairwise');
+        corrY = corr(pupilPositionsFit(2,goodFrameIdx)',pupilPositions(2,:)','Rows','pairwise');
+        ylim([-150 150]);
+        legend({'reference','+right (data)','+right (fit)','+up (data)','+up (fit)'},'Location','eastoutside')
+        title(['Pupil position vs camera translation, corr = [ ' num2str(corrX) ', ' num2str(corrY) ' ]'],'Interpreter','none');
+        xlabel('time [frames]');
+        ylabel('translation [pixels]');
+        box off
+        legend boxoff
+        
+        subplot(3,1,2)        
         plot(relativeCameraPosition.values(1,:));
         hold on
         plot(relativeCameraPosition.values(2,:));
         plot(relativeCameraPosition.values(3,:));
-        ylim([-4 4]);
-        legend({'+right','+up','+further'})
+        ylim([-5 5]);
+        legend({'+right','+up','+further'},'Location','eastoutside')
         tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
         tLine2 = ['theta [deg] = ' num2str(adjustParams(2)) '; pixelsPerMm = ' num2str(adjustParams(3)) '; frameShift = ' num2str(adjustParams(1))];
         tString = {tLine1,tLine2};
         title(tString,'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [mm]');
-
-        subplot(2,1,2)        
+        box off
+        legend boxoff
+        
+        subplot(3,1,3)        
         plot(preRotateRelativeCameraPosition.values(1,:));
         hold on
         plot(preRotateRelativeCameraPosition.values(2,:));
         plot(preRotateRelativeCameraPosition.values(3,:));
-        ylim([-4 4]);
-        legend({'+right','+up','+further'})
+        ylim([-5 5]);
+        legend({'+right','+up','+further'},'Location','eastoutside')
         tLine1 = ['Pre-rotation camera position'];
         tString = {tLine1};
         title(tString,'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [mm]');
+        box off
+        legend boxoff
 
         if p.Results.savePlots
             tmp = [videoAcqStemName '_relativeCameraPosition_QA.pdf'];
@@ -549,7 +573,7 @@ end
 end
 
 
-function [adjustedRelativeCameraPosition, adjustParams] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
+function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
 
 % Load the pupilData
 load([videoAcqStemName '_pupil.mat'],'pupilData');
@@ -573,7 +597,8 @@ weights = 1./pupilData.initial.ellipses.RMSE(goodIdx)';
 % time zero
 notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:startFrame)));
 w = 1./pupilData.initial.ellipses.RMSE(notNanIdx);
-refCenter = mean(w.*pupilData.initial.ellipses.values(notNanIdx,1:2))';
+w = w./sum(w);
+refCenter = sum(w.*pupilData.initial.ellipses.values(notNanIdx,1:2))';
 B = B-refCenter;
 
 % We have to invert the value of the x dimension of B so that the rotation
@@ -598,6 +623,9 @@ myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weigh
 options = optimoptions(@fmincon,...
     'Display','off');
 adjustParams = fmincon(myObj,[0 0 10],[],[],[],[],[-maxFrameShift -22.5 10],[+maxFrameShift 22.5 20],[],options);
+
+% Obtain and save the model fit
+Bfit = pupilPositionFit(adjustParams);
 
 % Obtain the adjustedRelativeCameraPosition
 pupilPositionFitNoScale = @(p) (censorShift(A,p(1))'*R(p(2)))';
