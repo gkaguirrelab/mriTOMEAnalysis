@@ -120,6 +120,10 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
     deriveCameraPosition('TOME_3011',[188 32 158],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true)
 %}
 %{
+    % One subject with plots
+    deriveCameraPosition('TOME_3032',[192 35 155],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
+%}
+%{
     % The coords were obtained within the Flywheel image viewer for the
     % right cornea from the T1w_acpc_dc_restore.nii.gz image.
     dataArray = {...
@@ -619,13 +623,13 @@ modelAtIdx = @(vec) vec(:,goodIdx);
 pupilPositionFit = @(p) (censorShift(A,p(1))'*R(p(2)).*p(3))';
 myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
 
-% Perform the fit. The parameters ae in the order of:
+% Perform the fit. The parameters are in the order of:
 %   adjustParams(1) = frame shift
 %   adjustParams(2) = theta (deg)
 %   adjustParams(3) = scale (pixelsPerMm)
 options = optimoptions(@fmincon,...
     'Display','off');
-adjustParams = fmincon(myObj,[0 0 10],[],[],[],[],[-maxFrameShift -22.5 10],[+maxFrameShift 22.5 20],[],options);
+adjustParams = fmincon(myObj,[0 0 10],[],[],[],[],[-maxFrameShift -22.5 5],[+maxFrameShift 22.5 40],[],options);
 
 % Obtain and save the model fit
 Bfit = pupilPositionFit(adjustParams);
