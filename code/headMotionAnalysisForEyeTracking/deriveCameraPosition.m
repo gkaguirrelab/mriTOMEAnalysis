@@ -394,7 +394,8 @@ for ii=1:length(targetFiles)
         corrX = corr(pupilPositionsFit(1,goodFrameIdx)',pupilPositions(1,:)','Rows','pairwise');
         corrY = corr(pupilPositionsFit(2,goodFrameIdx)',pupilPositions(2,:)','Rows','pairwise');
         ylim([-150 150]);
-        legend({'reference','+right (data)','+right (fit)','+up (data)','+up (fit)'},'Location','eastoutside')
+        xlim([0 ceil(nFrames/1000)*1000]);
+        legend({'ref','+right','+right','+up','+up'},'Location','eastoutside')
         title(['Pupil position vs camera translation, corr = [ ' num2str(corrX) ', ' num2str(corrY) ' ]'],'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [pixels]');
@@ -407,6 +408,7 @@ for ii=1:length(targetFiles)
         plot(relativeCameraPosition.values(2,:));
         plot(relativeCameraPosition.values(3,:));
         ylim([-5 5]);
+        xlim([0 ceil(nFrames/1000)*1000]);
         legend({'+right','+up','+further'},'Location','eastoutside')
         tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
         tLine2 = ['theta [deg] = ' num2str(adjustParams(2)) '; pixelsPerMm = ' num2str(adjustParams(3)) '; frameShift = ' num2str(adjustParams(1))];
@@ -423,6 +425,7 @@ for ii=1:length(targetFiles)
         plot(preRotateRelativeCameraPosition.values(2,:));
         plot(preRotateRelativeCameraPosition.values(3,:));
         ylim([-5 5]);
+        xlim([0 ceil(nFrames/1000)*1000]);
         legend({'+right','+up','+further'},'Location','eastoutside')
         tLine1 = ['Pre-rotation camera position'];
         tString = {tLine1};
