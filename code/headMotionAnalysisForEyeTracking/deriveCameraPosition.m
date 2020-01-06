@@ -117,7 +117,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 % Examples:
 %{
     % One subject with plots
-    deriveCameraPosition('TOME_3011',[188 32 158],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true)
+    deriveCameraPosition('TOME_3002',[188 32 158],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true)
 %}
 %{
     % One subject with plots
@@ -170,11 +170,15 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3045', [187 29 155]; ...
                 'TOME_3046', [190 25 161]  ...
                 };
+    preScanFixFlagSess1 = false(1,42);
+    preScanFixFlagSess2 = true(1,42);
+    preScanFixFlagSess2([1 2 3 4 5 6 7 8 9 11]) = false;
+
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure')
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1(ii))
     end
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli')
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli','preScanFixFlag',preScanFixFlagSess2(ii))
     end
 %}
 
@@ -210,6 +214,7 @@ p.addParameter('epiVoxelSizeMm', 2, @isscalar);
 p.addParameter('msecsTR', 800, @isscalar);
 p.addParameter('t1Dims', [227 272 227], @isnumeric);
 p.addParameter('rmseThreshold', 3, @isnumeric);
+p.addParameter('preScanFixFlag', true, @islogical);
 
 
 %% Parse and check the parameters
@@ -274,7 +279,7 @@ for ii=1:length(targetFiles)
     
     % In matlab, the eyeVoxelT1.vol dimensions are posterior-anterior,
     % right-left, inferior-superior (PRI). Although the coordinates are
-    % ostensibly one-indexed in the FLywheel viewer, we find we have to add
+    % ostensibly one-indexed in the Flywheel viewer, we find we have to add
     % one to the coordinate values here to match up exactly with the
     % corresonding slice.
     coordPRI = [coordIPR(2) coordIPR(3) coordIPR(1)];
@@ -347,7 +352,7 @@ for ii=1:length(targetFiles)
     videoAcqStemName = fullfile(p.Results.processingDir,p.Results.sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
     
     % Create the relativeCameraPosition
-    relativeCameraPosition = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
+    [relativeCameraPosition, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
     
     % Store the pre-rotated relativeCameraPosition
     preRotateRelativeCameraPosition = relativeCameraPosition;
@@ -366,9 +371,9 @@ for ii=1:length(targetFiles)
     % the acquisition.
     % We also compute the small shift in time that best matches the head
     % and camera motion measurements
-    maxFrameShift = ((p.Results.msecsTR/1000)*60)/2;
+    maxFrameShift = ((p.Results.msecsTR/1000)*60)/3;
     [relativeCameraPosition, adjustParams, pupilPositions, pupilPositionsFit, goodFrameIdx] = ...
-        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift);
+        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift, nElementsPre, nElementsPost, p.Results.preScanFixFlag);
     
     % add meta data
     relativeCameraPosition.meta = p.Results;
@@ -415,7 +420,7 @@ for ii=1:length(targetFiles)
         xlim([0 ceil(nFrames/1000)*1000]);
         legend({'+right','+up','+further'},'Location','eastoutside')
         tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
-        tLine2 = ['theta [deg] = ' num2str(adjustParams(2)) '; pixelsPerMm = ' num2str(adjustParams(3)) '; frameShift = ' num2str(adjustParams(1))];
+        tLine2 = ['angles [deg] = ' num2str(adjustParams(2)) ', ' num2str(adjustParams(3)) ', ' num2str(adjustParams(4)) '; pixelsPerMm = ' num2str(adjustParams(5)) '; frameShift = ' num2str(adjustParams(1))];
         tString = {tLine1,tLine2};
         title(tString,'Interpreter','none');
         xlabel('time [frames]');
@@ -465,7 +470,7 @@ end % deriveCameraPosition
 
 
 
-function relativeCameraPosition = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
+function [relativeCameraPosition, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
 
 % Load the head motion regressors
 numTRs = length(motionMats);
@@ -580,18 +585,26 @@ end
 end
 
 
-function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift)
+function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift,nElementsPre,nElementsPost, preScanFixFlag)
 
 % Load the pupilData
 load([videoAcqStemName '_pupil.mat'],'pupilData');
 
-% Load the timebase
-load([videoAcqStemName '_timebase.mat'],'timebase');
+% Load the sceneGeometry
+load([videoAcqStemName '_sceneGeometry.mat'],'sceneGeometry');
 
-% Find the "good" frames after the start of the scan
-[~,startFrame] = min(abs(timebase.values));
-goodIdx = logical(double(pupilData.initial.ellipses.RMSE < rmseThreshold) .* ...
-    (timebase.values > startFrame));
+% Calculate the pixelsPerMm
+e1 = pupilProjection_fwd([0 0 0 1],sceneGeometry);
+sceneGeometry.cameraPosition.translation(1) = ...
+    sceneGeometry.cameraPosition.translation(1) + 1;
+e2 = pupilProjection_fwd([0 0 0 1],sceneGeometry);
+pixelsPerMm = abs(e2(1) - e1(1));
+
+% Find the "good" frames after the start of the scan and which is within
+% the period for which we have head motion data
+goodIdx = logical(pupilData.initial.ellipses.RMSE < rmseThreshold);
+goodIdx(1:nElementsPre)=false;
+goodIdx(end-nElementsPost:end)=false;
 
 % Create a matrix of xy locations of the pupil center.
 B = [pupilData.initial.ellipses.values(goodIdx,1), ...
@@ -601,8 +614,14 @@ B = [pupilData.initial.ellipses.values(goodIdx,1), ...
 weights = 1./pupilData.initial.ellipses.RMSE(goodIdx)';
 
 % Set the pupilCenter position to be relative to the mean position prior to
-% time zero
-notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:startFrame)));
+% time zero (for those acquisitions that had a pre-scan fixation period) or
+% shortly after time zero (for the rest).
+if preScanFixFlag
+    notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:nElementsPre)));
+else
+    notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:nElementsPre+180)));
+    notNanIdx = notNanIdx(notNanIdx > nElementsPre);
+end
 w = 1./pupilData.initial.ellipses.RMSE(notNanIdx);
 w = w./sum(w);
 refCenter = sum(w.*pupilData.initial.ellipses.values(notNanIdx,1:2))';
@@ -612,16 +631,27 @@ B = B-refCenter;
 % matrix will not flip this around.
 B(1,:) = -B(1,:);
 
-% Create a matrix of x'y' locations of the camera in the Scout coordinate
+% Add a depth dimension that starts out as zeros
+B(3,:) = zeros(sum(goodIdx),1);
+
+% Create a matrix of x'y'z' locations of the camera in the Scout coordinate
 % frame
 A = [relativeCameraPosition.values(1,:)', ...
-    relativeCameraPosition.values(2,:)']';
+    relativeCameraPosition.values(2,:)', ...
+    relativeCameraPosition.values(3,:)']';
 
 % Set up some anonymous functions for the fit
-R = @(theta) [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
+% R = @(theta) [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
+% modelAtIdx = @(vec) vec(:,goodIdx);
+% pupilPositionFit = @(p) (censorShift(A,p(1))'*R(p(2)).*p(3))';
+% myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
+
+% Set up some anonymous functions for the fit
 modelAtIdx = @(vec) vec(:,goodIdx);
-pupilPositionFit = @(p) (censorShift(A,p(1))'*R(p(2)).*p(3))';
-myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
+pupilPositionFit = @(p) (censorShift(A,p(1))'*rotMat(p(2),p(3),p(4)).*p(5))';
+dropDepthDim = @(mat) mat(1:2,:);
+myObj = @(p) sqrt(nansum(nansum( dropDepthDim(B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
+
 
 % Perform the fit. The parameters are in the order of:
 %   adjustParams(1) = frame shift
@@ -629,21 +659,30 @@ myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weigh
 %   adjustParams(3) = scale (pixelsPerMm)
 options = optimoptions(@fmincon,...
     'Display','off');
-adjustParams = fmincon(myObj,[0 0 10],[],[],[],[],[-maxFrameShift -22.5 5],[+maxFrameShift 22.5 40],[],options);
+adjustParams = fmincon(myObj,[0 0 0 0 pixelsPerMm],[],[],[],[],[-maxFrameShift -30 -30 -45 pixelsPerMm],[+maxFrameShift 30 30 45 pixelsPerMm],[],options);
 
 % Obtain and save the model fit
 Bfit = pupilPositionFit(adjustParams);
 
 % Obtain the adjustedRelativeCameraPosition
-pupilPositionFitNoScale = @(p) (censorShift(A,p(1))'*R(p(2)))';
+pupilPositionFitNoScale = @(p) (censorShift(A,p(1))'*rotMat(p(2),p(3),p(4)))';
 fitResult = pupilPositionFitNoScale(adjustParams);
 adjustedRelativeCameraPosition = relativeCameraPosition;
-adjustedRelativeCameraPosition.values(1,:) = fitResult(1,:);
-adjustedRelativeCameraPosition.values(2,:) = fitResult(2,:);
+adjustedRelativeCameraPosition.values = fitResult;
 adjustedRelativeCameraPosition.meta.adjustParams = adjustParams;
 
 end
 
+
+function R = rotMat(alpha,beta,gamma)
+
+Rz = [cosd(alpha) -sind(alpha) 0; sind(alpha) cosd(alpha) 0; 0 0 1];
+Ry = [cosd(beta) 0 sind(beta); 0 1 0; -sind(beta) 0 cosd(beta)];
+Rx = [1 0 0; 0 cosd(gamma) -sind(gamma); 0 sind(gamma) cosd(gamma)];
+
+R = Rz*Ry*Rx;
+
+end
 
 function vecOut = censorShift(vecIn,frameShift)
 for jj = 1:size(vecIn,1)
