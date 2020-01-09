@@ -117,7 +117,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 % Examples:
 %{
     % One subject with plots
-    deriveCameraPosition('TOME_3002',[188 32 158],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true)
+    deriveCameraPosition('TOME_3004',[194 33 151],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true','preScanFixFlag',false)
 %}
 %{
     % One subject with plots
@@ -170,15 +170,28 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3045', [187 29 155]; ...
                 'TOME_3046', [190 25 161]  ...
                 };
-    preScanFixFlagSess1 = false(1,42);
-    preScanFixFlagSess2 = true(1,42);
-    preScanFixFlagSess2([1 2 3 4 5 6 7 8 9 11]) = false;
+    preScanFixFlagSess1 = num2cell(false(1,42));
+    preScanFixFlagSess2 = num2cell(true(1,42));
+
+    % These Session 2 datasets did not have pre-scan fixation
+    noFixationSessions = [1 2 3 4 5 6 7 8 9 11];
+    for ii = 1:length(noFixationSessions)
+        preScanFixFlagSess2{noFixationSessions(ii)} = false;
+    end
+
+    % In a few cases, the preScan period from a session 2 acquisition leads
+    % to a poor matching of head motion to pupil ellipses. We special case
+    % a few sessions and assign a false preScanFixFlag for those
+    % acquisitions
+
+    % TOME_3045, movie acquisitions
+    preScanFixFlagSess2{41} = logical([1 1 0 0 0 0 1 1 1 1]);
 
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1(ii))
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii})
     end
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli','preScanFixFlag',preScanFixFlagSess2(ii))
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli','preScanFixFlag',preScanFixFlagSess2{ii})
     end
 %}
 
@@ -214,11 +227,15 @@ p.addParameter('epiVoxelSizeMm', 2, @isscalar);
 p.addParameter('msecsTR', 800, @isscalar);
 p.addParameter('t1Dims', [227 272 227], @isnumeric);
 p.addParameter('rmseThreshold', 3, @isnumeric);
+p.addParameter('nonLinNonUniformThresh', 0.7, @isnumeric);
 p.addParameter('preScanFixFlag', true, @islogical);
 
 
 %% Parse and check the parameters
 p.parse(subject, cornealCoord, varargin{:});
+
+% Pull out the preScanFixFlag
+preScanFixFlag = p.Results.preScanFixFlag;
 
 
 %% Define some strings used in system calls
@@ -233,6 +250,11 @@ devNull = ' >/dev/null';
 
 % Find the Scout EPI targets in the analysisDir
 targetFiles = dir(fullfile(p.Results.analysisDir,p.Results.sessionDir,[subject '*' 'Scout_gdc.nii.gz']));
+
+% Expand the preScanFixFlag as needed
+if length(targetFiles)>1 && length(preScanFixFlag)==1
+    preScanFixFlag = repmat(preScanFixFlag,1,length(targetFiles));
+end
 
 % Loop through the target files and project the eye coordinate in T1 space
 % to scout EPI space
@@ -373,7 +395,7 @@ for ii=1:length(targetFiles)
     % and camera motion measurements
     maxFrameShift = ((p.Results.msecsTR/1000)*60)/3;
     [relativeCameraPosition, adjustParams, pupilPositions, pupilPositionsFit, goodFrameIdx] = ...
-        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, maxFrameShift, nElementsPre, nElementsPost, p.Results.preScanFixFlag);
+        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, p.Results.nonLinNonUniformThresh, maxFrameShift, nElementsPre, nElementsPost, preScanFixFlag(ii));
     
     % add meta data
     relativeCameraPosition.meta = p.Results;
@@ -394,18 +416,27 @@ for ii=1:length(targetFiles)
         nFrames = size(pupilPositionsFit,2);
         plot(1:nFrames,zeros(1,nFrames),':','color',[0.2 0.2 0.2]);
         hold on
-        h = scatter(find(goodFrameIdx),pupilPositions(1,:),1,'MarkerFaceColor','b','MarkerEdgeColor','none'); 
-        h.MarkerFaceAlpha = .025;
+        if sum(goodFrameIdx)>0
+            h = scatter(find(goodFrameIdx),pupilPositions(1,:),1,'MarkerFaceColor','b','MarkerEdgeColor','none');
+            h.MarkerFaceAlpha = .025;
+        end
         plot(1:nFrames,pupilPositionsFit(1,:),'-','color',[0.5 0.5 1]);
-        h = scatter(find(goodFrameIdx),pupilPositions(2,:),1,'MarkerFaceColor','r','MarkerEdgeColor','none'); 
-        h.MarkerFaceAlpha = .025;
+        if sum(goodFrameIdx)>0
+            h = scatter(find(goodFrameIdx),pupilPositions(2,:),1,'MarkerFaceColor','r','MarkerEdgeColor','none');
+            h.MarkerFaceAlpha = .025;
+        end
         plot(1:nFrames,pupilPositionsFit(2,:),'-','color',[1 0.5 0.5]);
-        corrX = corr(pupilPositionsFit(1,goodFrameIdx)',pupilPositions(1,:)','Rows','pairwise');
-        corrY = corr(pupilPositionsFit(2,goodFrameIdx)',pupilPositions(2,:)','Rows','pairwise');
+        if sum(goodFrameIdx)>0
+            corrX = corr(pupilPositionsFit(1,goodFrameIdx)',pupilPositions(1,:)','Rows','pairwise');
+            corrY = corr(pupilPositionsFit(2,goodFrameIdx)',pupilPositions(2,:)','Rows','pairwise');
+        else
+            corrX = nan;
+            corrY = nan;
+        end
         ylim([-150 150]);
         xlim([0 ceil(nFrames/1000)*1000]);
         legend({'ref','+right','+right','+up','+up'},'Location','eastoutside')
-        title(['Pupil position vs camera translation, corr = [ ' num2str(corrX) ', ' num2str(corrY) ' ]'],'Interpreter','none');
+        title(['Pupil position vs camera translation, corr = [ ' num2str(corrX) ', ' num2str(corrY) ' ], nFrames = ' num2str(sum(goodFrameIdx))],'Interpreter','none');
         xlabel('time [frames]');
         ylabel('translation [pixels]');
         box off
@@ -585,10 +616,13 @@ end
 end
 
 
-function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,maxFrameShift,nElementsPre,nElementsPost, preScanFixFlag)
+function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,nonLinNonUniformThresh,maxFrameShift,nElementsPre,nElementsPost, preScanFixFlag)
 
 % Load the pupilData
 load([videoAcqStemName '_pupil.mat'],'pupilData');
+
+% Load the corrected perimeter
+load([videoAcqStemName '_correctedPerimeter.mat'],'perimeter');
 
 % Load the sceneGeometry
 load([videoAcqStemName '_sceneGeometry.mat'],'sceneGeometry');
@@ -600,9 +634,45 @@ sceneGeometry.cameraPosition.translation(1) = ...
 e2 = pupilProjection_fwd([0 0 0 1],sceneGeometry);
 pixelsPerMm = abs(e2(1) - e1(1));
 
+% Obtain the non-linear, non-uniformity of the pupil perimeter for each
+% frame. First, define the bins over which the distribution of perimeter
+% angles will be evaluated. 20 bins works pretty well.
+nDivisions = 20;
+histBins = linspace(-pi,pi,nDivisions);
+
+% Anonymous function returns the linear non-uniformity of a set of values,
+% ranging from 0 when perfectly uniform to 1 when completely non-uniform.
+nonUniformity = @(x) (sum(abs(x/sum(x)-mean(x/sum(x))))/2)/(1-1/length(x));
+
+% Loop over frames. Frames which have no perimeter points will be given a
+% distVal of NaN.
+for ii = 1:size(pupilData.initial.ellipses.values,1)
+    
+    % Obtain the center of this fitted ellipse
+    centerX = pupilData.initial.ellipses.values(ii,1);
+    centerY = pupilData.initial.ellipses.values(ii,2);
+
+    % Obtain the set of perimeter points
+    Xp = perimeter.data{ii}.Xp;
+    Yp = perimeter.data{ii}.Xp;
+    
+    % Calculate the deviation of the distribution of points from uniform
+    linearNonUniformity(ii) = nonUniformity(histcounts(atan2(Yp-centerY,Xp-centerX),histBins));
+end
+
+% Subject the linearNonUniformity vector to a non-linear transformation.
+% This has the effect of changing 0 --> 0.1, 0.8 --> 1, and values > 0.8
+% --> infinity. This causes pupil perimeters with support at a single
+% location (as opposed to fully around the perimeter) to have a markedly
+% increased likelihood SD. Also, set InF values to something arbitrarily
+% large.
+nonLinNonUniform = (1./(1-sqrt(linearNonUniformity)))./10;
+nonLinNonUniform(isinf(nonLinNonUniform)) = 1e20;
+
 % Find the "good" frames after the start of the scan and which is within
 % the period for which we have head motion data
-goodIdx = logical(pupilData.initial.ellipses.RMSE < rmseThreshold);
+goodIdx = logical(double(pupilData.initial.ellipses.RMSE < rmseThreshold) .* ...
+    double(nonLinNonUniform' < nonLinNonUniformThresh));
 goodIdx(1:nElementsPre)=false;
 goodIdx(end-nElementsPost:end)=false;
 
@@ -618,13 +688,14 @@ weights = 1./pupilData.initial.ellipses.RMSE(goodIdx)';
 % shortly after time zero (for the rest).
 if preScanFixFlag
     notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:nElementsPre)));
+    notNanIdx = notNanIdx(notNanIdx > nElementsPre-180);    
 else
     notNanIdx = find(~isnan(pupilData.initial.ellipses.RMSE(1:nElementsPre+180)));
     notNanIdx = notNanIdx(notNanIdx > nElementsPre);
 end
 w = 1./pupilData.initial.ellipses.RMSE(notNanIdx);
 w = w./sum(w);
-refCenter = sum(w.*pupilData.initial.ellipses.values(notNanIdx,1:2))';
+refCenter = medianw( pupilData.initial.ellipses.values(notNanIdx,1:2), w, 1 )';
 B = B-refCenter;
 
 % We have to invert the value of the x dimension of B so that the rotation
@@ -641,12 +712,6 @@ A = [relativeCameraPosition.values(1,:)', ...
     relativeCameraPosition.values(3,:)']';
 
 % Set up some anonymous functions for the fit
-% R = @(theta) [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
-% modelAtIdx = @(vec) vec(:,goodIdx);
-% pupilPositionFit = @(p) (censorShift(A,p(1))'*R(p(2)).*p(3))';
-% myObj = @(p) sqrt(nansum(nansum( (B-modelAtIdx(pupilPositionFit(p))).^2 ).*weights)./sum(weights) );
-
-% Set up some anonymous functions for the fit
 modelAtIdx = @(vec) vec(:,goodIdx);
 pupilPositionFit = @(p) (censorShift(A,p(1))'*rotMat(p(2),p(3),p(4)).*p(5))';
 dropDepthDim = @(mat) mat(1:2,:);
@@ -655,11 +720,16 @@ myObj = @(p) sqrt(nansum(nansum( dropDepthDim(B-modelAtIdx(pupilPositionFit(p)))
 
 % Perform the fit. The parameters are in the order of:
 %   adjustParams(1) = frame shift
-%   adjustParams(2) = theta (deg)
-%   adjustParams(3) = scale (pixelsPerMm)
+%   adjustParams(2:4) = alpha, beta, gamma rotation (deg)
+%   adjustParams(5) = scale (pixelsPerMm)
 options = optimoptions(@fmincon,...
     'Display','off');
-adjustParams = fmincon(myObj,[0 0 0 0 pixelsPerMm],[],[],[],[],[-maxFrameShift -30 -30 -45 pixelsPerMm],[+maxFrameShift 30 30 45 pixelsPerMm],[],options);
+adjustParams = [0 0 0 0 pixelsPerMm];
+
+% Only search if there are actually pupil frames to fit
+if sum(goodIdx)>0
+    adjustParams = fmincon(myObj,adjustParams,[],[],[],[],[-maxFrameShift -40 -40 -65 pixelsPerMm],[+maxFrameShift 40 40 65 pixelsPerMm],[],options);
+end
 
 % Obtain and save the model fit
 Bfit = pupilPositionFit(adjustParams);
