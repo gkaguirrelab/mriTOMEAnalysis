@@ -185,7 +185,7 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
     % acquisitions
 
     % TOME_3045, movie acquisitions
-    preScanFixFlagSess2{41} = logical([1 1 0 0 0 0 1 1 1 1]);
+%    preScanFixFlagSess2{41} = logical([1 1 0 0 0 0 1 1 1 1]);
 
     for ii=1:size(dataArray,1)
         deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii})
@@ -227,7 +227,7 @@ p.addParameter('epiVoxelSizeMm', 2, @isscalar);
 p.addParameter('msecsTR', 800, @isscalar);
 p.addParameter('t1Dims', [227 272 227], @isnumeric);
 p.addParameter('rmseThreshold', 3, @isnumeric);
-p.addParameter('nonLinNonUniformThresh', 0.7, @isnumeric);
+p.addParameter('nonLinNonUniformThresh', 0.25, @isnumeric);
 p.addParameter('preScanFixFlag', true, @islogical);
 
 
@@ -654,7 +654,7 @@ for ii = 1:size(pupilData.initial.ellipses.values,1)
 
     % Obtain the set of perimeter points
     Xp = perimeter.data{ii}.Xp;
-    Yp = perimeter.data{ii}.Xp;
+    Yp = perimeter.data{ii}.Yp;
     
     % Calculate the deviation of the distribution of points from uniform
     linearNonUniformity(ii) = nonUniformity(histcounts(atan2(Yp-centerY,Xp-centerX),histBins));
