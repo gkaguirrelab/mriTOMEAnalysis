@@ -179,19 +179,24 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
         preScanFixFlagSess2{noFixationSessions(ii)} = false;
     end
 
+    % In a few cases, the standard pre/postScan period leads to a poor
+    % matching of head motion to pupil ellipses. We special case a few 
+    % sessions and assign a differemt preScanFixFlag for those acquisitions
+
+    % TOME_3029, MOVIE_PA_run03
+    preScanFixFlagSess2{26} = logical([1 1 1 1 0 1 1 1 1 1]);
+
+    % TOME_3032, MOVIE_PA_run03
+    preScanFixFlagSess2{29} = logical([1 1 1 1 1 0 1 1 1 1]);
+
+
     % Set the non-linear non-uniform thresh, with some special cases
     nonLinNonUniformThreshSess1 = ones(1,42).*0.25;
     nonLinNonUniformThreshSess2 = ones(1,42).*0.25;
 
+    % Session 2, TOME_3007
     nonLinNonUniformThreshSess2(6) = 0.35;
 
-    % In a few cases, the preScan period from a session 2 acquisition leads
-    % to a poor matching of head motion to pupil ellipses. We special case
-    % a few sessions and assign a false preScanFixFlag for those
-    % acquisitions
-
-    % TOME_3045, movie acquisitions
-%    preScanFixFlagSess2{41} = logical([1 1 0 0 0 0 1 1 1 1]);
 
     for ii=1:size(dataArray,1)
         deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii})
