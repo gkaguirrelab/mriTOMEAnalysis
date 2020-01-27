@@ -1,6 +1,5 @@
 function [runNames] = getRunsPerSubject(subjectID)
 
-fw = flywheel.Flywheel('upenn.flywheel.io:xRBvFBoJddS12kWEkM');
 
 result = fw.lookup('tome/tome');
 allSessions = fw.getProjectSessions(result.id);
