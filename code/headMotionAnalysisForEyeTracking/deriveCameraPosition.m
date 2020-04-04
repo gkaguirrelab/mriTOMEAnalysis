@@ -191,15 +191,20 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 
 
     % Set the non-linear non-uniform thresh, with some special cases
-    nonLinNonUniformThreshSess1 = ones(1,42).*0.25;
+    nonLinNonUniformThreshSess1 = ones(1,42).*0.35;
     nonLinNonUniformThreshSess2 = ones(1,42).*0.25;
+
+    % Sessopm 1, TOME_3001
+    nonLinNonUniformThreshSess1(1) = 0.45;
 
     % Session 2, TOME_3007
     nonLinNonUniformThreshSess2(6) = 0.35;
 
+    % Set the rmseThreshold for session 1, with some special cases
+    rmseThresholdSess1 = ones(1,42)*3;
 
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii})
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii},'nonLinNonUniformThresh',nonLinNonUniformThreshSess1(ii),'rmseThreshold',rmseThresholdSess1(ii))
     end
     for ii=1:size(dataArray,1)
         deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli','preScanFixFlag',preScanFixFlagSess2{ii},'nonLinNonUniformThresh',nonLinNonUniformThreshSess2(ii))
@@ -409,8 +414,8 @@ for ii=1:length(targetFiles)
         alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, p.Results.nonLinNonUniformThresh, maxFrameShift, nElementsPre, nElementsPost, preScanFixFlag(ii));
     
     % add meta data
-    relativeCameraPosition.meta = p.Results;
     relativeCameraPosition.meta.sessionInfo = sessionInfo;
+    relativeCameraPosition.meta.deriveCameraPosition = p.Results;
     
     % Save the relativeCameraPosition variable
     outCameraPositionFile = [videoAcqStemName '_relativeCameraPosition.mat'];
