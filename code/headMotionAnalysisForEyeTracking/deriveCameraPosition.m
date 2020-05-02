@@ -76,7 +76,6 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %
 % Optional key/value pairs (display and I/O):
 %  'verbose'              - Logical. Default false.
-%  'showPlots'            - Logical. Default false.
 %
 % Optional key/value pairs (environment)
 %  'tbSnapshot'           - This should contain the output of the
@@ -116,12 +115,12 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
 %
 % Examples:
 %{
-    % One subject with plots
-    deriveCameraPosition('TOME_3004',[194 33 151],'sessionDir','session2_spatialStimuli','verbose',true,'showPlots',true','preScanFixFlag',false)
+    % One subject
+    deriveCameraPosition('TOME_3004',[194 33 151],'sessionDir','session2_spatialStimuli','verbose',true,'preScanFixFlag',false)
 %}
 %{
-    % One subject with plots
-    deriveCameraPosition('TOME_3032',[192 35 155],'sessionDir','session1_restAndStructure','verbose',true,'showPlots',true)
+    % Another subject
+    deriveCameraPosition('TOME_3032',[192 35 155],'sessionDir','session1_restAndStructure','verbose',true)
 %}
 %{
     % The coords were obtained within the Flywheel image viewer for the
@@ -170,44 +169,12 @@ function deriveCameraPosition(subject, cornealCoord, varargin)
                 'TOME_3045', [187 29 155]; ...
                 'TOME_3046', [190 25 161]  ...
                 };
-    preScanFixFlagSess1 = num2cell(false(1,42));
-    preScanFixFlagSess2 = num2cell(true(1,42));
-
-    % These Session 2 datasets did not have pre-scan fixation
-    noFixationSessions = [1 2 3 4 5 6 7 8 9 11];
-    for ii = 1:length(noFixationSessions)
-        preScanFixFlagSess2{noFixationSessions(ii)} = false;
-    end
-
-    % In a few cases, the standard pre/postScan period leads to a poor
-    % matching of head motion to pupil ellipses. We special case a few 
-    % sessions and assign a differemt preScanFixFlag for those acquisitions
-
-    % TOME_3029, MOVIE_PA_run03
-    preScanFixFlagSess2{26} = logical([1 1 1 1 0 1 1 1 1 1]);
-
-    % TOME_3032, MOVIE_PA_run03
-    preScanFixFlagSess2{29} = logical([1 1 1 1 1 0 1 1 1 1]);
-
-
-    % Set the non-linear non-uniform thresh, with some special cases
-    nonLinNonUniformThreshSess1 = ones(1,42).*0.35;
-    nonLinNonUniformThreshSess2 = ones(1,42).*0.25;
-
-    % Sessopm 1, TOME_3001
-    nonLinNonUniformThreshSess1(1) = 0.45;
-
-    % Session 2, TOME_3007
-    nonLinNonUniformThreshSess2(6) = 0.35;
-
-    % Set the rmseThreshold for session 1, with some special cases
-    rmseThresholdSess1 = ones(1,42)*3;
 
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure','preScanFixFlag',preScanFixFlagSess1{ii},'nonLinNonUniformThresh',nonLinNonUniformThreshSess1(ii),'rmseThreshold',rmseThresholdSess1(ii))
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session1_restAndStructure')
     end
     for ii=1:size(dataArray,1)
-        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli','preScanFixFlag',preScanFixFlagSess2{ii},'nonLinNonUniformThresh',nonLinNonUniformThreshSess2(ii))
+        deriveCameraPosition(dataArray{ii,1}, dataArray{ii,2},'sessionDir','session2_spatialStimuli')
     end
 %}
 
@@ -220,8 +187,6 @@ p.addRequired('cornealCoord',@isnumeric);
 
 % Optional display and I/O params
 p.addParameter('verbose',true,@islogical);
-p.addParameter('showPlots',false,@islogical);
-p.addParameter('savePlots',true,@islogical);
 
 % Optional environment params
 p.addParameter('tbSnapshot',[],@(x)(isempty(x) | isstruct(x)));
@@ -242,16 +207,16 @@ p.addParameter('fslBinDir','/usr/local/fsl/bin/',@ischar);
 p.addParameter('epiVoxelSizeMm', 2, @isscalar);
 p.addParameter('msecsTR', 800, @isscalar);
 p.addParameter('t1Dims', [227 272 227], @isnumeric);
-p.addParameter('rmseThreshold', 3, @isnumeric);
-p.addParameter('nonLinNonUniformThresh', 0.25, @isnumeric);
-p.addParameter('preScanFixFlag', true, @islogical);
 
 
 %% Parse and check the parameters
 p.parse(subject, cornealCoord, varargin{:});
 
-% Pull out the preScanFixFlag
-preScanFixFlag = p.Results.preScanFixFlag;
+
+%% Create the scratch dir if it does not exist
+if ~exist(p.Results.scratchSaveDir,'dir')
+    mkdir(p.Results.scratchSaveDir)
+end
 
 
 %% Define some strings used in system calls
@@ -266,11 +231,6 @@ devNull = ' >/dev/null';
 
 % Find the Scout EPI targets in the analysisDir
 targetFiles = dir(fullfile(p.Results.analysisDir,p.Results.sessionDir,[subject '*' 'Scout_gdc.nii.gz']));
-
-% Expand the preScanFixFlag as needed
-if length(targetFiles)>1 && length(preScanFixFlag)==1
-    preScanFixFlag = repmat(preScanFixFlag,1,length(targetFiles));
-end
 
 % Loop through the target files and project the eye coordinate in T1 space
 % to scout EPI space
@@ -390,114 +350,19 @@ for ii=1:length(targetFiles)
     videoAcqStemName = fullfile(p.Results.processingDir,p.Results.sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
     
     % Create the relativeCameraPosition
-    [relativeCameraPosition, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
-    
-    % Store the pre-rotated relativeCameraPosition
-    preRotateRelativeCameraPosition = relativeCameraPosition;
-    
-    % Rotate the relativeCameraPosition to best match the pupilData. The
-    % relativeCamera position variable is calculated from head motion
-    % relative to the coordinate frame of the Scout image. The camera is
-    % not necessarily aligned with this coordinate frame, as the head may
-    % be tilted. Consider the case in which the camera is positioned to
-    % the side of the head, aimed towards the eyes. In this case,
-    % horizontal head movements (w.r.t. the Scout coordinate frame) will
-    % not produce any change in the location of the pupil center in the
-    % camea coordinate frame. To accout for this, we identify the rotation
-    % (and scaling) of the camera RL and IS positions that best match the
-    % change in location in the RL and IS pupil centers over the course of
-    % the acquisition.
-    % We also compute the small shift in time that best matches the head
-    % and camera motion measurements
-    maxFrameShift = ((p.Results.msecsTR/1000)*60)/3;
-    [relativeCameraPosition, adjustParams, pupilPositions, pupilPositionsFit, goodFrameIdx] = ...
-        alignCoordinates(relativeCameraPosition,videoAcqStemName, p.Results.rmseThreshold, p.Results.nonLinNonUniformThresh, maxFrameShift, nElementsPre, nElementsPost, preScanFixFlag(ii));
-    
+    relativeCameraPosition.initial.values = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
+        
     % add meta data
-    relativeCameraPosition.meta.sessionInfo = sessionInfo;
-    relativeCameraPosition.meta.deriveCameraPosition = p.Results;
-    
+    relativeCameraPosition.initial.meta.sessionInfo = sessionInfo;
+    relativeCameraPosition.initial.meta.deriveCameraPosition = p.Results;
+
+    % Update the currentField field
+    relativeCameraPosition.currentField = 'initial';
+
     % Save the relativeCameraPosition variable
     outCameraPositionFile = [videoAcqStemName '_relativeCameraPosition.mat'];
     save(outCameraPositionFile,'relativeCameraPosition');
-    
-    % Plot the relativeCameraPosition variables
-    if p.Results.showPlots || p.Results.savePlots
-        if p.Results.showPlots
-            plotFig = figure('Name',acquisitionRootName);
-        else
-            plotFig = figure('Name',acquisitionRootName,'Visible','off');
-        end
-        subplot(3,1,1)
-        nFrames = size(pupilPositionsFit,2);
-        plot(1:nFrames,zeros(1,nFrames),':','color',[0.2 0.2 0.2]);
-        hold on
-        if sum(goodFrameIdx)>0
-            h = scatter(find(goodFrameIdx),pupilPositions(1,:),1,'MarkerFaceColor','b','MarkerEdgeColor','none');
-            h.MarkerFaceAlpha = .025;
-        end
-        plot(1:nFrames,pupilPositionsFit(1,:),'-','color',[0.5 0.5 1]);
-        if sum(goodFrameIdx)>0
-            h = scatter(find(goodFrameIdx),pupilPositions(2,:),1,'MarkerFaceColor','r','MarkerEdgeColor','none');
-            h.MarkerFaceAlpha = .025;
-        end
-        plot(1:nFrames,pupilPositionsFit(2,:),'-','color',[1 0.5 0.5]);
-        if sum(goodFrameIdx)>0
-            corrX = corr(pupilPositionsFit(1,goodFrameIdx)',pupilPositions(1,:)','Rows','pairwise');
-            corrY = corr(pupilPositionsFit(2,goodFrameIdx)',pupilPositions(2,:)','Rows','pairwise');
-        else
-            corrX = nan;
-            corrY = nan;
-        end
-        ylim([-150 150]);
-        xlim([0 ceil(nFrames/1000)*1000]);
-        legend({'ref','+right','+right','+up','+up'},'Location','eastoutside')
-        title(['Pupil position vs camera translation, corr = [ ' num2str(corrX) ', ' num2str(corrY) ' ], nFrames = ' num2str(sum(goodFrameIdx))],'Interpreter','none');
-        xlabel('time [frames]');
-        ylabel('translation [pixels]');
-        box off
-        legend boxoff
         
-        subplot(3,1,2)        
-        plot(relativeCameraPosition.values(1,:));
-        hold on
-        plot(relativeCameraPosition.values(2,:));
-        plot(relativeCameraPosition.values(3,:));
-        ylim([-5 5]);
-        xlim([0 ceil(nFrames/1000)*1000]);
-        legend({'+right','+up','+further'},'Location','eastoutside')
-        tLine1 = ['Relative camera position (world coordinates) - ' acquisitionRootName ];
-        tLine2 = ['angles [deg] = ' num2str(adjustParams(2)) ', ' num2str(adjustParams(3)) ', ' num2str(adjustParams(4)) '; pixelsPerMm = ' num2str(adjustParams(5)) '; frameShift = ' num2str(adjustParams(1))];
-        tString = {tLine1,tLine2};
-        title(tString,'Interpreter','none');
-        xlabel('time [frames]');
-        ylabel('translation [mm]');
-        box off
-        legend boxoff
-        
-        subplot(3,1,3)        
-        plot(preRotateRelativeCameraPosition.values(1,:));
-        hold on
-        plot(preRotateRelativeCameraPosition.values(2,:));
-        plot(preRotateRelativeCameraPosition.values(3,:));
-        ylim([-5 5]);
-        xlim([0 ceil(nFrames/1000)*1000]);
-        legend({'+right','+up','+further'},'Location','eastoutside')
-        tLine1 = ['Pre-rotation camera position'];
-        tString = {tLine1};
-        title(tString,'Interpreter','none');
-        xlabel('time [frames]');
-        ylabel('translation [mm]');
-        box off
-        legend boxoff
-
-        if p.Results.savePlots
-            tmp = [videoAcqStemName '_relativeCameraPosition_QA.pdf'];
-            print(plotFig,tmp,'-dpdf');
-            close(plotFig)
-        end
-    end
-    
     % Report completion of this step
     if p.Results.verbose
         reportLineOut = sprintf([acquisitionRootName]);
@@ -632,7 +497,13 @@ end
 end
 
 
+
+
 function [adjustedRelativeCameraPosition, adjustParams, B, Bfit, goodIdx] = alignCoordinates(relativeCameraPosition,videoAcqStemName,rmseThreshold,nonLinNonUniformThresh,maxFrameShift,nElementsPre,nElementsPost, preScanFixFlag)
+% This function was created to adjust the head motion coordinates to try
+% and match pupil position. I subsequently found that this is better done
+% when adjusting scene geometry to match a data set. I have left this
+% deprecated code here in case I'd like to return to it one day.
 
 % Load the pupilData
 load([videoAcqStemName '_pupil.mat'],'pupilData');
