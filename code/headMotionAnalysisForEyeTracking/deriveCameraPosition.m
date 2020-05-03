@@ -350,12 +350,14 @@ for ii=1:length(targetFiles)
     videoAcqStemName = fullfile(p.Results.processingDir,p.Results.sessionDir,sessionInfo.subject,sessionInfo.date,'EyeTracking',tmpString);
     
     % Create the relativeCameraPosition
-    relativeCameraPosition.initial.values = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
+    [relativeCameraPosition.initial.values, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, p.Results.msecsTR);
         
     % add meta data
     relativeCameraPosition.initial.meta.sessionInfo = sessionInfo;
     relativeCameraPosition.initial.meta.deriveCameraPosition = p.Results;
-
+    relativeCameraPosition.initial.meta.nElementsPre = nElementsPre;
+    relativeCameraPosition.initial.meta.nElementsPost = nElementsPost;
+    
     % Update the currentField field
     relativeCameraPosition.currentField = 'initial';
 
