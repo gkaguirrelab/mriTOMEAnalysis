@@ -382,7 +382,7 @@ end % deriveCameraPosition
 
 
 
-function [relativeCameraPosition, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
+function [values, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
 
 % Load the head motion regressors
 numTRs = length(motionMats);
@@ -430,7 +430,7 @@ nElementsPre = sum(timebase.values<0);
 nElementsPost = sum(timebase.values>max(eyeTrackTimebase));
 
 % Create a variable to hold the relative camera position
-relativeCameraPosition.values = zeros(3,length(timebase.values));
+values = zeros(3,length(timebase.values));
 
 % We are sometimes off by one frame due to rounding errors and missed
 % frames. We fix that here.
@@ -488,7 +488,7 @@ scanToCameraSign = [1,-1,1];
 % acquisition. Interpolate from the coarse TR sampling to the fine video
 % sampling.
 for dd = 1:3
-    relativeCameraPosition.values(scanToCameraCoords(dd),:) = scanToCameraSign(dd) .* ...
+    values(scanToCameraCoords(dd),:) = scanToCameraSign(dd) .* ...
         [zeros(1,nElementsPre) ...
         -interp1(scanTimebase,eyePositionRPImm(:,dd),eyeTrackTimebase,'PCHIP') ...
         -repmat(eyePositionRPImm(end,dd),1,nElementsPost)];
