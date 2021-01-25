@@ -386,7 +386,7 @@ end % deriveCameraPosition
 
 function [values, nElementsPre, nElementsPost] = calcRelativeCameraPosition(motionMats, videoAcqStemName, eyeVoxelRPImm, msecsTR)
 
-% Load the head motion regressors
+% Determine how many TRs, and define a variable in advance of the loop
 numTRs = length(motionMats);
 eyePositionRPImm = nan(numTRs,3);
 
