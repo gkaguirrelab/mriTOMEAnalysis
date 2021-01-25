@@ -1,0 +1,58 @@
+% calcHeadAngles.m
+%
+% This script identifies 
+%
+
+sessionLabel = 'session1_restAndStructure';
+projectName = 'tome';
+gearName = 'hcp-func';
+scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
+resultSaveDirStem = fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),'calcHeadAngles');
+outputFileSuffix = '_hcpfunc.zip';
+resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','MotionMatrices','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/T1w_acpc_dc_restore_brain.nii.gz'};
+resultIsDir = [0 0 1 0];
+
+devNull = ' >/dev/null';
+
+% If the scratch dir does not exist, make it
+if ~exist(scratchSaveDir,'dir')
+    mkdir(scratchSaveDir)
+end
+
+%% Instantiate the flywheel object
+fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
+
+% Find the first project with a label of 'My Project'
+project = fw.projects.findFirst(['label=' projectName]);
+
+% Find all sessions that are labeled session 1
+sessions_1 = project.sessions.find(['label=' 'Session 1']);
+sessions_1a = project.sessions.find(['label=' 'Session 1a']);
+sessions_1b = project.sessions.find(['label=' 'Session 1b']);
+
+% Concatenate the list of sessions
+sessions = [sessions_1; sessions_1a; sessions_1b];
+
+%% Loop through the analyses and download
+for ii = 1:numel(sessions)
+    
+    % Get the acquisitions object
+    acquisitions = sessions{ii}.acquisitions();
+    
+    % Find the T1 acquisition
+    acqLabels = cellfun(@(x) x.label,acquisitions,'UniformOutput',false);
+    idxT1 = find(cellfun(@(x) contains(x,'T1w'),acqLabels));
+    
+    % Get the acquisition and reload it. For some reason Flywheel needs
+    % this step to make the annotations available
+    acquisition = acquisitions{idxT1};
+    acquisition = acquisition.reload();
+
+    % Find the nifti file
+    idxFile = find(cellfun(@(x) strcmp(x.type,'nifti'),acquisition.files));
+    file = acquisition.files{idxFile};
+    
+    % Grab the ROI structures
+    rois = file.info.roi;
+    
+end
