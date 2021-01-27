@@ -57,5 +57,15 @@ for ii = 1:numel(sessions)
     
     % Need to go into the elements of the structure here to figure out
     % which ones are which
+    for annot = 1:numel(rois)
+       if isequal(rois(annot).description,'midline falx')
+           xStart = rois(annot).handles.start.x;
+           yStart = rois(annot).handles.start.y;
+           xEnd = rois(annot).handles.end.x;
+           yEnd = rois(annot).handles.end.y;
+           angle = atan2(yEnd-yStart,xEnd-xStart);
+           rois(annot).interhemisphericFissureAngle = angle;
+       end
+    end
     
 end
