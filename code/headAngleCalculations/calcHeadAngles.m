@@ -55,4 +55,7 @@ for ii = 1:numel(sessions)
     % Grab the ROI structures
     rois = file.info.roi;
     
+    % Need to go into the elements of the structure here to figure out
+    % which ones are which
+    
 end
