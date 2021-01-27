@@ -56,8 +56,8 @@ for ii = 1:numel(sessions)
     if isfield(file.info, 'roi') == 1
     rois = file.info.roi;
     
-    Need to go into the elements of the structure here to figure out
-    which ones are which
+%     Need to go into the elements of the structure here to figure out
+%     which ones are which
     for annot = 1:numel(rois)
        if isequal(rois(annot).description,'midline falx')
            xStart = rois(annot).handles.start.x;
