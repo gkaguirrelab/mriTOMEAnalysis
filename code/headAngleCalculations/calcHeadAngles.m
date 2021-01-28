@@ -74,6 +74,9 @@ for ii = 1:numel(sessions)
                             rois(annot).interhemisphericFissureAngle = angle;
                            
                             %print values
+                            subId = acquisition.parents.subject;
+                            subject = fw.get(subId);
+                            disp(subject.label);
                             fprintf('imagePath: ');
                             disp(rois(annot).imagePath);
                             fprintf('imageId: ');
@@ -99,6 +102,9 @@ for ii = 1:numel(sessions)
                            rois{annot,1}.interhemisphericFissureAngle = angle;
                            
                            %print values
+                           subId = acquisition.parents.subject;
+                           subject = fw.get(subId);
+                           disp(subject.label);
                            fprintf('imagePath: ');
                            disp(rois{annot,1}.imagePath);
                            fprintf('imageId: ');
