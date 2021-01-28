@@ -45,76 +45,78 @@ for ii = 1:numel(sessions)
     
     % Get the acquisition and reload it. For some reason Flywheel needs
     % this step to make the annotations available
-    acquisition = acquisitions{idxT1};
-    acquisition = acquisition.reload();
+    if isempty(idxT1) == 0
+        acquisition = acquisitions{idxT1};
+        acquisition = acquisition.reload();
 
-    % Find the nifti file
-    idxFile = find(cellfun(@(x) strcmp(x.type,'nifti'),acquisition.files));
-    file = acquisition.files{idxFile};
-    
-    try
-       check = file.info.roi;
-    end
-    
-    if exist('check')
-        % Grab the ROI structures if annotations exist
-         if isstruct(file.info.roi)
-             rois = file.info.roi;
+        % Find the nifti file
+        idxFile = find(cellfun(@(x) strcmp(x.type,'nifti'),acquisition.files));
+        file = acquisition.files{idxFile};
 
-            % Need to go into the elements of the cell/structure here to
-            % figure out which ones are which
-                for annot = 1:numel(rois)
-                    if isfield(rois,'description')
-                        if isequal(rois(annot).description,'midline falx')
-                            xStart = rois(annot).handles.start.x;
-                            yStart = rois(annot).handles.start.y;
-                            xEnd = rois(annot).handles.end.x;
-                            yEnd = rois(annot).handles.end.y;
-                            angle = atan2(yEnd-yStart,xEnd-xStart);
-                            rois(annot).interhemisphericFissureAngle = angle;
-                           
-                            %print values
-                            subId = acquisition.parents.subject;
-                            subject = fw.get(subId);
-                            disp(subject.label);
-                            fprintf('imagePath: ');
-                            disp(rois(annot).imagePath);
-                            fprintf('imageId: ');
-                            disp(rois(annot).imageId);
-                            fprintf('interhemisphericFissureAngle: ');
-                            disp(rois(annot).interhemisphericFissureAngle);
-                            
+        try
+           check = file.info.roi;
+        end
+
+        if exist('check')
+            % Grab the ROI structures if annotations exist
+             if isstruct(file.info.roi)
+                 rois = file.info.roi;
+
+                % Need to go into the elements of the cell/structure here to
+                % figure out which ones are which
+                    for annot = 1:numel(rois)
+                        if isfield(rois,'description')
+                            if isequal(rois(annot).description,'midline falx')
+                                xStart = rois(annot).handles.start.x;
+                                yStart = rois(annot).handles.start.y;
+                                xEnd = rois(annot).handles.end.x;
+                                yEnd = rois(annot).handles.end.y;
+                                angle = atan2(yEnd-yStart,xEnd-xStart);
+                                rois(annot).interhemisphericFissureAngle = angle;
+
+                                %print values
+                                subId = acquisition.parents.subject;
+                                subject = fw.get(subId);
+                                disp(subject.label);
+                                fprintf('imagePath: ');
+                                disp(rois(annot).imagePath);
+                                fprintf('imageId: ');
+                                disp(rois(annot).imageId);
+                                fprintf('interhemisphericFissureAngle: ');
+                                disp(rois(annot).interhemisphericFissureAngle);
+
+                            end
                         end
                     end
-                end
-         end
+             end
 
-         if iscell(file.info.roi)
-            rois = file.info.roi;
-                for annot = 1:length(rois)
-                   if isfield(rois{annot,1},'description')
-                       if isequal(rois{annot,1}.description,'midline falx')
-                           xStart = rois{annot,1}.handles.start.x;
-                           yStart = rois{annot,1}.handles.start.y;
-                           xEnd = rois{annot,1}.handles.end.x;
-                           yEnd = rois{annot,1}.handles.end.y;
-                           angle = atan2(yEnd-yStart,xEnd-xStart);
-                           rois{annot,1}.interhemisphericFissureAngle = angle;
-                           
-                           %print values
-                           subId = acquisition.parents.subject;
-                           subject = fw.get(subId);
-                           disp(subject.label);
-                           fprintf('imagePath: ');
-                           disp(rois{annot,1}.imagePath);
-                           fprintf('imageId: ');
-                           disp(rois{annot,1}.imageId);
-                           fprintf('interhemisphericFissureAngle: ');
-                           disp(rois{annot,1}.interhemisphericFissureAngle);
+             if iscell(file.info.roi)
+                rois = file.info.roi;
+                    for annot = 1:length(rois)
+                       if isfield(rois{annot,1},'description')
+                           if isequal(rois{annot,1}.description,'midline falx')
+                               xStart = rois{annot,1}.handles.start.x;
+                               yStart = rois{annot,1}.handles.start.y;
+                               xEnd = rois{annot,1}.handles.end.x;
+                               yEnd = rois{annot,1}.handles.end.y;
+                               angle = atan2(yEnd-yStart,xEnd-xStart);
+                               rois{annot,1}.interhemisphericFissureAngle = angle;
+
+                               %print values
+                               subId = acquisition.parents.subject;
+                               subject = fw.get(subId);
+                               disp(subject.label);
+                               fprintf('imagePath: ');
+                               disp(rois{annot,1}.imagePath);
+                               fprintf('imageId: ');
+                               disp(rois{annot,1}.imageId);
+                               fprintf('interhemisphericFissureAngle: ');
+                               disp(rois{annot,1}.interhemisphericFissureAngle);
+                           end
                        end
-                   end
-                end
-         end
-         clear check;
+                    end
+             end
+             clear check;
+        end
     end
 end
