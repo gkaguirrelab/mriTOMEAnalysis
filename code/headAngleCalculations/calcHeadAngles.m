@@ -78,10 +78,8 @@ for ii = 1:numel(sessions)
                                 subId = acquisition.parents.subject;
                                 subject = fw.get(subId);
                                 disp(subject.label);
-                                fprintf('imagePath: ');
-                                disp(rois(annot).imagePath);
-                                fprintf('imageId: ');
-                                disp(rois(annot).imageId);
+                                fprintf('ImageOrientationPatient: ');
+                                disp(file.info.ImageOrientationPatientDICOM);
                                 fprintf('interhemisphericFissureAngle: ');
                                 disp(rois(annot).interhemisphericFissureAngle);
 
@@ -106,10 +104,8 @@ for ii = 1:numel(sessions)
                                subId = acquisition.parents.subject;
                                subject = fw.get(subId);
                                disp(subject.label);
-                               fprintf('imagePath: ');
-                               disp(rois{annot,1}.imagePath);
-                               fprintf('imageId: ');
-                               disp(rois{annot,1}.imageId);
+                               fprintf('ImageOrientationPatient: ');
+                               disp(file.info.ImageOrientationPatientDICOM);
                                fprintf('interhemisphericFissureAngle: ');
                                disp(rois{annot,1}.interhemisphericFissureAngle);
                            end
