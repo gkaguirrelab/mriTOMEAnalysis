@@ -63,6 +63,9 @@ for ii = 1:numel(sessions)
     % Get the session label
     sessionLabel = sessions{ii}.label;
     
+    % Get the subject label
+    subjectLabel = sessions{ii}.subject.label;
+    
     % Get the acquisitions object
     acquisitions = sessions{ii}.acquisitions();
     
@@ -71,8 +74,11 @@ for ii = 1:numel(sessions)
     acqLabels = cellfun(@(x) x.label,acquisitions,'UniformOutput',false);
     idxT2 = find(cellfun(@(x) contains(x,'T2w'),acqLabels));
     
+    % Make sure that this session includes rest fMRI data
+    rfMRIFlag = find(cellfun(@(x) contains(x,'rfMRI'),acqLabels),1);
+    
     % If there is no T2 acquisition, move on
-    if isempty(idxT2)
+    if isempty(idxT2) || isempty(rfMRIFlag)
         continue
     end
     
@@ -92,11 +98,7 @@ for ii = 1:numel(sessions)
     end
     
     file = acquisition.files{idxFile};
-    
-    % Get the subject ID
-    subId = acquisition.parents.subject;
-    subject = fw.get(subId);
-    
+        
     % Derive [yaw pitch roll] from ImageOrientationPatientDICOM
     iop = file.info.ImageOrientationPatientDICOM;
     xyzR = iop(1:3);
@@ -112,7 +114,7 @@ for ii = 1:numel(sessions)
     YPR = YPR + [-90 0 90];
     
     % Report the values for this subject to the screen
-    str = sprintf([subject.label ', ' sessionLabel ', YPR values: [%2.1f, %2.1f, %2.1f]'],YPR);
+    str = sprintf([subjectLabel ', ' sessionLabel ', YPR values: [%2.1f, %2.1f, %2.1f]'],YPR);
     disp(str);
 
 end % Loop over session
