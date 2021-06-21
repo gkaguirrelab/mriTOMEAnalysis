@@ -60,6 +60,12 @@ if showPlot
     figHandle=figure();
 end
 
+% Set up a table to hold the results
+T = table('Size',[6 3],'VariableTypes',{'string','string','double'});
+T.Properties.VariableNames = {'Side','Canal','Angle w.r.t B0'};
+sides = {'right','left'};
+canals = {'lat','ant','post'};
+
 % Now loop through the canals
 for cc=1:3
     for ss=1:2
@@ -80,6 +86,12 @@ for cc=1:3
         str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
         disp(str);
         
+        % Save the value in the table
+        row = 2*(cc-1)+ss;
+        T(row,1)=sides(ss);
+        T(row,2)=canals(cc);
+        T(row,3)={angle_xz};
+        
         % Construct the plot if requested
         if showPlot
             plot3(point_array(:,1),point_array(:,2),point_array(:,3),['*' colorList{cc}])
@@ -98,7 +110,9 @@ if showPlot
     zlabel('Inferior (-) -- Superior (+)')
 end
 
-
+% Save the table
+fileName = '/Users/aguirre/Desktop/TOME_3046_CanalAnglesWithB0.csv';
+writetable(T,fileName)
 
 
 
