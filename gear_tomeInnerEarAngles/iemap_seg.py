@@ -1,6 +1,12 @@
+#!/anaconda3/bin/python3
+
+import sys
+print (sys.path)
+
 import os, vtk, time, csv
+os.environ["PYTHONPATH"] = '/anaconda3/bin/python3'
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
-from ants.antsRegistration import registerImage, makeDiagnosticPlot
+from antsRegistration import registerImage, makeDiagnosticPlot
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
@@ -189,7 +195,7 @@ def registerInnerEar(config):
             M_flipLR = np.diag([1.0,1.0,1.0,1.0])
         M_trans_innerear = np.eye(4)
         M_trans_innerear[0:3,3] = -1.0 * df_fids.loc['fid_innerear_'+side,['x','y','z']].values
-        M_init = M_flipLR @ M_trans_innerear
+        M_init = np.dot(M_flipLR, M_trans_innerear)
         trf_init = sitk.AffineTransform(list(M_init[0:3,0:3].ravel()),
                                         list(M_init[0:3,3].ravel()),
                                         [0,0,0])
