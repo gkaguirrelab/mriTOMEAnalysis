@@ -14,8 +14,16 @@ showPlot = true;
 
 %% Identify the ImageOrientationPatientDICOM from a NIFTI image
 
-% The acquisition ID for the T2 image for TOME_3045
-acqID = '5cbf16aa1da427002da4298f'; %
+% The acquisition ID for the T2 image for TOME_3046
+% To get this ID:
+%{
+    fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
+    sessionID = '5cf166af36da2300403a9c43';
+    acqList = fw.getSessionAcquisitions(sessionID);
+    acqID = acqList{find(cellfun(@(x) strcmp(x.label,'T2w_SPC'),acqList))}.id;
+%}
+
+acqID = '5cf1724336da2300473b7b75'; 
 
 % Get the acquisition container
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -58,9 +66,11 @@ for cc=1:3
         fileName = fullfile('/Users/aguirre/Desktop/normals',[sideList{ss} '_' sccList{cc} '.mat']);
         load(fileName);
         
-        % Rotate the plane normal by the IOP rotation matrix
+        % Rotate the plane normal, offset, and point array by the IOP
+        % rotation matrix
         offset = m*offset';
         normal = m*normal';
+        point_array=(m*point_array')';
         
         R1 = [offset, normal];
         R2 = [0 0 0; 0 0 1]';
