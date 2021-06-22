@@ -1,4 +1,4 @@
-% calcHeadAngles.m
+% calcEarAngles.m
 %
 % The HCP LifeSpan scanning protocol automatically defines the field of
 % view of the acquisitions based upon an initial measurement (the auto
@@ -31,7 +31,7 @@ sessionLabel = 'session1_restAndStructure';
 projectName = 'tome';
 gearName = 'hcp-func';
 scratchSaveDir = getpref('flywheelMRSupport','flywheelScratchDir');
-resultSaveDirStem = fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),'calcHeadAngles');
+resultSaveDirStem = fullfile(getpref('mriTOMEAnalysis','TOMEAnalysisPath'),'calcEarAngles');
 outputFileSuffix = '_hcpfunc.zip';
 resultFileSuffix = {'Movement_Regressors.txt','Scout_gdc.nii.gz','MotionMatrices','DistortionCorrectionAndEPIToT1wReg_FLIRTBBRAndFreeSurferBBRbased/T1w_acpc_dc_restore_brain.nii.gz'};
 resultIsDir = [0 0 1 0];
@@ -57,6 +57,10 @@ sessions_1b = project.sessions.find(['label=' 'Session 1b']);
 % Concatenate the list of sessions
 sessions = [sessions_1; sessions_1a; sessions_1b];
 
+% Save the warn state and turn off a warning
+warnState = warning();
+warning('off','MATLAB:table:ModifiedAndSavedVarnames');
+
 %% Loop through the session
 for ii = 1:numel(sessions)
     
@@ -66,55 +70,48 @@ for ii = 1:numel(sessions)
     % Get the subject label
     subjectLabel = sessions{ii}.subject.label;
     
-    % Get the acquisitions object
-    acquisitions = sessions{ii}.acquisitions();
+    % Get the analyses object
+    analyses = sessions{ii}.analyses();
     
-    % Find the T2 acquisition. We use this because sometimes there was an
-    % axial and sagittal T1 acquired in the same session.
-    acqLabels = cellfun(@(x) x.label,acquisitions,'UniformOutput',false);
-    idxT2 = find(cellfun(@(x) contains(x,'T2w'),acqLabels));
-    
-    % Make sure that this session includes rest fMRI data
-    rfMRIFlag = find(cellfun(@(x) contains(x,'rfMRI'),acqLabels),1);
-    
-    % If there is no T2 acquisition, move on
-    if isempty(idxT2) || isempty(rfMRIFlag)
-        continue
-    end
-    
-    % Grab the acquisition
-    acquisition = acquisitions{idxT2};
-    
-    % For some reason, Flywheel requires that we reload the ibject
-    % to get all the juicy meta-data
-    acquisition = acquisition.reload();
-    
-    % Find the nifti file
-    idxFile = find(cellfun(@(x) strcmp(x.type,'nifti'),acquisition.files));
-    
-    % If there is no nifti file, move on
-    if isempty(idxFile)
-        continue
-    end
-    
-    file = acquisition.files{idxFile};
+    % Find the inner ear gear.
+    gearNames = cellfun(@(x) x.gearInfo.name,analyses,'UniformOutput',false);
+    idxEarGear = find(cellfun(@(x) contains(x,'tome-calculate-inner-ear-angles'),gearNames));
         
-    % Derive [yaw pitch roll] from ImageOrientationPatientDICOM
-    iop = file.info.ImageOrientationPatientDICOM;
-    xyzR = iop(1:3);
-    xyzC = iop(4:6);
-    xyzS = [ (xyzR(2) * xyzC(3)) - (xyzR(3) * xyzC(2)) ; ...
-        (xyzR(3) * xyzC(1)) - (xyzC(1) * xyzC(3)) ; ...
-        (xyzR(1) * xyzC(2)) - (xyzR(2) * xyzC(1))  ...
-        ];
-    m = [xyzR xyzC xyzS];
-    YPR = rad2deg(rotm2eul(m,'ZYX'));
+    % If there is no inner ear, move on
+    if isempty(idxEarGear)
+        continue
+    end
     
-    % Wrap the RPY values to center on zero
-    YPR = YPR + [-90 0 90];
+    % Grab the analysis
+    analysis = analyses{idxEarGear};
+
+        % If there are no files, we are still processing, so move on
+    if isempty(analysis.files)
+        continue
+    end
+
+    % Find which file is the csv file
+    fileIdx = find(cellfun(@(x) contains(x.name,'_CanalAnglesWithB0.csv'),analysis.files));
+
+    % If there are no files, we are still processing, so move on
+    if isempty(fileIdx)
+        continue
+    end
+
+    fileName = analysis.files{fileIdx}.name;
+    
+    % Download the csv results
+    tmpPath = fullfile(scratchSaveDir,fileName);
+    fw.downloadOutputFromAnalysis(analysis.id,fileName,tmpPath);
+    
+    % Load the csv file into memory
+    T = readtable(tmpPath);
     
     % Report the values for this subject to the screen
-    str = sprintf([subjectLabel '\t' sessionLabel '\tYPR values:\t%2.1f\t%2.1f\t%2.1f'],YPR);
+    str = sprintf([subjectLabel '\t' sessionLabel '\tlateral canal angles [R,L]:\t%2.1f\t%2.1f'],T{1,3},T{2,3});
     disp(str);
-
+        
 end % Loop over session
+
+% Restore warn state
+warning(warnState);
