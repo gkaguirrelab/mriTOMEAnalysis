@@ -31,7 +31,12 @@ sideList = {'right','left'};
 colorList = {'r','g','b'};
 figHandle=figure('visible','off');
 
-AngleWrsBZero = {};
+% Set up a table to hold the results
+T = table('Size',[6 3],'VariableTypes',{'string','string','double'});
+T.Properties.VariableNames = {'Side','Canal','Angle w.r.t B0'};
+sides = {'right','left'};
+canals = {'lat','ant','post'};
+
 % Now loop through the canals
 for cc=1:3
     for ss=1:2
@@ -42,9 +47,11 @@ for cc=1:3
         normal = [];
         load(fileName);
         
-        % Rotate the plane normal by the IOP rotation matrix
+        % Rotate the plane normal, offset, and point array by the IOP
+        % rotation matrix
         offset = m*offset';
         normal = m*normal';
+        point_array=(m*point_array')';
         
         R1 = [offset, normal];
         R2 = [0 0 0; 0 0 1]';
@@ -53,7 +60,12 @@ for cc=1:3
         % Report the values for this subject to the screen
         str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
         disp(str);
-        AngleWrsBZero{end+1} = str;
+
+        % Save the value in the table
+        row = 2*(cc-1)+ss;
+        T(row,1)=sides(ss);
+        T(row,2)=canals(cc);
+        T(row,3)={angle_xz};        
         
         % Construct the plot if requested
         plot3(point_array(:,1),point_array(:,2),point_array(:,3),['*' colorList{cc}])
@@ -64,9 +76,6 @@ for cc=1:3
     end
 end
 
-AngleWrsBZero = AngleWrsBZero';
-save(fullfile(outputFolder, [subID '_AngleWrsBZero.mat']), 'AngleWrsBZero')
-
 % Clean up plot
 axis equal
 xlabel('Left (-) -- Right (+)')
@@ -74,7 +83,11 @@ ylabel('Posterior (-) -- Anterior (+)')
 zlabel('Inferior (-) -- Superior (+)')
 
 savefig(figHandle, fullfile(outputFolder, [subID 'AnglesPlot.fig']))
+saveas(figHandle, fullfile(outputFolder, [subID 'AnglesPlot.pdf']))
 
+% Save the table
+tableName = fullfile(outputFolder, [subID '_CanalAnglesWithB0.csv']);
+writetable(T,tableName)
 %% LOCAL FUNCTION
 function [angle_xy, angle_xz] = angleRays( R1, R2 )
 % Returns the angle in degrees between two rays
