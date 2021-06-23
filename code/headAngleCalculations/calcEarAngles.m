@@ -57,61 +57,71 @@ sessions_1b = project.sessions.find(['label=' 'Session 1b']);
 % Concatenate the list of sessions
 sessions = [sessions_1; sessions_1a; sessions_1b];
 
+% The list of canals
+canals = {'lateral','anterior','posterior'};
+
 % Save the warn state and turn off a warning
 warnState = warning();
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
 
-%% Loop through the session
-for ii = 1:numel(sessions)
+% Loop through canals
+for cc = 1:3
     
-    % Get the session label
-    sessionLabel = sessions{ii}.label;
-    
-    % Get the subject label
-    subjectLabel = sessions{ii}.subject.label;
-    
-    % Get the analyses object
-    analyses = sessions{ii}.analyses();
-    
-    % Find the inner ear gear.
-    gearNames = cellfun(@(x) x.gearInfo.name,analyses,'UniformOutput',false);
-    idxEarGear = find(cellfun(@(x) contains(x,'tome-calculate-inner-ear-angles'),gearNames));
+    % Loop through the session
+    for ii = 1:numel(sessions)
         
-    % If there is no inner ear, move on
-    if isempty(idxEarGear)
-        continue
-    end
-    
-    % Grab the analysis
-    analysis = analyses{idxEarGear};
-
+        % Get the session label
+        sessionLabel = sessions{ii}.label;
+        
+        % Get the subject label
+        subjectLabel = sessions{ii}.subject.label;
+        
+        % Get the analyses object
+        analyses = sessions{ii}.analyses();
+        
+        % Find the inner ear gear.
+        gearNames = cellfun(@(x) x.gearInfo.name,analyses,'UniformOutput',false);
+        idxEarGear = find(cellfun(@(x) contains(x,'tome-calculate-inner-ear-angles'),gearNames));
+        
+        % If there is no inner ear, move on
+        if isempty(idxEarGear)
+            continue
+        end
+        
+        % Grab the analysis
+        analysis = analyses{idxEarGear};
+        
         % If there are no files, we are still processing, so move on
-    if isempty(analysis.files)
-        continue
-    end
-
-    % Find which file is the csv file
-    fileIdx = find(cellfun(@(x) contains(x.name,'_CanalAnglesWithB0.csv'),analysis.files));
-
-    % If there are no files, we are still processing, so move on
-    if isempty(fileIdx)
-        continue
-    end
-
-    fileName = analysis.files{fileIdx}.name;
-    
-    % Download the csv results
-    tmpPath = fullfile(scratchSaveDir,fileName);
-    fw.downloadOutputFromAnalysis(analysis.id,fileName,tmpPath);
-    
-    % Load the csv file into memory
-    T = readtable(tmpPath);
-    
-    % Report the values for this subject to the screen
-    str = sprintf([subjectLabel '\t' sessionLabel '\tlateral canal angles [R,L]:\t%2.1f\t%2.1f'],T{1,3},T{2,3});
-    disp(str);
+        if isempty(analysis.files)
+            continue
+        end
         
-end % Loop over session
+        % Find which file is the csv file
+        fileIdx = find(cellfun(@(x) contains(x.name,'_CanalAnglesWithB0.csv'),analysis.files));
+        
+        % If there are no files, we are still processing, so move on
+        if isempty(fileIdx)
+            continue
+        end
+        
+        fileName = analysis.files{fileIdx}.name;
+        
+        % Download the csv results
+        tmpPath = fullfile(scratchSaveDir,fileName);
+        fw.downloadOutputFromAnalysis(analysis.id,fileName,tmpPath);
+        
+        % Load the csv file into memory
+        T = readtable(tmpPath);
+        
+        % Report the values for this subject to the screen
+        str = sprintf([subjectLabel '\t' sessionLabel '\t ' canals{cc} ' canal angles [R,L]:\t%2.1f\t%2.1f'],T{(cc-1)*2+1,3},T{(cc-1)*2+2,3});
+        disp(str);
+        
+    end % Loop over session
+    
+    fprintf('\n\n');
+    
+end % Loop over canals
 
 % Restore warn state
 warning(warnState);
