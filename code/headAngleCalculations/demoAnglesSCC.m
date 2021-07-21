@@ -23,7 +23,7 @@ showPlot = true;
     acqID = acqList{find(cellfun(@(x) strcmp(x.label,'T2w_SPC'),acqList))}.id;
 %}
 
-acqID = '5cf1724336da2300473b7b75'; 
+acqID = '5cf1724336da2300473b7b75';
 
 % Get the acquisition container
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -61,14 +61,15 @@ if showPlot
 end
 
 % Set up a table to hold the results
-T = table('Size',[6 3],'VariableTypes',{'string','string','double'});
-T.Properties.VariableNames = {'Side','Canal','Angle w.r.t B0'};
+T = table('Size',[6 4],'VariableTypes',{'string','string','double','double'});
+T.Properties.VariableNames = {'Side','Canal','angle_xy','angle_xz'};
 sides = {'right','left'};
 canals = {'lat','ant','post'};
 
+normalSet = cell(2,3);
 % Now loop through the canals
-for cc=1:3
-    for ss=1:2
+for ss=1:2
+    for cc=1:3
         fileName = fullfile('/Users/aguirre/Desktop/normals',[sideList{ss} '_' sccList{cc} '.mat']);
         load(fileName);
         
@@ -79,18 +80,23 @@ for cc=1:3
         point_array=(m*point_array')';
         
         R1 = [offset, normal];
-        R2 = [0 0 0; 0 0 1]';
-        [~,angle_xz] = angleRays( R1, R2 );
-        
-        % Report the values for this subject to the screen
-        str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
-        disp(str);
-        
-        % Save the value in the table
-        row = 2*(cc-1)+ss;
-        T(row,1)=sides(ss);
-        T(row,2)=canals(cc);
-        T(row,3)={angle_xz};
+
+        normalSet{ss,cc}=R1;
+
+%         R2 = [0 0 0; 1 0 0]';
+%         [~,angle_xz] = angleRays( R1, R2 );
+%         
+%         
+%         % Report the values for this subject to the screen
+%         str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
+%         disp(str);
+%         
+%         % Save the value in the table
+%         row = 2*(cc-1)+ss;
+%         T(row,1)=sides(ss);
+%         T(row,2)=canals(cc);
+%         T(row,3)={angle_xy};
+%         T(row,4)={angle_xz};
         
         % Construct the plot if requested
         if showPlot
@@ -110,9 +116,9 @@ if showPlot
     zlabel('Inferior (-) -- Superior (+)')
 end
 
-% Save the table
-fileName = '/Users/aguirre/Desktop/TOME_3046_CanalAnglesWithB0.csv';
-writetable(T,fileName)
+% Save the normalSet
+fileName = '/Users/aguirre/Desktop/TOME_3046_NormalSetWRT_B0.mat';
+save(fileName,'normalSet')
 
 
 
