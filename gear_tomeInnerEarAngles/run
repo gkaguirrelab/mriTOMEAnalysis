@@ -11,6 +11,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from calculateSSCRadiometrics import calculateSSCRadiometrics
 
 ###################### Define the Paths and parameters ###########################
 
@@ -26,11 +27,15 @@ manifest_file = os.path.join(flywheel_base, 'manifest.json')
 config_path = os.path.join(flywheel_base, 'config.json')
 mcr_path = '/usr/local/MATLAB/MATLAB_Runtime/v98' #path to MATLAB runtime
 matlab_function = '/tmp/calculateSSCwrtBZero/run_calculateSSCwrtBZero.sh'
+fsl_path = 'FSLDIR=/fsl/;. ${FSLDIR}/etc/fslconf/fsl.sh;PATH=${FSLDIR}:${PATH};export FSLDIR PATH;/fsl/bin/'
 
 # Get the time series
 image_path = os.path.join(flywheel_base, 'input/T1_or_T2_image')
 image = os.path.join(image_path, os.listdir(image_path)[0])
 
+# Template 
+data_folder = '/segmentation_code/data/'
+template = os.path.join(data_folder, 'InnerEarAtlas/vol_InnerEarAtlas_Template_T2.nii.gz')
 ###################Parse Config Here############################
 
 with open(config_path) as config_file:
@@ -67,7 +72,19 @@ cmd = '%s %s %s %s %s %s' % (matlab_function, mcr_path,
                              
 os.system(cmd)
 
+# Rub radiometrics
+radiometrics_workdir = os.path.join(first_output_dir, 'radiometrics_workdir')
+os.system('mkdir %s' % radiometrics_workdir)
+left_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_left_InverseComposite.h5')
+right_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_right_InverseComposite.h5')
+inner_ear_L = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sl-segmentation-ls_Hsapiens_Sl-label.nii.gz')
+inner_ear_A = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sa-segmentation-ls_Hsapiens_Sa-label.nii.gz')
+inner_ear_P = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sp-segmentation-ls_Hsapiens_Sp-label.nii.gz')
+
+calculateSSCRadiometrics(image, template, left_ear_warp, right_ear_warp, inner_ear_L, inner_ear_A, inner_ear_P, radiometrics_workdir, final_output_dir, ants_path='', fsl_path=fsl_path)
+
 ################## Zip everything and output ##################################
+os.system('cd %s; zip -r %s *' % (first_output_dir, os.path.join(final_output_dir, 'intermediate_files.zip')))  
 os.system('cd %s; zip %s *' % (os.path.join(first_output_dir, 'plane_normals'), os.path.join(final_output_dir, '%s_plane_normals.zip' % subject_id)))
 os.system('cp %s %s' % (os.path.join(first_output_dir, 'left_ear_images', 'diagnostic.gif'), os.path.join(final_output_dir, 'left_ear_registration_diagnostic.gif')))
 os.system('cp %s %s' % (os.path.join(first_output_dir, 'right_ear_images', 'diagnostic.gif'), os.path.join(final_output_dir, 'right_ear_registration_diagnostic.gif')))

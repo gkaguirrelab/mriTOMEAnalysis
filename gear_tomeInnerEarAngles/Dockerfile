@@ -13,6 +13,7 @@ COPY ants /segmentation_code/ants
 COPY data /segmentation_code/data
 COPY iemap_seg.py /segmentation_code/iemap_seg.py
 RUN chmod +x /flywheel/v0/run
+COPY fslinstaller.py /fslinstaller.py
 COPY calculateSSCwrtBZero /tmp/calculateSSCwrtBZero
 
 # Install required packages    
@@ -21,12 +22,17 @@ RUN apt-get update \
     git \
     wget \
     zip \
+    python \
     unzip \
     ants \ 
     libgl1-mesa-glx \
     fsleyes \ 
     xvfb \
     python-vtk
+
+# Install python2 for fslinstallation and install the newest verison of fsl
+RUN apt-get install python -y
+RUN python2 /fslinstaller.py -d /fsl 
 
 # Install Anaconda
 RUN wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh

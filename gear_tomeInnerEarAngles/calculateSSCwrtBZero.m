@@ -32,14 +32,16 @@ colorList = {'r','g','b'};
 figHandle=figure('visible','off');
 
 % Set up a table to hold the results
-T = table('Size',[6 3],'VariableTypes',{'string','string','double'});
-T.Properties.VariableNames = {'Side','Canal','Angle w.r.t B0'};
+T = table('Size',[6 4],'VariableTypes',{'string','string','double','double'});
+T.Properties.VariableNames = {'Side','Canal','angle_xy','angle_xz'};
 sides = {'right','left'};
 canals = {'lat','ant','post'};
 
-% Now loop through the canals
-for cc=1:3
-    for ss=1:2
+normalSet = cell(2,3);
+
+for ss=1:2
+    for cc=1:3
+        % Load file
         fileName = fullfile(normalFolder,[sideList{ss} '_' sccList{cc} '.mat']);
         point_array = [];
         R = [];
@@ -54,25 +56,28 @@ for cc=1:3
         point_array=(m*point_array')';
         
         R1 = [offset, normal];
-        R2 = [0 0 0; 0 0 1]';
-        [~,angle_xz] = angleRays( R1, R2 );
-        
-        % Report the values for this subject to the screen
-        str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
-        disp(str);
 
-        % Save the value in the table
-        row = 2*(cc-1)+ss;
-        T(row,1)=sides(ss);
-        T(row,2)=canals(cc);
-        T(row,3)={angle_xz};        
+        normalSet{ss,cc}=R1;
+
+%         R2 = [0 0 0; 1 0 0]';
+%         [~,angle_xz] = angleRays( R1, R2 );
+%         
+%         
+%         % Report the values for this subject to the screen
+%         str = sprintf([sideList{ss} '_' sccList{cc} ' (' colorList{cc} '), angle w.r.t B0: %2.1f degrees'],angle_xz);
+%         disp(str);
+%         
+%         % Save the value in the table
+%         row = 2*(cc-1)+ss;
+%         T(row,1)=sides(ss);
+%         T(row,2)=canals(cc);
+%         T(row,3)={angle_xy};
+%         T(row,4)={angle_xz};
         
         % Construct the plot if requested
         plot3(point_array(:,1),point_array(:,2),point_array(:,3),['*' colorList{cc}])
         hold on
-        quiver3(offset(1),offset(2),offset(3),normal(1),normal(2),normal(3),5,['-' colorList{cc}],'LineWidth',3)
-
-        
+        quiver3(offset(1),offset(2),offset(3),normal(1),normal(2),normal(3),5,['-' colorList{cc}],'LineWidth',3)        
     end
 end
 
@@ -85,9 +90,14 @@ zlabel('Inferior (-) -- Superior (+)')
 savefig(figHandle, fullfile(outputFolder, [subID 'AnglesPlot.fig']))
 saveas(figHandle, fullfile(outputFolder, [subID 'AnglesPlot.pdf']))
 
-% Save the table
-tableName = fullfile(outputFolder, [subID '_CanalAnglesWithB0.csv']);
-writetable(T,tableName)
+% % Save the table
+% tableName = fullfile(outputFolder, [subID '_CanalAnglesWithB0.csv']);
+% writetable(T,tableName)
+
+% Save the normalSet
+fileName = fullfile(outputFolder, [subID '_NormalSetWRT_B0.mat']);
+save(fileName,'normalSet')
+
 %% LOCAL FUNCTION
 function [angle_xy, angle_xz] = angleRays( R1, R2 )
 % Returns the angle in degrees between two rays
