@@ -45,6 +45,7 @@ config = job_config['config']
 registration_quality = config['registration_quality']
 n_threads = config['n_threads']
 subject_id = config['subject_id']
+flywheel_API_key = config['flywheel_API_key']
 
 ###################Run Algorithm################################
 os.environ['ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS'] = n_threads
@@ -55,7 +56,7 @@ os.system('/anaconda3/bin/python3 iemap_seg.py --input_head_volumes %s --matchin
 context = flywheel.GearContext()
 config = context.get_input('T1_or_T2_image')
 input_id = config['hierarchy']['id']
-fw = flywheel.Client('upenn.flywheel.io:8P7zdNhXBWiahwEGKt')
+fw = flywheel.Client(flywheel_API_key)
 acquisition = fw.get(input_id)
 file = acquisition.files[1]
 vector = file.info['ImageOrientationPatientDICOM']
@@ -72,7 +73,7 @@ cmd = '%s %s %s %s %s %s' % (matlab_function, mcr_path,
                              
 os.system(cmd)
 
-# Rub radiometrics
+# Run radiometrics
 radiometrics_workdir = os.path.join(first_output_dir, 'radiometrics_workdir')
 os.system('mkdir %s' % radiometrics_workdir)
 left_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_left_InverseComposite.h5')
