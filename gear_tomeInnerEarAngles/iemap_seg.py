@@ -94,7 +94,7 @@ def transformPointListByTransform(trf,fid_csv_input_file,fid_csv_output_file, fl
 def transformVTKMeshByTransform(trf, vtkMesh_input_file, vtkMesh_output_file, flipPoints_LR=False):
     flip = sitk.AffineTransform([-1,0,0,0,1,0,0,0,1],[0,0,0],[0,0,0])
 
-    reader = vtk.vtkGenericDataObjectReader()
+    reader = vtk.vtkPolyDataReader()
     reader.SetFileName(vtkMesh_input_file)
     reader.Update()
 
@@ -116,7 +116,7 @@ def transformVTKMeshByTransform(trf, vtkMesh_input_file, vtkMesh_output_file, fl
     points.Modified()
     obj.Modified()
 
-    writer = vtk.vtkGenericDataObjectWriter()
+    writer = vtk.vtkPolyDataWriter()
     writer.SetFileName(vtkMesh_output_file)
     writer.SetInputDataObject(obj)
     writer.UpdateDataObject()
@@ -307,6 +307,90 @@ def calculatePlaneNormals(path_to_seg_output, position, side, output_folder):
     np.save(os.path.join(output_folder, side + '_' + position + '.npy'), values)
     return (values)
 
+def fidloc(dffids,tagfid):
+    return dffids.loc[tagfid,['x','y','z']].values.astype(float)
+
+def fiddist(dffids,tagfid1,tagfid2):
+    return np.linalg.norm(fidloc(dffids,tagfid1)-fidloc(dffids,tagfid2))
+
+def compute_distances(output_dir):
+    tags_fids = ['ant','lat','post']
+    # start calculating and storing results
+    for side in ['right','left']:
+        dictres = dict()
+        # measure SCC_ant/lat/post widths, heights, inner widths, inner heights
+        for idx_fid, tag_fids in enumerate(tags_fids):
+            # file-format: fids_InnerEarAtlas_SSC_ant_left.fcsv
+            ffFid = os.path.join(output_dir,'fids_InnerEarAtlas_SSC_%s_%s.fcsv'%(tag_fids, side)) 
+            dffids = readSlicerAnnotationFiducials(ffFid)
+            dffids = dffids.set_index('label')
+
+            # measure SCC width and height
+            dictres['SCC_%s_width'%tag_fids]  = fiddist(dffids,'SSC_%s_W_1'%tag_fids,'SSC_%s_W_2'%tag_fids)
+            dictres['SCC_%s_height'%tag_fids] = fiddist(dffids,'SSC_%s_H_inner'%tag_fids,'SSC_%s_H_outer'%tag_fids)
+            
+            # compute radius of curvature of each canal arc :
+            # calculated by taking half the average of the height and width measurements 
+            # [0.5(height+width)/2], in accordance with a previous study (Spoor and Zonneveld, 1998).
+            dictres['SCC_%s_radius'%tag_fids] = 0.5*np.mean([dictres['SCC_%s_width'%tag_fids], dictres['SCC_%s_height'%tag_fids]])
+            
+            # measure SCC inner width
+            v = []
+            for i in range(3):
+                dictres['SCC_%s_innerwidth_%d'%(tag_fids,i+1)] = fiddist(dffids,'SSC_%s_innerW_%d_in'%(tag_fids,i+1),'SSC_%s_innerW_%d_out'%(tag_fids,i+1))
+            # measure SCC inner height
+            v = []
+            for i in range(3):
+                dictres['SCC_%s_innerheight_%d'%(tag_fids,i+1)] = fiddist(dffids,'SSC_%s_innerH_%d_up'%(tag_fids,i+1),'SSC_%s_innerH_%d_down'%(tag_fids,i+1))
+            
+        # measure common crus length and width_1/2/3
+        # file-format: fids_InnerEarAtlas_SSC_ccrus_left.fcsv
+        ffFid = os.path.join(output_dir,'fids_InnerEarAtlas_SSC_ccrus_%s.fcsv'%(side))
+        dffids = readSlicerAnnotationFiducials(ffFid)
+        dffids = dffids.set_index('label')
+        dictres['SCC_ccrus_length']  = fiddist(dffids,'SSC_ccrus_L_1','SSC_ccrus_L_2')
+        for i in range(3):
+            dictres['SCC_ccrus_width_%d'%(i+1)]  = fiddist(dffids,'SSC_ccrus_W%d_1'%(i+1),'SSC_ccrus_W%d_2'%(i+1))
+        
+        # compute inner ear measures from literature 
+        # file-format: fids_IETLiterature_left.fcsv
+        ffFid = os.path.join(output_dir,'fids_IETLiterature_%s.fcsv'%(side))
+        dffids = readSlicerAnnotationFiducials(ffFid)
+        dffids = dffids.set_index('label')
+        dictres['litIE_cochleaheight_oblique']  = fiddist(dffids,'fids_Darco_cochheight_1','fids_Darco_cochheight_2')
+        dictres['litIE_cochleaheight_coronal']  = fiddist(dffids,'fids_PurcellShim_cochheight_coronal_1','fids_PurcellShim_cochheight_coronal_2')
+        dictres['litIE_cochlealength']  = fiddist(dffids,'fids_Liu_cochlength_1','fids_Liu_cochlength_2')
+        dictres['litIE_cochleawidth']  = fiddist(dffids,'fids_Liu_cochwidth_1','fids_Liu_cochwidth_2')
+        dictres['litIE_vestibulelength']  = fiddist(dffids,'fids_Sugihara_vest_h1','fids_Sugihara_vest_h2')
+        dictres['litIE_vestibulewidth']  = fiddist(dffids,'fids_Sugihara_vest_w1','fids_Sugihara_vest_w2')
+        dictres['litIE_lengthtotal']  = fiddist(dffids,'fids_Teixido_length_1','fids_Teixido_length_2')
+        
+        # write to file
+        s = pd.Series(dictres)
+        s.to_csv( os.path.join(output_dir,'anatomic_distances_%s.csv'%side), header=False )
+        print('Wrote anatomical distances for side: %s'%side)
+    print('All anatomical distances computed.')
+
+def transform_surface_models(output_dir, trf_left, trf_right):
+    vtk_files = ['ls_Hsapiens_Aa.vtk', 'ls_Hsapiens_Al.vtk', 'ls_Hsapiens_Ant_Cup_Duct.vtk', 'ls_Hsapiens_Ant_Cup_Ut.vtk', 
+                 'ls_Hsapiens_Ant_Cup_Wall.vtk', 'ls_Hsapiens_Ap.vtk', 'ls_Hsapiens_CCa.vtk', 'ls_Hsapiens_CCp.vtk', 
+                 'ls_Hsapiens_Lat_Cup_Duct.vtk', 'ls_Hsapiens_Lat_Cup_Ut.vtk', 'ls_Hsapiens_Lat_Cup_Wall.vtk', 
+                 'ls_Hsapiens_Post_Cup_Duct.vtk', 'ls_Hsapiens_Post_Cup_Ut.vtk', 'ls_Hsapiens_Post_Cup_Wall.vtk', 
+                 'ls_Hsapiens_Sa.vtk', 'ls_Hsapiens_SC.vtk', 'ls_Hsapiens_Sl.vtk', 'ls_Hsapiens_Sp.vtk', 'ls_Hsapiens_UCp.vtk', 
+                 'ls_Hsapiens_utricle.vtk', 'mesh_david_cochlea.vtk', 'mesh_david_sacculus.vtk',  
+                 'seg_coch_inner_cupula.vtk', 'seg_coch_inner_scala_tympani.vtk', 'seg_coch_inner_scala_vestibuli.vtk', 
+                 'seg_coch_outer_T2.vtk', 'surface_InnerEarAtlas_CISS_Otsu.vtk', 'surface_InnerEarAtlas_T2_Otsu.vtk']
+    print('Transforming surface meshes:')
+    for idx, file in enumerate(vtk_files):
+        for side, trf, flip in zip(['left', 'right'],
+                                   [trf_left, trf_right],
+                                   [True, False]):
+            vtk_file_in  = os.path.join(module_dir,"data","InnerEarAtlas","surface_models",file)
+            vtk_file_out = os.path.join(output_dir,file.replace('.vtk','_%s.vtk'%side))
+            transformVTKMeshByTransform(trf, vtk_file_in, vtk_file_out, flipPoints_LR=flip)
+        print('Transformation L/R done: %2d of %d (%s)'%(idx+1, len(vtk_files), file))
+    print('All surface meshes transformed.')
+
 if __name__ == "__main__":
     import argparse
 
@@ -335,6 +419,7 @@ if __name__ == "__main__":
     parser.add_argument('--write-fiducials',dest="write_innerear_fiducials", choices=["y","n"], default="y", help="Write fiducial lists")
     parser.add_argument('--write-transform-fullbrain',dest="write_trf_fullbrain", choices=["y","n"], default="y", help="Write transforms from full brain registration")
     parser.add_argument('--write-transform-innerears',dest="write_trf_innerears", choices=["y","n"], default="y", help="Write transforms from inner ear registration")
+    parser.add_argument('--compute_distances', choices=["y","n"], default="y", help="Compute and write distances between fiducials as in IEMap paper.")
     
     parser.add_argument('--accuracy_head', dest="accuracy_head", nargs='+', 
                         help="Choose accuracy vs speed for full-head registration ('accurate','better','normal','fast','debug').")
@@ -352,6 +437,9 @@ if __name__ == "__main__":
     print('\n')
     print(config)
     print('\n')
+    
+    if not os.path.exists(config['output_dir']):
+        os.makedirs(config['output_dir'], exist_ok=True)
     
     if len(config['input_head_volumes'])!=len(config['matching_template_modalities_head']):
         print('\nInput volumes for full-head specified incorrectly. The number of --input_head_volumes (currently %d) has to match the number of --matching_template_modalities_head (currently %d).'%(len(config['input_head_volumes']),
@@ -395,7 +483,7 @@ if __name__ == "__main__":
     output_dir_before_reg = os.path.join(config['output_dir'])
     
     # Perform the registration 
-    config, reg_innerear = registerInnerEar(config)
+    config_reg, reg_innerear = registerInnerEar(config)
     
     # Get the subjectToTemplate warp for left and right
     leftComposite = os.path.join(output_dir_before_reg, 'trf_Subject_to_IEMap_left_Composite.h5')
@@ -412,7 +500,7 @@ if __name__ == "__main__":
     makeDiagnosticPlot(subjectHead, IETemplatePatch, leftComposite, leftEarImageOutput)
     makeDiagnosticPlot(subjectHead, IETemplatePatch, rightComposite, rightEarImageOutput)    
     
-    # Move the SSC from IEspace to subject space
+    # Move fiducials: SSC from IEspace to subject space
     f_ant = os.path.join(module_dir,"data","InnerEarAtlas","fids_InnerEarAtlas_SSC_ant.fcsv")
     f_ccrus = os.path.join(module_dir,"data","InnerEarAtlas","fids_InnerEarAtlas_SSC_ccrus.fcsv")
     f_lat = os.path.join(module_dir,"data","InnerEarAtlas","fids_InnerEarAtlas_SSC_lat.fcsv")
@@ -438,7 +526,7 @@ if __name__ == "__main__":
     transformPointListByTransform(right_trf_loaded, f_lat, output_f_lat_right)
     transformPointListByTransform(right_trf_loaded, f_post, output_f_post_right)
     
-    # Calculate plane normals 
+    # Calculate plane normals from SSC fiducials
     plane_output = os.path.join(output_dir_before_reg, 'plane_normals')
     if not os.path.exists(plane_output):
         os.system('mkdir  %s' % plane_output)
@@ -448,6 +536,29 @@ if __name__ == "__main__":
     calculatePlaneNormals(output_dir_before_reg, 'post', 'right', plane_output)
     calculatePlaneNormals(output_dir_before_reg, 'lat', 'left', plane_output)
     calculatePlaneNormals(output_dir_before_reg, 'lat', 'right', plane_output)
+    
+    # Move fiducials: Whole inner ear landmarks (from literature) to subject space
+    f_lit = os.path.join(module_dir,"data","InnerEarAtlas","fids_IETLiterature.fcsv")
+    output_f_lit_left  = os.path.join(output_dir_before_reg, 'fids_IETLiterature_left.fcsv')
+    output_f_lit_right = os.path.join(output_dir_before_reg, 'fids_IETLiterature_right.fcsv')
+    transformPointListByTransform(left_trf_loaded,  f_lit, output_f_lit_left)
+    transformPointListByTransform(right_trf_loaded, f_lit, output_f_lit_right)
+    
+    if config['compute_distances']:
+        compute_distances(output_dir_before_reg)
+    
+    if config['write_surfacemodels']:
+        transform_surface_models(output_dir_before_reg, left_trf_loaded, right_trf_loaded)
+    else:
+        print('input option write_surfacemodels set to "False": skipping surface models.')
+    
+    # optional: cleanups
+    if not config['write_localization_fiducials']:
+        pass
+        # TODO
+        # e.g.:
+        # os.remove( os.path.join(config['output_dir'], config['output_prefix']+"fids_InnerEarLocationsLR.fcsv") )
+    
     
 # desired cmdline call
 '''
