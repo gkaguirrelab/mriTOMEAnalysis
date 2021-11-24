@@ -74,15 +74,15 @@ cmd = '%s %s %s %s %s %s' % (matlab_function, mcr_path,
 os.system(cmd)
 
 # Run radiometrics
-radiometrics_workdir = os.path.join(first_output_dir, 'radiometrics_workdir')
-os.system('mkdir %s' % radiometrics_workdir)
-left_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_left_InverseComposite.h5')
-right_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_right_InverseComposite.h5')
-inner_ear_L = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sl-segmentation-ls_Hsapiens_Sl-label.nii.gz')
-inner_ear_A = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sa-segmentation-ls_Hsapiens_Sa-label.nii.gz')
-inner_ear_P = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sp-segmentation-ls_Hsapiens_Sp-label.nii.gz')
+#radiometrics_workdir = os.path.join(first_output_dir, 'radiometrics_workdir')
+#os.system('mkdir %s' % radiometrics_workdir)
+#left_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_left_InverseComposite.h5')
+#right_ear_warp = os.path.join(first_output_dir, 'trf_Subject_to_IEMap_right_InverseComposite.h5')
+#inner_ear_L = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sl-segmentation-ls_Hsapiens_Sl-label.nii.gz')
+#inner_ear_A = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sa-segmentation-ls_Hsapiens_Sa-label.nii.gz')
+#inner_ear_P = os.path.join(data_folder, 'InnerEarAtlas', 'ls_Hsapiens_Sp-segmentation-ls_Hsapiens_Sp-label.nii.gz')
 
-calculateSSCRadiometrics(image, template, left_ear_warp, right_ear_warp, inner_ear_L, inner_ear_A, inner_ear_P, radiometrics_workdir, final_output_dir, ants_path='', fsl_path=fsl_path)
+#calculateSSCRadiometrics(image, template, left_ear_warp, right_ear_warp, inner_ear_L, inner_ear_A, inner_ear_P, radiometrics_workdir, final_output_dir, ants_path='', fsl_path=fsl_path)
 
 ################## Zip everything and output ##################################
 os.system('cd %s; zip -r %s *' % (first_output_dir, os.path.join(final_output_dir, 'intermediate_files.zip')))  
