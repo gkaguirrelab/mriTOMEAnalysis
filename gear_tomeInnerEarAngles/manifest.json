@@ -2,7 +2,7 @@
 	"name": "tome-calculate-inner-ear-angles",
 	"label": "tomeCalculateInnerEarAngles: Inner ear angles w.r.t B0 field",
 	"description": "This gear performs registration of T1/T2 images to an inner ear atlas to calculate semi-circular canal angles with respect to scanner B0",
-	"version": "0.2.7",
+	"version": "0.2.9",
 	"inputs": {
 		"T1_or_T2_image": {
 			"base": "file",
@@ -37,7 +37,12 @@
 			"default": "NA",
 			"description": "SubjectID",
 			"type": "string"
-		}
+		},
+		"flywheel_API_key": {
+			"optional": false,
+			"description": "Flywheel API",
+			"type": "string"
+		}		
 	},
 	"author": "Ozenc Taskin",
 	"maintainer": "Ozenc Taskin",
@@ -46,11 +51,11 @@
 	"url": "https://github.com/gkaguirrelab/mriTOMEAnalysis",
 	"custom": {
 		"flywheel": {
-			"suite": "GKAguirreLab"
+			"suite": "GKAguirreLab"		
 		},
 		"gear-builder": {
 			"category": "analysis",
-			"image": "gkaguirrelab/tome-calculate-inner-ear-angles:latest"
+			"image": "gkaguirrelab/tome-calculate-inner-ear-angles:0.2.8"
 		}
 	}
 }
