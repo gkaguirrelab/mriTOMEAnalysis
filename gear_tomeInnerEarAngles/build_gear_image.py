@@ -1,13 +1,13 @@
 import os
 
 # Specify version that will be appended to the Docker image name
-version = '0.3.1'
+version = '0.3.2'
 
 # Get the current directory 
 current_folder = os.getcwd()
 
 # Download supplements
-os.system(f'wget https://www.dropbox.com/s/wdelnnxndgana0e/innerEarSupplements_v_0_1_3.zip?dl=0 -P {current_folder}')
+os.system(f'wget https://www.dropbox.com/s/e65quftc74bijsh/innerEarSupplements_v_0_1_3.zip?dl=0 -P {current_folder}')
 
 # Get the zip file 
 zip_file = os.path.join(current_folder, 'innerEarSupplements_v_0_1_3.zip?dl=0')
