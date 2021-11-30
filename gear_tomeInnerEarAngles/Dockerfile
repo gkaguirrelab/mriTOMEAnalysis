@@ -8,10 +8,9 @@ MAINTAINER Ozzy(ozenctaskin@hotmail.com)
 ENV FLYWHEEL /flywheel/v0/
 RUN mkdir -p ${FLYWHEEL}
 COPY manifest.json run ${FLYWHEEL}
-RUN mkdir /segmentation_code
-COPY ants /segmentation_code/ants
-COPY data /segmentation_code/data
-COPY iemap_seg.py /segmentation_code/iemap_seg.py
+COPY ants /ants
+COPY data /data
+COPY iemap_seg.py /iemap_seg.py
 RUN chmod +x /flywheel/v0/run
 COPY fslinstaller.py /fslinstaller.py
 COPY calculateSSCwrtBZero /tmp/calculateSSCwrtBZero
