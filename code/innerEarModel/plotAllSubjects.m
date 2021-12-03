@@ -1,4 +1,4 @@
-function allNormals = plotAllSubjects(downloadFolder)
+function [allNormals, averageNormals] = plotAllSubjects(downloadFolder)
 
 folders = dir(downloadFolder);
 folders(1) = [];
@@ -67,7 +67,44 @@ for ii = 1:length(folders)
             anteriorMRIRight.normal = -anteriorMRIRight.normal;      
         end
     elseif contains(downloadFolder, 'dataset-2')
-        x = 'not filled';
+        if strcmp(folders(ii).name, 'sub-001') || strcmp(folders(ii).name, 'sub-006') || strcmp(folders(ii).name, 'sub-008') || strcmp(folders(ii).name, 'sub-010') || strcmp(folders(ii).name, 'sub-012') || strcmp(folders(ii).name, 'sub-014') || strcmp(folders(ii).name, 'sub-015') || strcmp(folders(ii).name, 'sub-017') || strcmp(folders(ii).name, 'sub-019') || strcmp(folders(ii).name, 'sub-021') || strcmp(folders(ii).name, 'sub-023') || strcmp(folders(ii).name, 'sub-024') || strcmp(folders(ii).name, 'sub-025') || strcmp(folders(ii).name, 'sub-026') || strcmp(folders(ii).name, 'sub-027') || strcmp(folders(ii).name, 'sub-035') || strcmp(folders(ii).name, 'sub-037') || strcmp(folders(ii).name, 'sub-038') || strcmp(folders(ii).name, 'sub-039') || strcmp(folders(ii).name, 'sub-043') || strcmp(folders(ii).name, 'sub-044') || strcmp(folders(ii).name, 'sub-049') || strcmp(folders(ii).name, 'sub-050') || strcmp(folders(ii).name, 'sub-054') || strcmp(folders(ii).name, 'sub-058') || strcmp(folders(ii).name, 'sub-059') || strcmp(folders(ii).name, 'sub-062') || strcmp(folders(ii).name, 'sub-066') || strcmp(folders(ii).name, 'sub-067') || strcmp(folders(ii).name, 'sub-069')
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;   
+        elseif strcmp(folders(ii).name, 'sub-002')
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;
+            anteriorMRILeft.normal = -anteriorMRILeft.normal;                 
+        elseif strcmp(folders(ii).name, 'sub-003') || strcmp(folders(ii).name, 'sub-013') || strcmp(folders(ii).name, 'sub-020') || strcmp(folders(ii).name, 'sub-022') || strcmp(folders(ii).name, 'sub-030') || strcmp(folders(ii).name, 'sub-042') || strcmp(folders(ii).name, 'sub-045') || strcmp(folders(ii).name, 'sub-047') || strcmp(folders(ii).name, 'sub-048') || strcmp(folders(ii).name, 'sub-056') || strcmp(folders(ii).name, 'sub-071')      
+            anteriorMRIRight.normal = -anteriorMRIRight.normal;
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;  
+        elseif strcmp(folders(ii).name, 'sub-004') 
+            posteriorMRILeft.normal = -posteriorMRILeft.normal; 
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;   
+        elseif strcmp(folders(ii).name, 'sub-007') || strcmp(folders(ii).name, 'sub-029') || strcmp(folders(ii).name, 'sub-055') || strcmp(folders(ii).name, 'sub-064')
+            posteriorMRILeft.normal = -posteriorMRILeft.normal; 
+            anteriorMRIRight.normal = -anteriorMRIRight.normal;
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;    
+        elseif strcmp(folders(ii).name, 'sub-009') || strcmp(folders(ii).name, 'sub-031') || strcmp(folders(ii).name, 'sub-033') || strcmp(folders(ii).name, 'sub-034') || strcmp(folders(ii).name, 'sub-036') || strcmp(folders(ii).name, 'sub-046')
+            anteriorMRILeft.normal = -anteriorMRILeft.normal; 
+            anteriorMRIRight.normal = -anteriorMRIRight.normal;
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;                
+        elseif strcmp(folders(ii).name, 'sub-018') || strcmp(folders(ii).name, 'sub-028')   
+            posteriorMRILeft.normal = -posteriorMRILeft.normal;       
+        elseif strcmp(folders(ii).name, 'sub-052') 
+            anteriorMRILeft.normal = -anteriorMRILeft.normal; 
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;
+            posteriorMRILeft.normal = -posteriorMRILeft.normal;             
+        elseif strcmp(folders(ii).name, 'sub-053') || strcmp(folders(ii).name, 'sub-057') || strcmp(folders(ii).name, 'sub-060') || strcmp(folders(ii).name, 'sub-070')
+            posteriorMRILeft.normal = -posteriorMRILeft.normal; 
+            posteriorMRIRight.normal = -posteriorMRIRight.normal;              
+        elseif strcmp(folders(ii).name, 'sub-065')
+            posteriorMRILeft.normal = -posteriorMRILeft.normal; 
+            posteriorMRIRight.normal = -posteriorMRIRight.normal; 
+            anteriorMRIRight.normal = -anteriorMRIRight.normal; 
+        elseif strcmp(folders(ii).name, 'sub-032')   
+            anteriorMRIRight.normal = -anteriorMRIRight.normal;              
+        elseif strcmp(folders(ii).name, 'sub-068')    
+            posteriorMRILeft.normal = -posteriorMRILeft.normal; 
+            anteriorMRIRight.normal = -anteriorMRIRight.normal;    
+        end
     end
 
     allNormals{ii,1} = lateralMRILeft;
@@ -146,4 +183,7 @@ figure
 plotMRINormals(averageLateralLeft, averageLateralRight, ...
                averageAnteriorLeft, averageAnteriorRight, ...
                averagePosteriorLeft, averagePosteriorRight)
+averageNormals = [averageLateralLeft, averageLateralRight, ...
+                  averageAnteriorLeft, averageAnteriorRight, ...
+                  averagePosteriorLeft, averagePosteriorRight];
 end
