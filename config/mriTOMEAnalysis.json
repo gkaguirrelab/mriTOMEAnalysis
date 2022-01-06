@@ -89,5 +89,18 @@
 		"type": "git",
 		"update": "",
 		"url": "https://github.com/gkaguirrelab/mriTOMEAnalysis.git"
-	}	
+	},
+        {
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "spm12",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/spm\/spm12.git"
+	}		
 ]
