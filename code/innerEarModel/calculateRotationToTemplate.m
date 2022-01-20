@@ -19,7 +19,7 @@ centroidSub = mean(Sub,2);
 centroidTemp = mean(Temp,2);
 
 % Calculate familiar covariance 
-H = (Sub - centroidSub)*(Temp - centroidTemp)';
+H = (Temp - centroidTemp)*(Sub - centroidSub)';
 
 % SVD to find the rotation 
 [U,S,V] = svd(H);

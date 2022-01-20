@@ -11,9 +11,9 @@
 % 3046 - pitch up
 
 % Set ID and Workdir
-subjectID = 'TOME_3025';
+subjectID = 'TOME_3046';
 workdir = 'C:\Users\ozenc\Desktop\ears';
-compareTo = 'spinEcho'; % enter spinEcho or T2 here.
+compareTo = 'T2'; % enter spinEcho or T2 here.
 
 % Create a folder for the subject in workdir
 subjectDir = fullfile(workdir, subjectID);
@@ -95,9 +95,9 @@ compareVol = compareVol(:,:,:,1);
 scoutQform = scoutHeader.mat;
 compareQform = compareHeader.mat;
 
-% Set translation to zero on both
-scoutQform(1:3, 4) = 0; 
-compareQform(1:3, 4) = 0; 
+% % Set translation to zero on both
+% scoutQform(1:3, 4) = 0; 
+% compareQform(1:3, 4) = 0; 
 
 % Get scalings from the both
 scoutSx = norm(scoutQform(1:3, 1));
@@ -118,7 +118,27 @@ compareR = [compareQform(1,1)/compareSx  compareQform(1,2)/compareSy  compareQfo
          compareQform(2,1)/compareSx  compareQform(2,2)/compareSy  compareQform(2,3)/compareSz 0;...
          compareQform(3,1)/compareSx  compareQform(3,2)/compareSy  compareQform(3,3)/compareSz 0;...
                    0                      0                        0         1]; 
-            
+ 
+% INNER EAR DRAW
+lateralMRILeft_points = pca(load(fullfile('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\tome\TOME_3046', 'left_lat.mat'), 'point_array').point_array);
+lateralMRILeft = lateralMRILeft_points(:,3);
+offsetLeft = load(fullfile('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\tome\TOME_3005', 'left_lat.mat'), 'offset').offset;
+offsetRight = load(fullfile('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\tome\TOME_3005', 'right_lat.mat'), 'offset').offset;
+offsetLeft = inv(compareQform)*[offsetLeft(1) offsetLeft(2) offsetLeft(3) 1]';
+offsetRight = inv(compareQform)*[offsetRight(1) offsetRight(2) offsetRight(3) 1]';
+slice(double(compareVol),round(offsetRight(2)),round(offsetRight(1)),round(offsetRight(3)))
+grid on, shading interp, colormap gray
+% oMat = inv(compareQform) * [offset 1]';
+% normalMat = inv(compareQform) * [lateralMRILeft' 1]';
+% newOffset = [round(oMat(1)) round(oMat(2)) round(oMat(3))];
+% newNormal = [round(normalMat(1)) round(normalMat(2)) round(normalMat(3))];
+[newcompare, newR] = affine(compareVol, compareQform);
+slice(double(newcompare),round(offset(2)),round(offset(1)),round(offset(3)))
+grid on, shading interp, colormap gray
+hold on
+pts = [offset(2) offset(1) offset(3); lateralMRILeft(1) lateralMRILeft(2) lateralMRILeft(3)];
+line(pts(:,1), pts(:,2), pts(:,3))
+
 % Plot raw scout. Plot Y axis first
 a = subplot(2,2,1);
 scoutSize = size(scoutVol);
@@ -137,14 +157,14 @@ else
 end
 grid on, shading interp, colormap gray
 
-% Maybe plot vectors here? 
-hold on
-y = [round(compareSize(1)/3) 0 0];
-x = [0 round(compareSize(2)/3) 0]; 
-z = [0 0 round(compareSize(3)/3)];
-quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,x(1),x(2),x(3),'r')
-quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,y(1),y(2),y(3),'g')
-quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,z(1),z(2),z(3),'b')
+% % Maybe plot vectors here? 
+% hold on
+% y = [round(compareSize(1)/3) 0 0];
+% x = [0 round(compareSize(2)/3) 0]; 
+% z = [0 0 round(compareSize(3)/3)];
+% quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,x(1),x(2),x(3),'r')
+% quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,y(1),y(2),y(3),'g')
+% quiver3(compareSize(2)/2,compareSize(1)/2,compareSize(3)/2,z(1),z(2),z(3),'b')
 
 % Plot raw scout again
 c = subplot(2,2,3);
@@ -154,7 +174,7 @@ grid on, shading interp, colormap gray
 
 % Now rotate the spinEcho/T2 with qform to get back to scout image and plot
 d = subplot(2,2,4);
-[newcompare, newR] = affine(compareVol, compareR);
+[newcompare, newR] = affine(compareVol, compareQform);
 newcompareSize = size(newcompare);
 slice(double(newcompare),newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2)
 if strcmp(compareTo, 'spinEcho')
@@ -164,15 +184,17 @@ else
 end
 grid on, shading interp, colormap gray
 
-% Maybe plot the unit vectors again here but this time rotated versions?
-hold on 
-yNew = compareR(1:3,1:3)*y';
-xNew = compareR(1:3,1:3)*x';
-zNew = compareR(1:3,1:3)*z';
-quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,xNew(1),xNew(2),xNew(3),'r')
-quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,yNew(1),yNew(2),yNew(3),'g')
-quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,zNew(1),zNew(2),zNew(3),'b')
+% % Maybe plot the unit vectors again here but this time rotated versions?
+% hold on 
+% yNew = compareR(1:3,1:3)*y';
+% xNew = compareR(1:3,1:3)*x';
+% zNew = compareR(1:3,1:3)*z';
+% quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,xNew(1),xNew(2),xNew(3),'r')
+% quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,yNew(1),yNew(2),yNew(3),'g')
+% quiver3(newcompareSize(2)/2,newcompareSize(1)/2,newcompareSize(3)/2,zNew(1),zNew(2),zNew(3),'b')
 
 % Link all plots together, so they move together
 linkprop([a,b,c,d],'View');
 set(a,'View',[-3.5 20.0])
+
+rad2deg(rotm2eul(x.R(1:3, 1:3), 'ZXY'))
