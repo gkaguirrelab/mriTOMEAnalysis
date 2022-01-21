@@ -5,7 +5,7 @@ function plotMRINormals(lateralMRILeft, lateralMRIRight, ...
     % This function plots the normals for a single subject. Left and right
     % ears are separated along the x-axis to visualize correct RAS orient. 
 
-    if istrue(dashed)
+    if true(dashed)
         % Plot left ear
         quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'k','LineStyle', '--')
         hold on
@@ -25,7 +25,7 @@ function plotMRINormals(lateralMRILeft, lateralMRIRight, ...
         quiver3(0,0,0,anteriorMRIRight(1),anteriorMRIRight(2),anteriorMRIRight(3),'g','LineStyle', '--')
         quiver3(0,0,0,posteriorMRIRight(1),posteriorMRIRight(2),posteriorMRIRight(3),'b','LineStyle', '--')
         hold off
-    elseif istrue(thick)
+    elseif true(thick)
         % Plot left ear
         quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'k','linewidth',5)
         hold on

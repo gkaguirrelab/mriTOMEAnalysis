@@ -1,10 +1,12 @@
+function downloadSubjectNormals(saveLoc)
 % This is the list of subjects whose plane normals are looking at the non
 % preferred direction (right). This script downloads normals and corrects
 % the directions and and saves normals in different folders.   
 
 % Save folder
-saveLoc = 'C:\\Users\\ozenc\\Desktop\\innerEarNormals';
-mkdir(saveLoc)
+if ~isfolder(saveLoc)
+    mkdir(saveLoc)
+end
 
 % Init fw and find projects
 fw = flywheel.Flywheel(getpref('flywheelMRSupport','flywheelAPIKey'));
@@ -36,6 +38,7 @@ for ii = 1:length(subjects)
             end
         end
     end
+end
 end
         
 
