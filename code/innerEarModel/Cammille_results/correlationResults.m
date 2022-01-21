@@ -142,4 +142,23 @@ x = comparisonTable.MeanY; y = comparisonTable.RollEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])    
+fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n']) 
+
+x = comparisonTable.Yaw; y = comparisonTable.YawEar;
+[r,p] = corrcoef(x, y);
+modelcorr = @(x,y) corr(x,y);
+CI = bootci(bootN,{modelcorr,x,y});
+fprintf(['Correlation between ear yaw and head yaw is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+
+x = comparisonTable.Pitch; y = comparisonTable.PitchEar;
+[r,p] = corrcoef(x, y);
+modelcorr = @(x,y) corr(x,y);
+CI = bootci(bootN,{modelcorr,x,y});
+fprintf(['Correlation between ear pitch and head pitch is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+
+x = comparisonTable.Roll; y = comparisonTable.RollEar;
+[r,p] = corrcoef(x, y);
+modelcorr = @(x,y) corr(x,y);
+CI = bootci(bootN,{modelcorr,x,y});
+fprintf(['Correlation between ear roll and head roll is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+
