@@ -58,57 +58,61 @@ avgAfter = zeros(3,6);
 % Loop through subjects
 for ii = 1:length(folders)
     
-    % Load normals
-    [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
-     posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name));
-    
-    Sub = [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, posteriorMRILeft, posteriorMRIRight];
-    Temp = [lateralLeft', lateralRight', anteriorLeft', anteriorRight', posteriorLeft', posteriorRight'];
+    % Remove tome 3009 and 3029 as registration didn't work for these
+    if ~strcmp(folders(ii).name, 'TOME_3009') || ~strcmp(folders(ii).name, 'TOME_3029')
+        
+        % Load normals
+        [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
+         posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name));
 
-    % Add to avg 
-    avg = avg + Sub;
-    subjectNum = subjectNum + 1;
-    
-    % Calculate centroids 
-    centroidSub = mean(Sub,2);
-    centroidTemp = mean(Temp,2);
+        Sub = [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, posteriorMRILeft, posteriorMRIRight];
+        Temp = [lateralLeft', lateralRight', anteriorLeft', anteriorRight', posteriorLeft', posteriorRight'];
 
-    % Calculate familiar covariance 
-    H = (Temp - centroidTemp)*(Sub - centroidSub)';
+        % Add to avg 
+        avg = avg + Sub;
+        subjectNum = subjectNum + 1;
 
-    % SVD to find the rotation 
-    [U,S,V] = svd(H);
-    R = inv(V*U');
+        % Calculate centroids 
+        centroidSub = mean(Sub,2);
+        centroidTemp = mean(Temp,2);
 
-    % Calculate euler angles from the rotation matrix and save them into
-    % the allNormals cell
-    euler = rad2deg(rotm2eul(R, 'XYZ'));
-    yaw = euler(3);
-    pitch = euler(1); 
-    roll = euler(2);
-    
-    allNormals{ii, 1} = folders(ii).name;
-    allNormals{ii, 2} = yaw;
-    allNormals{ii, 3} = pitch;    
-    allNormals{ii, 4} = roll;
-    
-    % Rotate the subject matrix
-    lateralMRILeftNew = R*lateralMRILeft;
-    lateralMRIRightNew = R*lateralMRIRight;
-    anteriorMRILeftNew = R*anteriorMRILeft;
-    anteriorMRIRightNew = R*anteriorMRIRight;
-    posteriorMRILeftNew = R*posteriorMRILeft;
-    posteriorMRIRightNew = R*posteriorMRIRight;    
-    
-    subNew = [lateralMRILeftNew, lateralMRIRightNew, ...
-              anteriorMRILeftNew, anteriorMRIRightNew, ...
-              posteriorMRILeftNew, posteriorMRIRightNew];
-    avgAfter = avgAfter + subNew;
-          
-    plotMRINormals(lateralMRILeftNew, lateralMRIRightNew, ...
-                        anteriorMRILeftNew, anteriorMRIRightNew, ...
-                        posteriorMRILeftNew, posteriorMRIRightNew, false, false)
-    hold on
+        % Calculate familiar covariance 
+        H = (Temp - centroidTemp)*(Sub - centroidSub)';
+
+        % SVD to find the rotation 
+        [U,S,V] = svd(H);
+        R = inv(V*U');
+
+        % Calculate euler angles from the rotation matrix and save them into
+        % the allNormals cell
+        euler = rad2deg(rotm2eul(R, 'XYZ'));
+        yaw = euler(3);
+        pitch = euler(1); 
+        roll = euler(2);
+
+        allNormals{ii, 1} = folders(ii).name;
+        allNormals{ii, 2} = yaw;
+        allNormals{ii, 3} = pitch;    
+        allNormals{ii, 4} = roll;
+
+        % Rotate the subject matrix
+        lateralMRILeftNew = R*lateralMRILeft;
+        lateralMRIRightNew = R*lateralMRIRight;
+        anteriorMRILeftNew = R*anteriorMRILeft;
+        anteriorMRIRightNew = R*anteriorMRIRight;
+        posteriorMRILeftNew = R*posteriorMRILeft;
+        posteriorMRIRightNew = R*posteriorMRIRight;    
+
+        subNew = [lateralMRILeftNew, lateralMRIRightNew, ...
+                  anteriorMRILeftNew, anteriorMRIRightNew, ...
+                  posteriorMRILeftNew, posteriorMRIRightNew];
+        avgAfter = avgAfter + subNew;
+
+        plotMRINormals(lateralMRILeftNew, lateralMRIRightNew, ...
+                            anteriorMRILeftNew, anteriorMRIRightNew, ...
+                            posteriorMRILeftNew, posteriorMRIRightNew, false, false)
+        hold on
+    end
 end
     
 SubAvg = avg / subjectNum;
@@ -137,12 +141,37 @@ x = comparisonTable.MeanX; y = comparisonTable.PitchEar;
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear pitch and horizontal nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])
+% Plot
+fit = fitlm(y, x);
+figHandle = figure();
+h = fit.plot;
+h(1).Marker = 'o';
+h(1).MarkerEdgeColor = 'none';
+set(h,'LineWidth',1.5)
+h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
+xlabel('Ear normals pitch')
+ylabel('Horizontal slow phase velocity [deg/seg]')
+title('')
+legend off 
 
 x = comparisonTable.MeanY; y = comparisonTable.RollEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n']) 
+% Plot
+fit = fitlm(y, x);
+figHandle = figure();
+h = fit.plot;
+h(1).Marker = 'o';
+h(1).MarkerEdgeColor = 'none';
+set(h,'LineWidth',1.5)
+h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
+xlabel('Ear normals roll')
+ylabel('Vertical slow phase velocity [deg/seg]')
+title('')
+xline(0, '--')
+legend off 
 
 x = comparisonTable.Yaw; y = comparisonTable.YawEar;
 [r,p] = corrcoef(x, y);
@@ -161,4 +190,6 @@ x = comparisonTable.Roll; y = comparisonTable.RollEar;
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear roll and head roll is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+
+
 
