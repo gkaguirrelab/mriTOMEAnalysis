@@ -1,4 +1,4 @@
-tome = plotAllSubjects('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\tome');
+tome = plotAllSubjects('C:\Users\ozenc\Documents\MATLAB\projects\mriTOMEAnalysis\code\innerEarModel\Cammille_results\innerEarNormals');
 % dataset1 = plotAllSubjects('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\dataset-1');
 % dataset2 = plotAllSubjects('C:\Users\ozenc\Desktop\ForOzzy\ForOzzy\dataset-2');
 % 

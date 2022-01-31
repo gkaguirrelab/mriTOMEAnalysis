@@ -107,7 +107,7 @@ for ii = 1:length(folders)
     
     % Plot the subject and hold on
     plotMRINormals(lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
-                   posteriorMRILeft, posteriorMRIRight)
+                   posteriorMRILeft, posteriorMRIRight, false, false)
     hold on
 end
 title('Normals from all subjects')

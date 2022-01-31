@@ -3,7 +3,7 @@
 currentDirectory = pwd; 
 
 % Set the bootstrapping sample size
-bootN = 10000;
+bootN = 100;
 
 % Read YPR table, rename the first variable to 'Patient'
 ypr = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'YPR_values.xls'));
@@ -55,7 +55,10 @@ allNormals = {};
 subjectNum = 0;
 avg = zeros(3,6);
 avgAfter = zeros(3,6);
+
 % Loop through subjects
+figHandle = figure();
+figHandle.Renderer ='Painters';
 for ii = 1:length(folders)
     
     % Remove tome 3009 and 3029 as registration didn't work for these
@@ -93,7 +96,7 @@ for ii = 1:length(folders)
         allNormals{ii, 1} = folders(ii).name;
         allNormals{ii, 2} = yaw;
         allNormals{ii, 3} = pitch;    
-        allNormals{ii, 4} = roll;
+        allNormals{ii, 4} = roll;        
 
         % Rotate the subject matrix
         lateralMRILeftNew = R*lateralMRILeft;
@@ -101,8 +104,18 @@ for ii = 1:length(folders)
         anteriorMRILeftNew = R*anteriorMRILeft;
         anteriorMRIRightNew = R*anteriorMRIRight;
         posteriorMRILeftNew = R*posteriorMRILeft;
-        posteriorMRIRightNew = R*posteriorMRIRight;    
+        posteriorMRIRightNew = R*posteriorMRIRight;   
 
+        % Sqrt of sum of square angles
+        lateralLeftAngle = rad2deg(atan2(norm(cross(lateralMRILeftNew,lateralLeft)), dot(lateralMRILeftNew,lateralLeft)));
+        lateralRightAngle = rad2deg(atan2(norm(cross(lateralMRIRightNew,lateralRight)), dot(lateralMRIRightNew,lateralRight)));
+        anteriorLeftAngle = rad2deg(atan2(norm(cross(anteriorMRILeftNew,anteriorLeft)), dot(anteriorMRILeftNew,anteriorLeft)));
+        anteriorRightAngle = rad2deg(atan2(norm(cross(anteriorMRIRightNew,anteriorRight)), dot(anteriorMRIRightNew,anteriorRight)));
+        posteriorLeftAngle = rad2deg(atan2(norm(cross(posteriorMRILeftNew,posteriorLeft)), dot(posteriorMRILeftNew,posteriorLeft)));
+        posteriorRightAngle = rad2deg(atan2(norm(cross(posteriorMRIRightNew,posteriorRight)), dot(posteriorMRIRightNew,posteriorRight)));
+        errorMetric = sqrt(lateralLeftAngle^2 + lateralRightAngle^2 + anteriorLeftAngle^2 + anteriorRightAngle^2 + posteriorLeftAngle^2 + posteriorRightAngle^2);
+        allNormals{ii, 5} = errorMetric; 
+        
         subNew = [lateralMRILeftNew, lateralMRIRightNew, ...
                   anteriorMRILeftNew, anteriorMRIRightNew, ...
                   posteriorMRILeftNew, posteriorMRIRightNew];
@@ -131,6 +144,7 @@ allNormals = renamevars(allNormals,'allNormals1','Patient');
 allNormals = renamevars(allNormals,'allNormals2','YawEar');
 allNormals = renamevars(allNormals,'allNormals3','PitchEar');
 allNormals = renamevars(allNormals,'allNormals4','RollEar');
+allNormals = renamevars(allNormals,'allNormals5','fitError');
 
 % Merge comparison table with the allNormals table
 comparisonTable = innerjoin(comparisonTable, allNormals);
@@ -141,55 +155,192 @@ x = comparisonTable.MeanX; y = comparisonTable.PitchEar;
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear pitch and horizontal nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])
+combined = [x y];
+fitError = comparisonTable.fitError;
+r = weightedcorrs(combined, fitError);
+modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
+CI = bootci(bootN,{modelcorr,combined,fitError});
+fprintf(['Correlation between ear pitch and horizontal nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
 % Plot
 fit = fitlm(y, x);
 figHandle = figure();
+figHandle.Renderer ='Painters';
+set(gcf,'units','inches')
+old_pos = get(gcf,'position'); 
+set(gcf,'Position',[0 0 8.5 7])
+subplot(1,2,1)
 h = fit.plot;
 h(1).Marker = 'o';
 h(1).MarkerEdgeColor = 'none';
 set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
-xlabel('Ear normals pitch')
+xlabel('Vestibular pitch')
 ylabel('Horizontal slow phase velocity [deg/seg]')
 title('')
 legend off 
+box off
+ax = gca;
+set(gca,'TickDir','out')
+cbHandles = findobj(h,'DisplayName','Confidence bounds');
+cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
+set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 
 x = comparisonTable.MeanY; y = comparisonTable.RollEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n']) 
+combined = [x y];
+fitError = comparisonTable.fitError;
+r = weightedcorrs(combined, fitError);
+modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
+CI = bootci(bootN,{modelcorr,combined,fitError});
+fprintf(['Correlation between ear roll and vertical nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
 % Plot
 fit = fitlm(y, x);
-figHandle = figure();
+subplot(1,2,2)
 h = fit.plot;
 h(1).Marker = 'o';
 h(1).MarkerEdgeColor = 'none';
 set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
-xlabel('Ear normals roll')
+xlabel('Vestibular roll')
 ylabel('Vertical slow phase velocity [deg/seg]')
 title('')
 xline(0, '--')
 legend off 
+box off
+ax = gca;
+set(gca,'TickDir','out')
+cbHandles = findobj(h,'DisplayName','Confidence bounds');
+cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
+set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 
-x = comparisonTable.Yaw; y = comparisonTable.YawEar;
+% Find the correlations between head and vestibular rotations
+x = -comparisonTable.Yaw; y = comparisonTable.YawEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear yaw and head yaw is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+fit = fitlm(y, x);
+figHandle = figure();
+figHandle.Renderer ='Painters';
+set(gcf,'units','inches')
+old_pos = get(gcf,'position'); 
+set(gcf,'Position',[0 0 8.5 7])
+subplot(2,2,1)
+h = fit.plot;
+h(1).Marker = 'o';
+h(1).MarkerEdgeColor = 'none';
+set(h,'LineWidth',1.5)
+h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
+xlabel('Vestibular yaw')
+ylabel('Head yaw')
+title('')
+xlim([-10 10])
+ylim([-15 10])
+refline([1 0])
+legend off 
+box off
+axis square
+ax = gca;
+set(gca,'TickDir','out')
+cbHandles = findobj(h,'DisplayName','Confidence bounds');
+cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
+set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 
-x = comparisonTable.Pitch; y = comparisonTable.PitchEar;
+x = -comparisonTable.Pitch; y = comparisonTable.PitchEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear pitch and head pitch is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+fit = fitlm(y, x);
+subplot(2,2,2)
+h = fit.plot;
+h(1).Marker = 'o';
+h(1).MarkerEdgeColor = 'none';
+set(h,'LineWidth',1.5)
+h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
+xlabel('Vestibular roll')
+ylabel('Head pitch')
+ylim([-15 10])
+refline([1 0])
+title('')
+legend off
+box off
+axis square
+ax = gca;
+set(gca,'TickDir','out')
+cbHandles = findobj(h,'DisplayName','Confidence bounds');
+cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
+set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 
 x = comparisonTable.Roll; y = comparisonTable.RollEar;
 [r,p] = corrcoef(x, y);
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear roll and head roll is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
+fit = fitlm(y, x);
+subplot(2,2,3)
+h = fit.plot;
+h(1).Marker = 'o';
+h(1).MarkerEdgeColor = 'none';
+set(h,'LineWidth',1.5)
+h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
+xlabel('Vestibular roll')
+ylabel('Head roll')
+xlim([-10 10])
+ylim([-15 10])
+refline([1 0])
+title('')
+legend off
+box off
+axis square
+ax = gca;
+set(gca,'TickDir','out')
+cbHandles = findobj(h,'DisplayName','Confidence bounds');
+cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
+set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 
-
-
+% Histograms
+figHandle = figure();
+figHandle.Renderer ='Painters';
+subplot(3,1,1)
+a = histogram(comparisonTable.PitchEar, 15, 'BinWidth', 1);
+a.FaceColor = [0.5, 0.5, 0.5];
+a.EdgeColor = [0.5, 0.5, 0.5];
+a.EdgeAlpha = 0;
+xlabel('Vestibular pitch [deg]')
+ylabel('Number of subjects')
+xlim([-45 -15])
+ylim([0 10])
+yticks(0:2:10)
+box off
+ax = gca;
+set(gca,'TickDir','out')
+subplot(3,1,2)
+b = histogram(comparisonTable.RollEar, 10, 'BinWidth', 1);
+b.FaceColor = [0.5, 0.5, 0.5];
+b.EdgeColor = [0.5, 0.5, 0.5];
+b.EdgeAlpha = 0;
+xlabel('Vestibular roll [deg]')
+ylabel('Number of subjects')
+xlim([-15 15])
+ylim([0 10])
+yticks(0:2:10)
+box off
+ax = gca;
+set(gca,'TickDir','out')
+subplot(3,1,3)
+c = histogram(comparisonTable.YawEar, 11, 'BinWidth', 1);
+c.FaceColor = [0.5, 0.5, 0.5];
+c.EdgeColor = [0.5, 0.5, 0.5];
+c.EdgeAlpha = 0;
+xlabel('Vestibular yaw [deg]')
+ylabel('Number of subjects')
+xlim([-15 15])
+ylim([0 10])
+yticks(0:2:10)
+box off
+ax = gca;
+set(gca,'TickDir','out')

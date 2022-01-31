@@ -7,7 +7,7 @@ function plotMRINormals(lateralMRILeft, lateralMRIRight, ...
 
     if true(dashed)
         % Plot left ear
-        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'k','LineStyle', '--')
+        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'r','LineStyle', '--')
         hold on
         axis equal
         xlabel('x')
@@ -27,7 +27,7 @@ function plotMRINormals(lateralMRILeft, lateralMRIRight, ...
         hold off
     elseif true(thick)
         % Plot left ear
-        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'k','linewidth',5)
+        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'r','linewidth',5,'color', [0.6350 0.0780 0.1840])
         hold on
         axis equal
         xlabel('x')
@@ -47,7 +47,7 @@ function plotMRINormals(lateralMRILeft, lateralMRIRight, ...
         hold off
 
     else 
-        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'k','color', [0.6350 0.0780 0.1840])
+        quiver3(-3,0,0,lateralMRILeft(1),lateralMRILeft(2),lateralMRILeft(3),'r')
         hold on
         axis equal
         xlabel('x')
