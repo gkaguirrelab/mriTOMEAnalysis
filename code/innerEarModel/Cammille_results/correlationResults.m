@@ -127,7 +127,7 @@ for ii = 1:length(folders)
         hold on
     end
 end
-view(-120,20)    
+view(-130.8370,20.3106)    
 
 
 SubAvg = avg / subjectNum;
