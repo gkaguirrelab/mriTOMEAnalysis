@@ -127,7 +127,9 @@ for ii = 1:length(folders)
         hold on
     end
 end
-    
+view(-120,20)    
+
+
 SubAvg = avg / subjectNum;
 SubAfterAvg = avgAfter / subjectNum;
 plotMRINormals(SubAvg(:,1), SubAvg(:,2), ...
@@ -155,12 +157,12 @@ x = comparisonTable.MeanX; y = comparisonTable.PitchEar;
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear pitch and horizontal nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])
-combined = [x y];
-fitError = comparisonTable.fitError;
-r = weightedcorrs(combined, fitError);
-modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
-CI = bootci(bootN,{modelcorr,combined,fitError});
-fprintf(['Correlation between ear pitch and horizontal nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
+% combined = [x y];
+% fitError = comparisonTable.fitError;
+% r = weightedcorrs(combined, fitError);
+% modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
+% CI = bootci(bootN,{modelcorr,combined,fitError});
+% fprintf(['Correlation between ear pitch and horizontal nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
 % Plot
 fit = fitlm(y, x);
 figHandle = figure();
@@ -190,12 +192,12 @@ x = comparisonTable.MeanY; y = comparisonTable.RollEar;
 modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n']) 
-combined = [x y];
-fitError = comparisonTable.fitError;
-r = weightedcorrs(combined, fitError);
-modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
-CI = bootci(bootN,{modelcorr,combined,fitError});
-fprintf(['Correlation between ear roll and vertical nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
+% combined = [x y];
+% fitError = comparisonTable.fitError;
+% r = weightedcorrs(combined, fitError);
+% modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
+% CI = bootci(bootN,{modelcorr,combined,fitError});
+% fprintf(['Correlation between ear roll and vertical nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
 % Plot
 fit = fitlm(y, x);
 subplot(1,2,2)
@@ -238,8 +240,8 @@ xlabel('Vestibular yaw')
 ylabel('Head yaw')
 title('')
 xlim([-10 10])
-ylim([-15 10])
-refline([1 0])
+ylim([-10 10])
+% refline([1 0])
 legend off 
 box off
 axis square
@@ -255,16 +257,18 @@ modelcorr = @(x,y) corr(x,y);
 CI = bootci(bootN,{modelcorr,x,y});
 fprintf(['Correlation between ear pitch and head pitch is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
 fit = fitlm(y, x);
+% Plot
 subplot(2,2,2)
 h = fit.plot;
 h(1).Marker = 'o';
 h(1).MarkerEdgeColor = 'none';
 set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
-xlabel('Vestibular roll')
+xlabel('Vestibular pitch')
 ylabel('Head pitch')
-ylim([-15 10])
-refline([1 0])
+xlim([-55 -15])
+ylim([-20 20])
+% yticks(-30:10:10)
 title('')
 legend off
 box off
@@ -290,8 +294,8 @@ h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
 xlabel('Vestibular roll')
 ylabel('Head roll')
 xlim([-10 10])
-ylim([-15 10])
-refline([1 0])
+ylim([-10 10])
+% refline([1 0])
 title('')
 legend off
 box off
