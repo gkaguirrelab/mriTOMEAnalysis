@@ -1,0 +1,5 @@
+# Markups fiducial file version = 4.11
+# CoordinateSystem = 0
+# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID
+0,35.50905075669379,0.33485242959307504,-60.0706419186308,0,0,0,1,1,1,0,fid_innerear_right,,
+1,-35.25622161385074,-0.8315814323982031,-61.80829377096835,0,0,0,1,1,1,0,fid_innerear_left,,
