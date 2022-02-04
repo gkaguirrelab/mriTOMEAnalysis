@@ -32,9 +32,23 @@ for ii = 1:length(subjects)
                 mkdir(subjectFolder)
                 innerEarGear = analyses{aa};
                 zipName = fullfile(subjectFolder, [subjectName, '_plane_normals.zip']);
-                innerEarGear.downloadFile([subjectName '_plane_normals.zip'], zipName);
-                unzip(zipName, subjectFolder) 
-                delete(zipName)
+                if ~isfile(fullfile(subjectFolder, 'left_ant.mat'))
+                    fprintf(['Downloading normals for ' subjectName])
+                    innerEarGear.downloadFile([subjectName '_plane_normals.zip'], zipName);
+                    unzip(zipName, subjectFolder) 
+                    delete(zipName)
+                end
+                intermediate = innerEarGear.getFileZipInfo('intermediate_files.zip');
+                members = intermediate.members;
+                for mm = 1:length(members)
+                    if contains(members{mm}.path, 'fids')
+                        fidName = fullfile(subjectFolder, members{mm}.path);
+                        if ~isfile(fidName)
+                            fprintf(['Downloading fidicuals for ' subjectName])
+                            innerEarGear.downloadFileZipMember('intermediate_files.zip', members{mm}.path, fidName);
+                        end
+                    end
+                end
             end
         end
     end

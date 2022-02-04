@@ -15,7 +15,7 @@ for ii = 1:length(folders)
     
     % Load normals
     [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
-     posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name));
+     posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name), true);
     
 %     % Here I manually change signs to make all normals point to the same 
 %     % direction. Not RAS yet.
