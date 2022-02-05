@@ -1,33 +1,39 @@
 %% Cammille correlations 
 % Set the code directory after tbUse
 currentDirectory = pwd; 
-
-% Set the bootstrapping sample size
-bootN = 100;
+pcaWithAllFids = true;
 
 % Read YPR table, rename the first variable to 'Patient'
-ypr = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'YPR_values.xls'));
+ypr = load(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'qformRots.mat'));
+ypr = cell2table(ypr.qformRots);
 ypr = renamevars(ypr,'Var1','Patient');
+ypr = renamevars(ypr,'Var2','Yaw');
+ypr = renamevars(ypr,'Var3','Pitch');
+ypr = renamevars(ypr,'Var4','Roll');
+ypr.Roll = -ypr.Roll;
 
 % Read the nystagmus table and only retain the meanX and meanY columns 
-nystagmus = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'ResultsMatrix.xlsx'));
-nystagmus(:,2:17) = []; nystagmus(:,3) = []; nystagmus(:,4) = [];
+nystagmus = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'nystagmus.xlsx'));
 
 % Create a comparison table by combining two tables by the common rows
 comparisonTable = innerjoin(ypr, nystagmus);
 
-% Get the correlation between horizontal vs pitch and vertical vs roll
-x = comparisonTable.MeanX; y = comparisonTable.Pitch;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between pitch and horizontal nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])
+% Calculate std weights 
+weights_x = 1./comparisonTable.StdX;
+weights_y = 1./comparisonTable.StdY;
 
-x = comparisonTable.MeanY; y = comparisonTable.Roll;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n'])
+% Get the correlation between horizontal vs pitch and vertical vs roll
+x = comparisonTable.Pitch; y = comparisonTable.MeanX;
+fit = fitlm(x,y,'linear','RobustOpts','on','weights',weights_x);
+ci = fit.coefCI;
+ci = ci(2,:);
+fprintf('Head pitch and horizontal nystagmus: R-squared = %2.2f slope[95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f \n',fit.Rsquared.Adjusted,fit.Coefficients{2,1},ci,fit.coefTest)
+
+x = comparisonTable.Roll; y = comparisonTable.MeanY;
+fit = fitlm(x,y,'linear','RobustOpts','on','weights',weights_y);
+ci = fit.coefCI;
+ci = ci(2,:);
+fprintf('Head roll and vertical nystagmus: R-squared = %2.2f slope[95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f \n\n',fit.Rsquared.Adjusted,fit.Coefficients{2,1},ci,fit.coefTest)
 
 %% Inner ear correlations 
 % Download the inner ear files
@@ -37,43 +43,32 @@ if ~isfolder(innerEarLoc)
     downloadSubjectNormals(innerEarLoc)
 end
 
+% Find the normal paths and set an empty cell for saving
+folders = dir(innerEarLoc);
+folders(1:2) = [];
+
 % Set the inner ear model
+lateralLeft = [0 0 1];
+lateralRight = [0 0 1];
 anteriorLeft = [1 0 0];
 anteriorRight = [-1 0 0];
 posteriorLeft = [0 1 0];
 posteriorRight = [0 1 0];
-lateralLeft = [0 0 1];
-lateralRight = [0 0 1];
 
-% Find the normal paths and set an empty cell for saving
-folders = dir(innerEarLoc);
-folders(1:2) = [];
-allNormals = {};
-
-% Set a subject counter for the loop (very roundabout way of counting how
-% many subjects we have) and initiate zero matrices for saving.
-subjectNum = 0;
-avg = zeros(3,6);
-avgAfter = zeros(3,6);
-
-% Loop through subjects
+% Loop through subjects and calculate an average vector
+% Initiate figure
 figHandle = figure();
 figHandle.Renderer ='Painters';
-for ii = 1:length(folders)
-    
+for ii = 1:length(folders) 
     % Remove tome 3009 and 3029 as registration didn't work for these
     if ~strcmp(folders(ii).name, 'TOME_3009') || ~strcmp(folders(ii).name, 'TOME_3029')
         
         % Load normals
         [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
-         posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name));
+         posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name), pcaWithAllFids);
 
         Sub = [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, posteriorMRILeft, posteriorMRIRight];
         Temp = [lateralLeft', lateralRight', anteriorLeft', anteriorRight', posteriorLeft', posteriorRight'];
-
-        % Add to avg 
-        avg = avg + Sub;
-        subjectNum = subjectNum + 1;
 
         % Calculate centroids 
         centroidSub = mean(Sub,2);
@@ -84,11 +79,61 @@ for ii = 1:length(folders)
 
         % SVD to find the rotation 
         [U,S,V] = svd(H);
-        R = inv(V*U');
+        R = inv(V*U');  
 
+        % Save name and rotated vectors
+        cardinalWarped{ii, 1} = folders(ii).name;
+        cardinalWarped{ii, 2} = R*Sub;
+        
+        % Thos plots normals after cardinal rotation
+        plotMRINormals(cardinalWarped{ii, 2}(:,1), cardinalWarped{ii, 2}(:,2), ...
+                       cardinalWarped{ii, 2}(:,3), cardinalWarped{ii, 2}(:,4), ...
+                       cardinalWarped{ii, 2}(:,5), cardinalWarped{ii, 2}(:,6), false, false)      
+        hold on
+    end
+end
+view(-130.8370,20.3106)         
+% Now average the cardinal warped normals 
+cardinalAveragedVectors = mean(cat(3, cardinalWarped{:,2}), 3);
+
+% This plots average vector after cardinal rotation
+plotMRINormals(cardinalAveragedVectors(:,1), cardinalAveragedVectors(:,2), ...
+               cardinalAveragedVectors(:,3), cardinalAveragedVectors(:,4), ...
+               cardinalAveragedVectors(:,5), cardinalAveragedVectors(:,6), false, true)
+
+% Set a normal cell where the y/p/r results and rotated vectors will be saved
+allNormals = {};
+allVectors = {};
+
+% % Initiate figure
+% figHandle = figure();
+% figHandle.Renderer ='Painters';
+for ii = 1:length(folders)
+    
+    % Remove tome 3009 and 3029 as registration didn't work for these
+    if ~strcmp(folders(ii).name, 'TOME_3009') || ~strcmp(folders(ii).name, 'TOME_3029')
+        
+        % Load normals
+        [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, ...
+         posteriorMRILeft, posteriorMRIRight] = loadMRINormals(fullfile(folders(ii).folder,folders(ii).name), pcaWithAllFids);
+        
+        % Concatanate normals
+        Sub = [lateralMRILeft, lateralMRIRight, anteriorMRILeft, anteriorMRIRight, posteriorMRILeft, posteriorMRIRight];
+
+        % Calculate centroids of Sub and average 
+        centroidSub = mean(Sub,2);
+        centroidTemp = mean(cardinalAveragedVectors,2);
+
+        % Calculate familiar covariance 
+        H = (cardinalAveragedVectors - centroidTemp)*(Sub - centroidSub)';
+
+        % SVD to find the rotation 
+        [U,S,V] = svd(H);
+        R = inv(V*U');       
+        
         % Calculate euler angles from the rotation matrix and save them into
         % the allNormals cell
-        euler = rad2deg(rotm2eul(R, 'XYZ'));
+        euler = rad2deg(rotm2eul(R, 'XYZ')); 
         yaw = euler(3);
         pitch = euler(1); 
         roll = euler(2);
@@ -96,7 +141,7 @@ for ii = 1:length(folders)
         allNormals{ii, 1} = folders(ii).name;
         allNormals{ii, 2} = yaw;
         allNormals{ii, 3} = pitch;    
-        allNormals{ii, 4} = roll;        
+        allNormals{ii, 4} = roll;     
 
         % Rotate the subject matrix
         lateralMRILeftNew = R*lateralMRILeft;
@@ -105,40 +150,31 @@ for ii = 1:length(folders)
         anteriorMRIRightNew = R*anteriorMRIRight;
         posteriorMRILeftNew = R*posteriorMRILeft;
         posteriorMRIRightNew = R*posteriorMRIRight;   
-
-        % Sqrt of sum of square angles
-        lateralLeftAngle = rad2deg(atan2(norm(cross(lateralMRILeftNew,lateralLeft)), dot(lateralMRILeftNew,lateralLeft)));
-        lateralRightAngle = rad2deg(atan2(norm(cross(lateralMRIRightNew,lateralRight)), dot(lateralMRIRightNew,lateralRight)));
-        anteriorLeftAngle = rad2deg(atan2(norm(cross(anteriorMRILeftNew,anteriorLeft)), dot(anteriorMRILeftNew,anteriorLeft)));
-        anteriorRightAngle = rad2deg(atan2(norm(cross(anteriorMRIRightNew,anteriorRight)), dot(anteriorMRIRightNew,anteriorRight)));
-        posteriorLeftAngle = rad2deg(atan2(norm(cross(posteriorMRILeftNew,posteriorLeft)), dot(posteriorMRILeftNew,posteriorLeft)));
-        posteriorRightAngle = rad2deg(atan2(norm(cross(posteriorMRIRightNew,posteriorRight)), dot(posteriorMRIRightNew,posteriorRight)));
-        errorMetric = sqrt(lateralLeftAngle^2 + lateralRightAngle^2 + anteriorLeftAngle^2 + anteriorRightAngle^2 + posteriorLeftAngle^2 + posteriorRightAngle^2);
-        allNormals{ii, 5} = errorMetric; 
         
         subNew = [lateralMRILeftNew, lateralMRIRightNew, ...
                   anteriorMRILeftNew, anteriorMRIRightNew, ...
                   posteriorMRILeftNew, posteriorMRIRightNew];
-        avgAfter = avgAfter + subNew;
+        
+        % Save these to the all vetors file
+        allVectors{ii, 1} = folders(ii).name;
+        allVectors{ii, 2} = subNew;                 
 
-        plotMRINormals(lateralMRILeftNew, lateralMRIRightNew, ...
-                            anteriorMRILeftNew, anteriorMRIRightNew, ...
-                            posteriorMRILeftNew, posteriorMRIRightNew, false, false)
-        hold on
+%         % This plots the vectors after final rotation
+%         plotMRINormals(lateralMRILeftNew, lateralMRIRightNew, ...
+%                             anteriorMRILeftNew, anteriorMRIRightNew, ...
+%                             posteriorMRILeftNew, posteriorMRIRightNew, false, false)
+%         hold on
     end
 end
-view(-130.8370,20.3106)    
+   
 
+% Average the final vectors 
+finalMeanVector = mean(cat(3, allVectors{:,2}), 3);
 
-SubAvg = avg / subjectNum;
-SubAfterAvg = avgAfter / subjectNum;
-plotMRINormals(SubAvg(:,1), SubAvg(:,2), ...
-               SubAvg(:,3), SubAvg(:,4), ...
-               SubAvg(:,5), SubAvg(:,6), true, false)
-hold on
-plotMRINormals(SubAfterAvg(:,1), SubAfterAvg(:,2), ...
-               SubAfterAvg(:,3), SubAfterAvg(:,4), ...
-               SubAfterAvg(:,5), SubAfterAvg(:,6), false, true)  
+% This plots the average of final warped vectors
+% plotMRINormals(finalMeanVector(:,1), finalMeanVector(:,2), ...
+%                finalMeanVector(:,3), finalMeanVector(:,4), ...
+%                finalMeanVector(:,5), finalMeanVector(:,6), false, true) 
 
 % Convert the normal cell into a table so we keep things similar 
 allNormals = cell2table(allNormals);
@@ -146,26 +182,23 @@ allNormals = renamevars(allNormals,'allNormals1','Patient');
 allNormals = renamevars(allNormals,'allNormals2','YawEar');
 allNormals = renamevars(allNormals,'allNormals3','PitchEar');
 allNormals = renamevars(allNormals,'allNormals4','RollEar');
-allNormals = renamevars(allNormals,'allNormals5','fitError');
 
 % Merge comparison table with the allNormals table
 comparisonTable = innerjoin(comparisonTable, allNormals);
 
+% Calculate std weights again with the remaining subjects
+weights_x = 1./comparisonTable.StdX;
+weights_y = 1./comparisonTable.StdY;
+
 % Calculate the same correlations with the ear rotations this time
-x = comparisonTable.MeanX; y = comparisonTable.PitchEar;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear pitch and horizontal nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n'])
-% combined = [x y];
-% fitError = comparisonTable.fitError;
-% r = weightedcorrs(combined, fitError);
-% modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
-% CI = bootci(bootN,{modelcorr,combined,fitError});
-% fprintf(['Correlation between ear pitch and horizontal nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
+x = comparisonTable.PitchEar; y = comparisonTable.MeanX;
+fit = fitlm(x, y, 'linear', 'RobustOpts', 'on', 'weights', weights_x);
+ci = fit.coefCI;
+ci = ci(2,:);
+fprintf('Ear pitch and horizontal nystagmus: R-squared = %2.2f slope[95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f \n',fit.Rsquared.Adjusted,fit.Coefficients{2,1},ci,fit.coefTest)
 % Plot
-fit = fitlm(y, x);
 figHandle = figure();
+tiledlayout(1,2,'TileSpacing','Compact','Padding','Compact');
 figHandle.Renderer ='Painters';
 set(gcf,'units','inches')
 old_pos = get(gcf,'position'); 
@@ -178,7 +211,6 @@ set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
 xlabel('Vestibular pitch')
 ylabel('Horizontal slow phase velocity [deg/seg]')
-title('')
 legend off 
 box off
 ax = gca;
@@ -186,20 +218,14 @@ set(gca,'TickDir','out')
 cbHandles = findobj(h,'DisplayName','Confidence bounds');
 cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
 set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
+title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
-x = comparisonTable.MeanY; y = comparisonTable.RollEar;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear roll and vertical nystagmus is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n\n']) 
-% combined = [x y];
-% fitError = comparisonTable.fitError;
-% r = weightedcorrs(combined, fitError);
-% modelcorr = @(combined,fitError) weightedcorrs(combined,fitError);
-% CI = bootci(bootN,{modelcorr,combined,fitError});
-% fprintf(['Correlation between ear roll and vertical nystagmus with errorWeighting is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1,1,2)) ' UB:' num2str(CI(2,1,2)) '\n'])
+x = comparisonTable.RollEar; y = comparisonTable.MeanY;
+fit = fitlm(x, y, 'linear', 'RobustOpts', 'on', 'weights', weights_y);
+ci = fit.coefCI;
+ci = ci(2,:);
+fprintf('Ear roll and vertical nystagmus: R-squared = %2.2f slope[95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f \n',fit.Rsquared.Adjusted,fit.Coefficients{2,1},ci,fit.coefTest)
 % Plot
-fit = fitlm(y, x);
 subplot(1,2,2)
 h = fit.plot;
 h(1).Marker = 'o';
@@ -208,7 +234,6 @@ set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
 xlabel('Vestibular roll')
 ylabel('Vertical slow phase velocity [deg/seg]')
-title('')
 xline(0, '--')
 legend off 
 box off
@@ -217,14 +242,12 @@ set(gca,'TickDir','out')
 cbHandles = findobj(h,'DisplayName','Confidence bounds');
 cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
 set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
+title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
+print(gcf,'vestibularAndNystagmus',"-dpdf","-bestfit")
 
 % Find the correlations between head and vestibular rotations
-x = -comparisonTable.Yaw; y = comparisonTable.YawEar;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear yaw and head yaw is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
-fit = fitlm(y, x);
+x = comparisonTable.YawEar; y = -comparisonTable.Yaw;
+fit = fitlm(x, y);
 figHandle = figure();
 figHandle.Renderer ='Painters';
 set(gcf,'units','inches')
@@ -246,17 +269,16 @@ legend off
 box off
 axis square
 ax = gca;
+ax.TitleFontSizeMultiplier = 1;
+ax.FontSize = 8;
 set(gca,'TickDir','out')
 cbHandles = findobj(h,'DisplayName','Confidence bounds');
 cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
 set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
+title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
-x = -comparisonTable.Pitch; y = comparisonTable.PitchEar;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear pitch and head pitch is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
-fit = fitlm(y, x);
+x = comparisonTable.PitchEar; y = -comparisonTable.Pitch;
+fit = fitlm(x, y);
 % Plot
 subplot(2,2,2)
 h = fit.plot;
@@ -266,25 +288,24 @@ set(h,'LineWidth',1.5)
 h(1).MarkerFaceColor = [0.5, 0.5, 0.5];
 xlabel('Vestibular pitch')
 ylabel('Head pitch')
-xlim([-55 -15])
-ylim([-20 20])
-% yticks(-30:10:10)
+xlim([-45 -15])
+ylim([-20 10])
+yticks(-20:10:20)
 title('')
 legend off
 box off
 axis square
 ax = gca;
+ax.TitleFontSizeMultiplier = 1;
+ax.FontSize = 8;
 set(gca,'TickDir','out')
 cbHandles = findobj(h,'DisplayName','Confidence bounds');
 cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
 set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
+title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
-x = comparisonTable.Roll; y = comparisonTable.RollEar;
-[r,p] = corrcoef(x, y);
-modelcorr = @(x,y) corr(x,y);
-CI = bootci(bootN,{modelcorr,x,y});
-fprintf(['Correlation between ear roll and head roll is r:' num2str(r(2)) ', CI(95%%) LB:' num2str(CI(1)) ' UB:' num2str(CI(2)) ', p:' num2str(p(2)) '\n']) 
-fit = fitlm(y, x);
+x = comparisonTable.RollEar; y = comparisonTable.Roll;
+fit = fitlm(x, y);
 subplot(2,2,3)
 h = fit.plot;
 h(1).Marker = 'o';
@@ -301,12 +322,15 @@ legend off
 box off
 axis square
 ax = gca;
+ax.TitleFontSizeMultiplier = 1;
+ax.FontSize = 8;
 set(gca,'TickDir','out')
 cbHandles = findobj(h,'DisplayName','Confidence bounds');
 cbHandles = findobj(h,'LineStyle',cbHandles.LineStyle, 'Color', cbHandles.Color);
 set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
+title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
-% Histograms
+%% Histograms
 figHandle = figure();
 figHandle.Renderer ='Painters';
 subplot(3,1,1)
