@@ -2,24 +2,28 @@ function [lateralMRILeft, lateralMRIRight, ...
           anteriorMRILeft, anteriorMRIRight, ...
           posteriorMRILeft, posteriorMRIRight] = loadMRINormals(planeFolder, useAllFids)
 
+      % This function loads fidicuals for each canal for a single subject
+      % that were downloaded with the downloadSubjectNormals.m function.
+      % Then it does PCA on these markups to find the vectors that are
+      % parallel to the plane. Finally, it rotates the sigh of the TOME
+      % vectors that have an opposite sign of the majority of vectors
+      %    Inputs:
+      %        planeFolder: A subject folder created by the downloadSubjectNormals.m function
+      %        useAllFids: If set to true, the function uses all fidicuals
+      %                    if false, use 5 main ones. We used only 5 for
+      %                    the inner ear analysis.
+      
+    % If use all fids  
     if ~true(useAllFids)
-    %     % This function loads normal files
-    %       
-    %     lateralMRILeft = load(fullfile(planeFolder, 'left_lat.mat'), 'normal').normal;
-    %     lateralMRIRight = load(fullfile(planeFolder, 'right_lat.mat'), 'normal').normal;
-    %     anteriorMRILeft = load(fullfile(planeFolder, 'left_ant.mat'), 'normal').normal;
-    %     anteriorMRIRight = load(fullfile(planeFolder, 'right_ant.mat'), 'normal').normal;
-    %     posteriorMRILeft = load(fullfile(planeFolder, 'left_post.mat'), 'normal').normal;
-    %     posteriorMRIRight = load(fullfile(planeFolder, 'right_post.mat'), 'normal').normal;
-    %     
-    %     This calculates PCA from points
+        % Calculate PCA 
         lateralMRILeft_points = pca(load(fullfile(planeFolder, 'left_lat.mat'), 'point_array').point_array);
         lateralMRIRight_points = pca(load(fullfile(planeFolder, 'right_lat.mat'), 'point_array').point_array);
         anteriorMRILeft_points = pca(load(fullfile(planeFolder, 'left_ant.mat'), 'point_array').point_array);
         anteriorMRIRight_points = pca(load(fullfile(planeFolder, 'right_ant.mat'), 'point_array').point_array);
         posteriorMRILeft_points = pca(load(fullfile(planeFolder, 'left_post.mat'), 'point_array').point_array);
-        posteriorMRIRight_points = pca(load(fullfile(planeFolder, 'right_post.mat'), 'point_array').point_array);    
-
+        posteriorMRIRight_points = pca(load(fullfile(planeFolder, 'right_post.mat'), 'point_array').point_array);           
+        
+        % 3rd eigenvector is the plane normal
         lateralMRILeft = lateralMRILeft_points(:,3);
         lateralMRIRight = lateralMRIRight_points(:,3);
         anteriorMRILeft = anteriorMRILeft_points(:,3);
@@ -28,7 +32,7 @@ function [lateralMRILeft, lateralMRIRight, ...
         posteriorMRIRight = posteriorMRIRight_points(:,3);
 
         % Here I manually change signs to make all normals point to the same 
-        % direction. Not RAS yet.
+        % direction.
         if contains(planeFolder, 'TOME_3007') || contains(planeFolder, 'TOME_3014') || contains(planeFolder, 'TOME_3021') || contains(planeFolder, 'TOME_3022') || contains(planeFolder, 'TOME_3030') || contains(planeFolder, 'TOME_3044')  
             posteriorMRILeft = -posteriorMRILeft;   
         elseif contains(planeFolder, 'TOME_3024')     
@@ -36,7 +40,9 @@ function [lateralMRILeft, lateralMRIRight, ...
         end
 
         anteriorMRIRight = -anteriorMRIRight;
+    % If not use all fids
     else
+        % Split the fcsv files to get the first 5 fidicuals for each canal
         lateralFidsLeft = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_lat_left.fcsv'))),'UniformOutput',0);
         lateralFidsRight = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_lat_right.fcsv'))),'UniformOutput',0);
         anteriorFidsLeft = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_ant_left.fcsv'))),'UniformOutput',0);
@@ -44,6 +50,7 @@ function [lateralMRILeft, lateralMRIRight, ...
         posteriorFidsLeft = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_post_left.fcsv'))),'UniformOutput',0);
         posteriorFidsRight = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_post_right.fcsv'))),'UniformOutput',0);        
         
+        % Do PCA
         lateralFidsLeft = pca(cell2mat(cellfun(@(x) [str2num(x{2}) str2num(x{3}) str2num(x{4})], lateralFidsLeft(4:end), 'UniformOutput', false)));
         lateralFidsRight = pca(cell2mat(cellfun(@(x) [str2num(x{2}) str2num(x{3}) str2num(x{4})], lateralFidsRight(4:end), 'UniformOutput', false)));
         anteriorFidsLeft = pca(cell2mat(cellfun(@(x) [str2num(x{2}) str2num(x{3}) str2num(x{4})], anteriorFidsLeft(4:end), 'UniformOutput', false)));
@@ -51,6 +58,7 @@ function [lateralMRILeft, lateralMRIRight, ...
         posteriorFidsLeft = pca(cell2mat(cellfun(@(x) [str2num(x{2}) str2num(x{3}) str2num(x{4})], posteriorFidsLeft(4:end), 'UniformOutput', false)));
         posteriorFidsRight = pca(cell2mat(cellfun(@(x) [str2num(x{2}) str2num(x{3}) str2num(x{4})], posteriorFidsRight(4:end), 'UniformOutput', false)));
         
+        % Get the 3rd eigenvector
         lateralMRILeft = lateralFidsLeft(:,3);
         lateralMRIRight = lateralFidsRight(:,3);
         anteriorMRILeft = anteriorFidsLeft(:,3);
@@ -59,8 +67,7 @@ function [lateralMRILeft, lateralMRIRight, ...
         posteriorMRIRight = posteriorFidsRight(:,3);
     end
     
-        % Here I manually change signs to make all normals point to the same 
-        % direction. Not RAS yet.
+        % Flip the signs of the rogue vectors 
         if contains(planeFolder, 'TOME_3014') || contains(planeFolder, 'TOME_3021') || contains(planeFolder, 'TOME_3022') || contains(planeFolder, 'TOME_3044')  
             posteriorMRILeft = -posteriorMRILeft;   
         end

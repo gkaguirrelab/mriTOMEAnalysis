@@ -1,7 +1,6 @@
 function downloadSubjectNormals(saveLoc)
-% This is the list of subjects whose plane normals are looking at the non
-% preferred direction (right). This script downloads normals and corrects
-% the directions and and saves normals in different folders.   
+% This script downloads inner ear fiducials from the flywheel gears. Specify
+% a folder (saveLoc) for the data
 
 % Save folder
 if ~isfolder(saveLoc)
