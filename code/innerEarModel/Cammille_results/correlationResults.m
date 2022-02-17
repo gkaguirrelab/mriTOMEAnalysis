@@ -5,16 +5,25 @@ pcaWithAllFids = true;
 
 % Read YPR table, rename the first variable to 'Patient'
 ypr = load(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'qformRots.mat'));
-ypr = cell2table(ypr.qformRots);
-ypr = renamevars(ypr,'Var1','Patient');
-ypr = renamevars(ypr,'Var2','Yaw');
-ypr = renamevars(ypr,'Var3','Pitch');
-ypr = renamevars(ypr,'Var4','Roll');
-ypr.Roll = -ypr.Roll;
-
+ypr = ypr.qformRots;
+ypr = renamevars(ypr,'qformRots1','Patient');
+ypr = renamevars(ypr,'qformRots2','Yaw');
+ypr = renamevars(ypr,'qformRots3','Pitch');
+ypr = renamevars(ypr,'qformRots4','Roll');
+ypr.Roll = -ypr.Roll;             
+               
 % Read the nystagmus table and only retain the meanX and meanY columns 
 nystagmus = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'nystagmus.xlsx'));
 
+% Remove subjects that have no structurals in the rest ses from YPR values
+% These are TOME_0012,18,19,21,30,44
+subjectsToRemove = [find(strcmp('TOME_3012',nystagmus.Patient)),...
+                    find(strcmp('TOME_3018',nystagmus.Patient)),...
+                    find(strcmp('TOME_3019',nystagmus.Patient)),...
+                    find(strcmp('TOME_3021',nystagmus.Patient)),...
+                    find(strcmp('TOME_3030',nystagmus.Patient)),...
+                    find(strcmp('TOME_3044',nystagmus.Patient))];
+nystagmus(subjectsToRemove,:) = [];  
 % Create a comparison table by combining two tables by the common rows
 comparisonTable = innerjoin(ypr, nystagmus);
 
@@ -37,7 +46,7 @@ fprintf('Head roll and vertical nystagmus: R-squared = %2.2f slope[95%% CI] = %2
 
 %% Inner ear correlations 
 % Download the inner ear files
-innerEarLoc = fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'innerEarNormals');
+innerEarLoc = fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'subjectNormals');
 if ~isfolder(innerEarLoc)
     fprintf('Downloading inner ear normals.') 
     downloadSubjectNormals(innerEarLoc)
@@ -247,7 +256,7 @@ print(gcf,'vestibularAndNystagmus',"-dpdf","-bestfit")
 
 % Find the correlations between head and vestibular rotations
 x = comparisonTable.YawEar; y = -comparisonTable.Yaw;
-fit = fitlm(x, y);
+fit = fitlm(x, y, 'RobustOpts', 'on');
 figHandle = figure();
 figHandle.Renderer ='Painters';
 set(gcf,'units','inches')
@@ -278,7 +287,7 @@ set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
 x = comparisonTable.PitchEar; y = -comparisonTable.Pitch;
-fit = fitlm(x, y);
+fit = fitlm(x, y, 'RobustOpts', 'on');
 % Plot
 subplot(2,2,2)
 h = fit.plot;
@@ -305,7 +314,7 @@ set(cbHandles, 'LineWidth', 1, 'LineStyle', '--')
 title(sprintf('slope [95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f',fit.Coefficients{2,1},ci,fit.coefTest))
 
 x = comparisonTable.RollEar; y = comparisonTable.Roll;
-fit = fitlm(x, y);
+fit = fitlm(x, y, 'RobustOpts', 'on');
 subplot(2,2,3)
 h = fit.plot;
 h(1).Marker = 'o';
