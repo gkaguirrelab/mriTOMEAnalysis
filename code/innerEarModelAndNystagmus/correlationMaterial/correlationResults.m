@@ -4,7 +4,7 @@ currentDirectory = pwd;
 pcaWithAllFids = true;
 
 % Read YPR table, rename the first variable to 'Patient'
-ypr = load(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'qformRots.mat'));
+ypr = load(fullfile(currentDirectory, 'code', 'innerEarModelAndNystagmus', 'correlationMaterial', 'qformRots.mat'));
 ypr = ypr.qformRots;
 ypr = renamevars(ypr,'qformRots1','Patient');
 ypr = renamevars(ypr,'qformRots2','Yaw');
@@ -13,7 +13,7 @@ ypr = renamevars(ypr,'qformRots4','Roll');
 ypr.Roll = -ypr.Roll;             
                
 % Read the nystagmus table and only retain the meanX and meanY columns 
-nystagmus = readtable(fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'nystagmus.xlsx'));
+nystagmus = readtable(fullfile(currentDirectory, 'code', 'innerEarModelAndNystagmus', 'correlationMaterial', 'nystagmus.xlsx'));
 
 % Remove subjects that have no structurals in the rest ses from YPR values
 % These are TOME_0012,18,19,21,30,44
