@@ -44,9 +44,9 @@ ci = fit.coefCI;
 ci = ci(2,:);
 fprintf('Head roll and vertical nystagmus: R-squared = %2.2f slope[95%% CI] = %2.2f [%2.2f to %2.2f], p = %2.3f \n\n',fit.Rsquared.Adjusted,fit.Coefficients{2,1},ci,fit.coefTest)
 
-%% Inner ear correlations 
+% Inner ear correlations 
 % Download the inner ear files
-innerEarLoc = fullfile(currentDirectory, 'code', 'innerEarModel', 'Cammille_results', 'subjectNormals');
+innerEarLoc = fullfile(currentDirectory, 'code', 'innerEarModelAndNystagmus', 'correlationMaterial', 'subjectNormals');
 if ~isfolder(innerEarLoc)
     fprintf('Downloading inner ear normals.') 
     downloadSubjectNormals(innerEarLoc)
