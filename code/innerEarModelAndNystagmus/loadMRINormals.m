@@ -14,7 +14,7 @@ function [lateralMRILeft, lateralMRIRight, ...
       %                    the inner ear analysis.
       
     % If use all fids  
-    if ~true(useAllFids)
+    if isequal(useAllFids, 0)
         % Calculate PCA 
         lateralMRILeft_points = pca(load(fullfile(planeFolder, 'left_lat.mat'), 'point_array').point_array);
         lateralMRIRight_points = pca(load(fullfile(planeFolder, 'right_lat.mat'), 'point_array').point_array);
@@ -41,7 +41,7 @@ function [lateralMRILeft, lateralMRIRight, ...
 
         anteriorMRIRight = -anteriorMRIRight;
     % If not use all fids
-    else
+    elseif isequal(useAllFids,1)
         % Split the fcsv files to get the first 5 fidicuals for each canal
         lateralFidsLeft = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_lat_left.fcsv'))),'UniformOutput',0);
         lateralFidsRight = cellfun(@(x)regexp(x,',','split'),splitlines(fileread(fullfile(planeFolder, 'fids_InnerEarAtlas_SSC_lat_right.fcsv'))),'UniformOutput',0);
@@ -67,12 +67,31 @@ function [lateralMRILeft, lateralMRIRight, ...
         posteriorMRIRight = posteriorFidsRight(:,3);
     end
     
-        % Flip the signs of the rogue vectors 
-        if contains(planeFolder, 'TOME_3014') || contains(planeFolder, 'TOME_3021') || contains(planeFolder, 'TOME_3022') || contains(planeFolder, 'TOME_3044')  
-            posteriorMRILeft = -posteriorMRILeft;   
-        end
-
-        anteriorMRIRight = -anteriorMRIRight;    
-    
+%         %  Flip the signs of the rogue vectors 
+%         if contains(planeFolder, 'TOME_3014') || contains(planeFolder, 'TOME_3021') || contains(planeFolder, 'TOME_3022') || contains(planeFolder, 'TOME_3044')  
+%             posteriorMRILeft = -posteriorMRILeft;   
+%         end
+% 
+%         anteriorMRIRight = -anteriorMRIRight; 
+%         
+        % Another way to flip signs which is more systmatic 
+if sum(lateralMRILeft.*[0 0 1]') < 0
+lateralMRILeft = -lateralMRILeft;
+end
+if sum(lateralMRIRight.*[0 0 1]') <0
+lateralMRIRight = -lateralMRIRight;
+end
+if sum(anteriorMRILeft.*[1 0 0]') <0
+anteriorMRILeft = -anteriorMRILeft;
+end
+if sum(anteriorMRIRight.*[-1 0 0]') <0
+anteriorMRIRight = -anteriorMRIRight;
+end
+if sum(posteriorMRILeft.*[0 1 0]') <0
+posteriorMRILeft = -posteriorMRILeft;
+end
+if sum(posteriorMRIRight.*[0 1 0]') <0
+posteriorMRIRight = -posteriorMRIRight;
+end
 end
           
