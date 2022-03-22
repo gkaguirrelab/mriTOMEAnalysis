@@ -44,7 +44,7 @@ for sub = 1:length(subjects)
                            if strcmp(files{mm}.type, 'nifti')
                                niftiFile = files{mm};
                                % Download the nifti and read qform                                 
-                               downloadPath = fullfile(workdir, [subjects{sub}.label '.nii.gz']);
+                               downloadPath = fullfile(workdir, [subjects{sub}.label '_T2.nii.gz']);
                                if ~isfile(downloadPath)
                                     niftiFile.download(downloadPath);
                                end
@@ -86,3 +86,60 @@ joined = innerjoin(ypr, qformRots);
 fprintf(['Yaw correlation: r: ' num2str(rYaw(2)) ' p: ' num2str(pYaw(2)) '\n']) 
 fprintf(['Pitch correlation: r: ' num2str(rPitch(2)) ' p: ' num2str(pPitch(2)) '\n'])
 fprintf(['Roll correlation: r: ' num2str(rRoll(2)) ' p: ' num2str(pRoll(2)) '\n'])
+
+%% Run the same thing for spin echo images
+% Loop through subjects
+qformRotsSpinEcho = {};
+counter = 1;
+for sub = 1:length(subjects)
+    % Get sessions if the subject ID is in the plane normal folder
+    sessions = subjects{sub}.sessions();
+    % Loop through sessions and get acquisitions 
+    for ss = 1:length(sessions)
+        if strcmp(sessions{ss}.label, 'Session 1')
+            acquisitions = sessions{ss}.acquisitions();
+            % Go through acquisitions in the sessions and get task and
+            % rest fmri files.
+            for aa = 1:length(acquisitions)
+                if contains(acquisitions{aa}.label, 'SpinEchoFieldMap_AP')
+                       acquisition = acquisitions{aa};    
+                       files = acquisition.files();
+                       % Loop through files get niftis
+                       for mm = 1:length(files)
+                           if strcmp(files{mm}.type, 'nifti')
+                               niftiFile = files{mm};
+                               % Download the nifti and read qform                                 
+                               downloadPath = fullfile(workdir, [subjects{sub}.label '_spinEcho.nii.gz']);
+                               if ~isfile(downloadPath)
+                                    niftiFile.download(downloadPath);
+                               end
+                               header = load_untouch_header_only(downloadPath); 
+                               qform = [header.hist.srow_x 0;
+                                        header.hist.srow_y 0;
+                                        header.hist.srow_z 1];
+                               scaleX = norm(qform(1:3, 1));
+                               scaleY = norm(qform(1:3, 2));
+                               scaleZ = norm(qform(1:3, 3));
+                               rotation = [qform(1,1)/scaleX  qform(1,2)/scaleY  qform(1,3)/scaleZ 0;...
+                                           qform(2,1)/scaleX  qform(2,2)/scaleY  qform(2,3)/scaleZ 0;...
+                                           qform(3,1)/scaleX  qform(3,2)/scaleY  qform(3,3)/scaleZ 0;...
+                                                    0                 0                   0        1];
+                               rotation = rotation * rotm2tform(roty(180));
+                               eulAngles = rad2deg(rotm2eul(rotation(1:3, 1:3), 'XYZ'));
+                               if ~any(any(strcmp(qformRots, subjects{sub}.label)))
+                                   qformRotsSpinEcho{counter, 1} = subjects{sub}.label;
+                                   qformRotsSpinEcho{counter, 2} = eulAngles(3)
+                                   qformRotsSpinEcho{counter, 3} = eulAngles(1) - 20;
+                                   qformRotsSpinEcho{counter, 4} = eulAngles(2);
+                                   counter = counter + 1;
+                               end
+                           end
+                       end
+                end
+            end
+        end
+    end
+end
+
+qformRotsSpinEcho = cell2table(qformRotsSpinEcho);
+qformRotsSpinEcho = renamevars(qformRotsSpinEcho,'qformRotsSpinEcho1','Patient');
