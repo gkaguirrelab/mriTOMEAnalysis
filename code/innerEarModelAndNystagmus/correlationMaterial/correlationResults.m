@@ -1,7 +1,7 @@
 %% Cammille correlations 
 % Set the code directory after tbUse
 currentDirectory = pwd; 
-pcaWithAllFids = true;
+pcaWithAllFids = false;
 
 % Read YPR table, rename the first variable to 'Patient'
 ypr = load(fullfile(currentDirectory, 'code', 'innerEarModelAndNystagmus', 'correlationMaterial', 'qformRots.mat'));
